@@ -2,6 +2,20 @@
 
 Sistema completo de gestión de presupuestos con módulo de solicitudes de descuento, aprobación administrativa, auditoría completa y generación de PDFs.
 
+---
+
+## 🚨 CONFIGURACIÓN DE SEGURIDAD OBLIGATORIA
+
+**⚠️ ANTES DE USAR ESTE SISTEMA, DEBES CONFIGURAR LA SEGURIDAD:**
+
+1. **Ve al Dashboard de Supabase** → Authentication → Policies
+2. **Habilita**: "Check passwords against HaveIBeenPwned" ✅
+3. **Esto es obligatorio** para prevenir contraseñas comprometidas
+
+📄 **Instrucciones detalladas**: Ver [`SECURITY_SETUP.md`](./SECURITY_SETUP.md) y [`.bolt/security-instructions.md`](./.bolt/security-instructions.md)
+
+---
+
 ## Stack Tecnológico
 
 - **Frontend**: React 18 + TypeScript + Vite
@@ -153,7 +167,26 @@ VITE_SUPABASE_URL=tu_url_de_supabase
 VITE_SUPABASE_ANON_KEY=tu_clave_anonima
 ```
 
-### 3. Configurar Supabase
+### 3. ⚠️ CONFIGURAR SEGURIDAD DE SUPABASE (OBLIGATORIO)
+
+**ANTES de crear usuarios, debes configurar la seguridad en Supabase:**
+
+1. Ve a tu proyecto en [Supabase Dashboard](https://app.supabase.com)
+2. Navega a **Authentication** → **Policies** (o **Settings**)
+3. **HABILITA**: "Check passwords against HaveIBeenPwned" ✅
+
+**Esto es CRÍTICO**: Previene el uso de contraseñas comprometidas verificando contra bases de datos de brechas conocidas.
+
+📄 **Para configuración completa de seguridad, consulta** [`SECURITY_SETUP.md`](./SECURITY_SETUP.md)
+
+Este archivo incluye:
+- Configuración de protección contra contraseñas filtradas (OBLIGATORIO)
+- Políticas de contraseñas fuertes
+- Rate limiting contra ataques de fuerza bruta
+- Configuración de tokens y sesiones
+- Checklist de seguridad pre-producción
+
+### 4. Configurar Supabase
 
 Las migraciones ya están aplicadas. Para verificar:
 
@@ -165,21 +198,23 @@ supabase db list
 supabase db migrations list
 ```
 
-### 4. Crear Usuarios de Prueba
+### 5. Crear Usuarios de Prueba
 
 En Supabase Dashboard → Authentication → Users:
 
 1. Crear usuario administrador:
    - Email: admin@hdm.com
-   - Password: (tu elección)
+   - Password: (usa una contraseña segura, el sistema verificará que no esté comprometida)
 
 2. Crear usuario vendedor:
    - Email: vendedor1@hdm.com
-   - Password: (tu elección)
+   - Password: (usa una contraseña segura)
+
+**Nota**: Si la protección está habilitada, contraseñas comunes como "password123" serán rechazadas automáticamente.
 
 Los perfiles en la tabla `users` ya están creados por el seed.
 
-### 5. Ejecutar la Aplicación
+### 6. Ejecutar la Aplicación
 
 ```bash
 npm run dev
@@ -187,7 +222,7 @@ npm run dev
 
 La aplicación estará disponible en `http://localhost:5173`
 
-### 6. Configurar Recordatorios (Opcional)
+### 7. Configurar Recordatorios (Opcional)
 
 La Edge Function `discount-reminders` ya está desplegada. Para programar ejecuciones automáticas:
 
