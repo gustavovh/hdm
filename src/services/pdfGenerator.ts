@@ -1,0 +1,276 @@
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Presupuesto, SolicitudDescuento } from '../types/database.types';
+import { BudgetCalculator } from './budgetCalculator';
+
+export class PDFGenerator {
+  static generatePresupuestoPDF(
+    presupuesto: Presupuesto,
+    solicitudAprobada?: SolicitudDescuento
+  ): jsPDF {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPosition = 20;
+
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('HDM - Presupuesto', pageWidth / 2, yPosition, { align: 'center' });
+
+    yPosition += 15;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Código: ${presupuesto.codigo}`, 20, yPosition);
+    doc.text(
+      `Fecha: ${new Date(presupuesto.created_at).toLocaleDateString()}`,
+      pageWidth - 20,
+      yPosition,
+      { align: 'right' }
+    );
+
+    yPosition += 5;
+    doc.setLineWidth(0.5);
+    doc.line(20, yPosition, pageWidth - 20, yPosition);
+    yPosition += 10;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Información del Cliente', 20, yPosition);
+    yPosition += 7;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Nombre: ${presupuesto.cliente_nombre}`, 20, yPosition);
+    yPosition += 5;
+    if (presupuesto.cliente_email) {
+      doc.text(`Email: ${presupuesto.cliente_email}`, 20, yPosition);
+      yPosition += 5;
+    }
+    if (presupuesto.cliente_telefono) {
+      doc.text(`Teléfono: ${presupuesto.cliente_telefono}`, 20, yPosition);
+      yPosition += 5;
+    }
+
+    yPosition += 5;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Información del Vendedor', 20, yPosition);
+    yPosition += 7;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Vendedor: ${presupuesto.vendedor?.full_name || 'N/A'}`, 20, yPosition);
+    yPosition += 5;
+    doc.text(`Email: ${presupuesto.vendedor?.email || 'N/A'}`, 20, yPosition);
+    yPosition += 10;
+
+    const items = presupuesto.items || [];
+    const tableData = items.map((item, index) => [
+      index + 1,
+      item.descripcion,
+      item.cantidad.toString(),
+      BudgetCalculator.formatCurrency(item.precio_unitario, presupuesto.moneda),
+      BudgetCalculator.formatCurrency(item.subtotal, presupuesto.moneda),
+      item.descuento_aplicado > 0
+        ? BudgetCalculator.formatCurrency(item.descuento_aplicado, presupuesto.moneda)
+        : '-',
+      BudgetCalculator.formatCurrency(
+        item.subtotal - item.descuento_aplicado,
+        presupuesto.moneda
+      ),
+    ]);
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [
+        [
+          '#',
+          'Descripción',
+          'Cant.',
+          'Precio Unit.',
+          'Subtotal',
+          'Descuento',
+          'Total',
+        ],
+      ],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246], fontSize: 9 },
+      bodyStyles: { fontSize: 9 },
+      columnStyles: {
+        0: { cellWidth: 10 },
+        1: { cellWidth: 60 },
+        2: { cellWidth: 15, halign: 'center' },
+        3: { cellWidth: 25, halign: 'right' },
+        4: { cellWidth: 25, halign: 'right' },
+        5: { cellWidth: 25, halign: 'right' },
+        6: { cellWidth: 25, halign: 'right' },
+      },
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 10;
+
+    if (solicitudAprobada) {
+      doc.setFillColor(219, 234, 254);
+      doc.rect(20, yPosition, pageWidth - 40, 30, 'F');
+
+      yPosition += 7;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(29, 78, 216);
+      doc.text('Descuento Aprobado', 25, yPosition);
+
+      yPosition += 6;
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+
+      const estadoText =
+        solicitudAprobada.estado === 'APROBADO_MODIFICADO'
+          ? 'APROBADO CON MODIFICACIÓN'
+          : 'APROBADO';
+      doc.text(`Estado: ${estadoText}`, 25, yPosition);
+
+      yPosition += 4;
+      doc.text(`Tipo: ${solicitudAprobada.tipo}`, 25, yPosition);
+
+      yPosition += 4;
+      const valorAprobado = solicitudAprobada.valor_aprobado || 0;
+      if (solicitudAprobada.tipo === 'PORCENTAJE') {
+        doc.text(`Descuento: ${valorAprobado}%`, 25, yPosition);
+      } else {
+        doc.text(
+          `Descuento: ${BudgetCalculator.formatCurrency(
+            valorAprobado,
+            presupuesto.moneda
+          )}`,
+          25,
+          yPosition
+        );
+      }
+
+      yPosition += 4;
+      doc.text(
+        `Aprobado el: ${new Date(
+          solicitudAprobada.applied_at || ''
+        ).toLocaleDateString()}`,
+        25,
+        yPosition
+      );
+
+      if (solicitudAprobada.comentario_admin) {
+        yPosition += 4;
+        doc.text(`Observaciones: ${solicitudAprobada.comentario_admin}`, 25, yPosition);
+      }
+
+      yPosition += 10;
+    }
+
+    const summaryStartY = yPosition;
+    const summaryX = pageWidth - 70;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+
+    doc.text('Total Bruto:', summaryX, summaryStartY);
+    doc.text(
+      BudgetCalculator.formatCurrency(presupuesto.total_bruto, presupuesto.moneda),
+      summaryX + 50,
+      summaryStartY,
+      { align: 'right' }
+    );
+
+    if (presupuesto.total_descuento > 0) {
+      doc.text('Descuento:', summaryX, summaryStartY + 5);
+      doc.setTextColor(220, 38, 38);
+      doc.text(
+        `- ${BudgetCalculator.formatCurrency(
+          presupuesto.total_descuento,
+          presupuesto.moneda
+        )}`,
+        summaryX + 50,
+        summaryStartY + 5,
+        { align: 'right' }
+      );
+      doc.setTextColor(0, 0, 0);
+    }
+
+    doc.text('Total Neto:', summaryX, summaryStartY + 10);
+    doc.text(
+      BudgetCalculator.formatCurrency(presupuesto.total_neto, presupuesto.moneda),
+      summaryX + 50,
+      summaryStartY + 10,
+      { align: 'right' }
+    );
+
+    doc.text(
+      `Impuestos (${presupuesto.tasa_impuesto}%):`,
+      summaryX,
+      summaryStartY + 15
+    );
+    doc.text(
+      BudgetCalculator.formatCurrency(
+        presupuesto.total_impuestos,
+        presupuesto.moneda
+      ),
+      summaryX + 50,
+      summaryStartY + 15,
+      { align: 'right' }
+    );
+
+    doc.setLineWidth(0.5);
+    doc.line(summaryX, summaryStartY + 18, summaryX + 50, summaryStartY + 18);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('TOTAL:', summaryX, summaryStartY + 24);
+    doc.text(
+      BudgetCalculator.formatCurrency(
+        presupuesto.total_neto + presupuesto.total_impuestos,
+        presupuesto.moneda
+      ),
+      summaryX + 50,
+      summaryStartY + 24,
+      { align: 'right' }
+    );
+
+    const footerY = doc.internal.pageSize.getHeight() - 20;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(128, 128, 128);
+    doc.text(
+      `Generado el ${new Date().toLocaleString()}`,
+      pageWidth / 2,
+      footerY,
+      { align: 'center' }
+    );
+
+    if (solicitudAprobada) {
+      doc.text(
+        `ID Solicitud: ${solicitudAprobada.id}`,
+        pageWidth / 2,
+        footerY + 4,
+        { align: 'center' }
+      );
+    }
+
+    return doc;
+  }
+
+  static downloadPresupuestoPDF(
+    presupuesto: Presupuesto,
+    solicitudAprobada?: SolicitudDescuento
+  ): void {
+    const doc = this.generatePresupuestoPDF(presupuesto, solicitudAprobada);
+    doc.save(`presupuesto-${presupuesto.codigo}.pdf`);
+  }
+
+  static previewPresupuestoPDF(
+    presupuesto: Presupuesto,
+    solicitudAprobada?: SolicitudDescuento
+  ): void {
+    const doc = this.generatePresupuestoPDF(presupuesto, solicitudAprobada);
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  }
+}
