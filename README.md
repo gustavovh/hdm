@@ -201,37 +201,43 @@ supabase db list
 supabase db migrations list
 ```
 
-### 5. Crear Usuarios de Prueba en Supabase Auth
+### 5. Crear Usuarios en Supabase Auth
 
-**IMPORTANTE**: Debes crear estos usuarios en **Supabase Dashboard → Authentication → Users**
+**Ve a Supabase Dashboard → Authentication → Users**
 
-#### Pasos para cada usuario:
+#### Crear Usuario Administrador (primero):
 
-1. Click en "Add user" → "Create new user"
-2. Ingresa el email
-3. Ingresa una contraseña segura (12+ caracteres)
-4. **MUY IMPORTANTE**: Expande "Advanced Settings"
-5. En el campo "User UID", ingresa el UUID correspondiente
+1. Click en **"Add user"** → **"Create new user"**
+2. Ingresa:
+   ```
+   Email: admin@hdm.com
+   Password: (tu contraseña segura, 12+ caracteres)
+   ```
+3. Marca **"Auto Confirm User?"** (para evitar verificación de email)
+4. Click **"Create user"**
 
-#### Usuario Administrador:
-```
-Email: admin@hdm.com
-Password: (tu contraseña segura)
-User UID: 00000000-0000-0000-0000-000000000001
-```
+**✨ El primer usuario se convierte automáticamente en admin.**
 
-#### Usuario Vendedor:
+#### Crear Usuarios Vendedores (opcional):
+
+Repite el proceso para vendedores:
 ```
 Email: vendedor1@hdm.com
 Password: (tu contraseña segura)
-User UID: 00000000-0000-0000-0000-000000000002
 ```
 
-**⚠️ Los UUIDs deben coincidir exactamente** con los perfiles creados en la base de datos.
+Los usuarios subsiguientes tienen rol de `vendedor` por defecto.
 
-**Nota**: Si la protección está habilitada, contraseñas como "password123" serán rechazadas.
+**Nota**: Si la protección contra contraseñas comprometidas está habilitada, contraseñas como "password123" serán rechazadas.
 
-Los perfiles en la tabla `users` ya están creados por el seed.
+#### Cambiar Rol de Usuario
+
+Si necesitas hacer admin a otro usuario después:
+
+```sql
+-- Ejecutar en Supabase SQL Editor (como admin)
+SELECT set_user_role('uuid-del-usuario', 'admin');
+```
 
 ### 6. Ejecutar la Aplicación
 
