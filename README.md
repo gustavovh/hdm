@@ -172,10 +172,13 @@ VITE_SUPABASE_ANON_KEY=tu_clave_anonima
 **ANTES de crear usuarios, debes configurar la seguridad en Supabase:**
 
 1. Ve a tu proyecto en [Supabase Dashboard](https://app.supabase.com)
-2. Navega a **Authentication** → **Policies** (o **Settings**)
+2. Navega a **Authentication** → **Settings**
 3. **HABILITA**: "Check passwords against HaveIBeenPwned" ✅
+4. **DESACTIVA**: "Enable email confirmations" (para desarrollo/testing)
 
-**Esto es CRÍTICO**: Previene el uso de contraseñas comprometidas verificando contra bases de datos de brechas conocidas.
+**Esto es CRÍTICO**: La protección de contraseñas previene el uso de contraseñas comprometidas verificando contra bases de datos de brechas conocidas.
+
+**Nota sobre Email**: La confirmación de email está desactivada para facilitar desarrollo. Los usuarios pueden iniciar sesión inmediatamente después de registrarse sin verificar su correo.
 
 📄 **Para configuración completa de seguridad, consulta** [`SECURITY_SETUP.md`](./SECURITY_SETUP.md)
 

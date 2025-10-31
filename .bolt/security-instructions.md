@@ -1,71 +1,108 @@
-# 🔐 Instrucciones Rápidas de Seguridad
+# 🔐 Instrucciones Rápidas de Configuración - Desarrollo
 
-## ⚠️ ACCIÓN REQUERIDA: Habilitar Protección contra Contraseñas Comprometidas
+## 📋 Configuración de Supabase (3 minutos)
 
-Esta configuración es **OBLIGATORIA** antes de usar el sistema.
-
-### 📋 Pasos Rápidos (2 minutos)
-
-#### 1. Accede al Dashboard de Supabase
+### Paso 1: Accede al Dashboard
 ```
 🔗 https://app.supabase.com
 ```
 
-#### 2. Selecciona tu proyecto HDM
+### Paso 2: Selecciona tu proyecto HDM
 
-#### 3. Ve a la configuración de Authentication
+### Paso 3: Configurar Authentication
 
-**Ruta en el menú**:
-```
-Authentication → Policies
-```
-O también puede estar en:
-```
-Project Settings → Authentication
-```
+**Ruta**: `Authentication → Settings`
 
-#### 4. Busca la opción de Password Protection
+#### A) Protección de Contraseñas (OBLIGATORIO) ✅
 
-Encontrarás una sección llamada:
-- **"Password Protection"**
-- **"Password Requirements"**
-- **"Security"**
+**Sección**: Password Requirements o Security
 
-#### 5. Habilita el toggle
-
-Busca y **ACTIVA** la opción:
 ```
 ☑ Check passwords against HaveIBeenPwned
 ```
-O similar que mencione "HaveIBeenPwned" o "compromised passwords"
 
-#### 6. Guarda los cambios
+**Esto es obligatorio** - Previene contraseñas comprometidas.
+
+#### B) Confirmación de Email (Desarrollo/Testing)
+
+**Sección**: Email Confirmation
+
+```
+☐ Enable email confirmations (DESACTIVAR para desarrollo)
+```
+
+**Por qué desactivarlo:**
+- ✅ No necesitas configurar SMTP
+- ✅ No necesitas verificar emails
+- ✅ Los usuarios pueden iniciar sesión inmediatamente
+- ✅ Facilita pruebas rápidas
+
+**⚠️ IMPORTANTE**: En producción, debes activar la confirmación de email.
+
+### Paso 4: Guardar Cambios
 
 Haz click en **"Save"** o **"Update"**
 
-### ✅ Verificación
+---
 
-Intenta crear un usuario con contraseña débil como "password123":
+## ✅ Verificación Rápida
 
-- ❌ **Debe fallar** con mensaje: "Password has been found in a data breach"
-- ✅ **Esto confirma** que la protección está activa
+### 1. Protección de Contraseñas
 
-### 🎯 ¿Por qué es importante?
+Intenta crear un usuario con `password123`:
 
-- Previene el uso de contraseñas expuestas en brechas de seguridad
-- Protege cuentas de administrador y vendedores
-- No tiene impacto en el rendimiento
-- Es una buena práctica de seguridad estándar
+```
+❌ Debe fallar: "Password has been found in a data breach"
+✅ Protección activa
+```
 
-### 📱 Siguientes Pasos
+### 2. Sin Confirmación de Email
 
-Una vez completado esto, puedes:
+Crea un usuario:
 
-1. ✅ Crear usuarios de prueba (admin@hdm.com, vendedor1@hdm.com)
-2. ✅ Iniciar sesión en la aplicación
-3. ✅ Comenzar a usar el sistema
+```
+✅ Se crea inmediatamente
+✅ Puedes iniciar sesión sin verificar email
+✅ No recibes correos de confirmación
+```
 
-Para configuración avanzada de seguridad, consulta: **SECURITY_SETUP.md**
+---
+
+## 🚀 Ahora puedes:
+
+1. ✅ Crear usuarios de prueba directamente
+2. ✅ Iniciar sesión inmediatamente
+3. ✅ Probar el sistema sin configurar SMTP
+
+### Usuarios de Prueba Sugeridos
+
+En `Authentication → Users`, crea:
+
+**Admin:**
+```
+Email: admin@hdm.com
+Password: (mínimo 12 caracteres, segura)
+```
+
+**Vendedor:**
+```
+Email: vendedor1@hdm.com
+Password: (mínimo 12 caracteres, segura)
+```
+
+Los perfiles en la tabla `users` ya están creados por el seed.
+
+---
+
+## 🔒 Para Producción
+
+Antes de desplegar:
+
+1. ⚠️ **ACTIVAR** confirmación de email
+2. ⚠️ Configurar SMTP personalizado
+3. ⚠️ Revisar todas las políticas de seguridad
+
+Ver: **SECURITY_SETUP.md** para configuración completa.
 
 ---
 

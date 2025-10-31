@@ -63,17 +63,24 @@ Protege contra ataques de fuerza bruta:
 - OTP: 5 intentos por minuto
 ```
 
-### 4. Habilitar Email Confirmación (Producción)
+### 4. Configurar Email Confirmación
 
 **Ubicación**: Authentication → Settings → Email Confirmation
 
+**Para Desarrollo/Testing (Configuración Actual):**
 ```
-✓ Habilitar "Confirm email" para nuevos usuarios
+☐ DESACTIVAR "Confirm email" para nuevos usuarios
+```
+Esto permite crear usuarios y acceder inmediatamente sin verificar email.
+
+**Para Producción:**
+```
+✓ ACTIVAR "Confirm email" para nuevos usuarios
 ✓ Configurar plantilla de email profesional
 ✓ Configurar dominio SMTP personalizado
 ```
 
-**Nota**: Para desarrollo puedes mantenerlo deshabilitado.
+**⚠️ IMPORTANTE**: La confirmación de email está **DESHABILITADA** en este proyecto para facilitar desarrollo y pruebas. Asegúrate de habilitarla antes de ir a producción.
 
 ### 5. Configurar Refresh Token Rotation
 
@@ -149,20 +156,32 @@ El sistema ya tiene RLS habilitado en todas las tablas con las siguientes polít
 
 ## 🔍 Verificación de Seguridad
 
-### Checklist Pre-Producción
+### Checklist Desarrollo (Configuración Actual)
 
-Antes de desplegar a producción, verifica:
+Para entorno de desarrollo/testing:
 
 - [ ] ✅ Protección contra contraseñas filtradas habilitada
-- [ ] ✅ Políticas de contraseñas configuradas
-- [ ] ✅ Rate limiting configurado
-- [ ] ✅ Email confirmation habilitada
+- [ ] ✅ Rate limiting configurado (opcional en dev)
+- [ ] ❌ Email confirmation **DESHABILITADA** (facilita desarrollo)
+- [ ] ✅ CORS configurado para localhost:5173
+- [ ] ✅ Variables de entorno (.env) configuradas
+
+### Checklist Pre-Producción
+
+⚠️ **IMPORTANTE**: Antes de desplegar a producción, verifica:
+
+- [ ] ✅ Protección contra contraseñas filtradas habilitada
+- [ ] ✅ Políticas de contraseñas configuradas (12+ caracteres)
+- [ ] ✅ Rate limiting configurado (estricto)
+- [ ] ⚠️ **Email confirmation HABILITADA** (cambiar de desarrollo)
 - [ ] ✅ Refresh token rotation habilitada
-- [ ] ✅ CORS y URLs configuradas correctamente
+- [ ] ✅ CORS y URLs configuradas correctamente (solo dominios de producción)
 - [ ] ✅ Variables de entorno en producción configuradas
-- [ ] ✅ SMTP configurado (no usar Supabase SMTP en prod)
+- [ ] ✅ SMTP personalizado configurado (NO usar Supabase SMTP)
+- [ ] ✅ Plantillas de email personalizadas
 - [ ] ✅ SSL/TLS habilitado
 - [ ] ✅ Logs de auditoría habilitados
+- [ ] ✅ Monitoreo de seguridad configurado
 
 ---
 

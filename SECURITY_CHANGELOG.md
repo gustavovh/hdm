@@ -2,7 +2,43 @@
 
 ## 🔒 Correcciones de Seguridad Aplicadas
 
-### Fecha: 2025-10-30
+### Última actualización: 2025-10-30
+
+---
+
+## Cambio: Email Confirmation Disabled for Development
+
+### 📝 Decisión de Arquitectura
+
+**Fecha**: 2025-10-30
+
+**Cambio aplicado**: La confirmación de email está **DESACTIVADA** para facilitar el desarrollo y pruebas.
+
+**Razón**:
+- ✅ Simplifica el flujo de registro en desarrollo
+- ✅ No requiere configuración de SMTP
+- ✅ Los usuarios pueden acceder inmediatamente después de registrarse
+- ✅ Facilita pruebas rápidas del sistema
+
+**Configuración actual**:
+```
+Authentication → Settings → Email Confirmation
+☐ Enable email confirmations (DESACTIVADO)
+```
+
+**⚠️ IMPORTANTE PARA PRODUCCIÓN**:
+```
+Antes de desplegar a producción:
+1. ACTIVAR confirmación de email
+2. Configurar SMTP personalizado (no usar Supabase SMTP)
+3. Personalizar plantillas de email
+4. Probar flujo completo de verificación
+```
+
+**Documentación actualizada**:
+- README.md incluye instrucciones para desactivar confirmación
+- SECURITY_SETUP.md diferencia entre desarrollo y producción
+- .bolt/security-instructions.md con pasos rápidos
 
 ---
 
