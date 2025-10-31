@@ -201,19 +201,35 @@ supabase db list
 supabase db migrations list
 ```
 
-### 5. Crear Usuarios de Prueba
+### 5. Crear Usuarios de Prueba en Supabase Auth
 
-En Supabase Dashboard → Authentication → Users:
+**IMPORTANTE**: Debes crear estos usuarios en **Supabase Dashboard → Authentication → Users**
 
-1. Crear usuario administrador:
-   - Email: admin@hdm.com
-   - Password: (usa una contraseña segura, el sistema verificará que no esté comprometida)
+#### Pasos para cada usuario:
 
-2. Crear usuario vendedor:
-   - Email: vendedor1@hdm.com
-   - Password: (usa una contraseña segura)
+1. Click en "Add user" → "Create new user"
+2. Ingresa el email
+3. Ingresa una contraseña segura (12+ caracteres)
+4. **MUY IMPORTANTE**: Expande "Advanced Settings"
+5. En el campo "User UID", ingresa el UUID correspondiente
 
-**Nota**: Si la protección está habilitada, contraseñas comunes como "password123" serán rechazadas automáticamente.
+#### Usuario Administrador:
+```
+Email: admin@hdm.com
+Password: (tu contraseña segura)
+User UID: 00000000-0000-0000-0000-000000000001
+```
+
+#### Usuario Vendedor:
+```
+Email: vendedor1@hdm.com
+Password: (tu contraseña segura)
+User UID: 00000000-0000-0000-0000-000000000002
+```
+
+**⚠️ Los UUIDs deben coincidir exactamente** con los perfiles creados en la base de datos.
+
+**Nota**: Si la protección está habilitada, contraseñas como "password123" serán rechazadas.
 
 Los perfiles en la tabla `users` ya están creados por el seed.
 
