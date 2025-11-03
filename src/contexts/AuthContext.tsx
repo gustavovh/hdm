@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { User } from '../types/database.types';
 import { UserService } from '../services/api';
 
+
 interface AuthContextType {
   authUser: AuthUser | null;
   user: User | null;
