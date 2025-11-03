@@ -2,17 +2,19 @@ import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { PresupuestoDetail } from './pages/PresupuestoDetail';
+import { PresupuestoList } from './components/presupuestos/PresupuestoList';
+import { PresupuestoForm } from './components/presupuestos/PresupuestoForm';
 import { NotificationCenter } from './components/notifications/NotificationCenter';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
-import { LogOut, FileText, Users } from 'lucide-react';
+import { LogOut, FileText, Users, List } from 'lucide-react';
 
 function AuthenticatedApp() {
   const { user, signOut, isAdmin, isVendedor } = useAuth();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto'>(
-    'dashboard'
+  const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form'>(
+    isAdmin ? 'dashboard' : 'list'
   );
-  const [selectedPresupuestoId] = useState<string>('');
+  const [selectedPresupuestoId, setSelectedPresupuestoId] = useState<string>('');
 
   const handleSignOut = async () => {
     try {
@@ -58,8 +60,8 @@ function AuthenticatedApp() {
             </div>
           </div>
 
-          {isAdmin && (
-            <div className="flex gap-2 mt-4 border-t border-gray-200 pt-4">
+          <div className="flex gap-2 mt-4 border-t border-gray-200 pt-4">
+            {isAdmin && (
               <button
                 onClick={() => setCurrentView('dashboard')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -71,32 +73,54 @@ function AuthenticatedApp() {
                 <Users className="w-4 h-4 inline mr-2" />
                 Panel de Aprobación
               </button>
-            </div>
-          )}
+            )}
+            <button
+              onClick={() => {
+                setCurrentView('list');
+                setSelectedPresupuestoId('');
+              }}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                currentView === 'list'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <List className="w-4 h-4 inline mr-2" />
+              Mis Presupuestos
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="py-8">
-        {isAdmin && currentView === 'dashboard' && <AdminDashboard />}
+        {currentView === 'dashboard' && <AdminDashboard />}
+        {currentView === 'list' && (
+          <PresupuestoList
+            onSelectPresupuesto={(id) => {
+              setSelectedPresupuestoId(id);
+              setCurrentView('presupuesto');
+            }}
+            onCreateNew={() => {
+              setSelectedPresupuestoId('');
+              setCurrentView('form');
+            }}
+          />
+        )}
+        {currentView === 'form' && (
+          <PresupuestoForm
+            presupuestoId={selectedPresupuestoId}
+            onSave={() => {
+              setCurrentView('list');
+              setSelectedPresupuestoId('');
+            }}
+            onCancel={() => {
+              setCurrentView('list');
+              setSelectedPresupuestoId('');
+            }}
+          />
+        )}
         {currentView === 'presupuesto' && selectedPresupuestoId && (
           <PresupuestoDetail presupuestoId={selectedPresupuestoId} />
-        )}
-        {isVendedor && (
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-              <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                Bienvenido al Sistema de Presupuestos
-              </h2>
-              <p className="text-gray-600 mb-6">
-                Aquí podrás gestionar tus presupuestos y solicitudes de descuento
-              </p>
-              <p className="text-sm text-gray-500">
-                La interfaz completa de vendedor se puede implementar según los
-                requisitos específicos
-              </p>
-            </div>
-          </div>
         )}
       </main>
     </div>
