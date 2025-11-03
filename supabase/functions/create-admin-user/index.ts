@@ -37,19 +37,15 @@ Deno.serve(async (req: Request) => {
       throw authError;
     }
 
-    // Agregar usuario a public.users
-    const { error: dbError } = await supabaseAdmin
+    // El trigger handle_new_user se encargará de crear el usuario en public.users
+    // Pero necesitamos asegurar que tenga rol admin
+    const { error: updateError } = await supabaseAdmin
       .from('users')
-      .insert({
-        id: authData.user.id,
-        email: 'admin@hdm.com',
-        full_name: 'Administrador',
-        role: 'admin',
-        active: true,
-      });
+      .update({ role: 'admin' })
+      .eq('id', authData.user.id);
 
-    if (dbError) {
-      throw dbError;
+    if (updateError) {
+      throw updateError;
     }
 
     return new Response(
