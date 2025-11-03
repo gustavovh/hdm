@@ -61,7 +61,7 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
   const filteredPresupuestos = presupuestos.filter((p) => {
     const matchesSearch =
       p.cliente_nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.cliente_ruc?.toLowerCase().includes(searchTerm.toLowerCase());
+      p.cliente_documento?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || p.estado === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -109,7 +109,7 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
         <div className="flex gap-4">
           <div className="flex-1">
             <Input
-              placeholder="Buscar por cliente o RUC..."
+              placeholder="Buscar por cliente o documento..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               icon={<Search className="w-4 h-4" />}
@@ -168,21 +168,24 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
                       {getStatusLabel(presupuesto.estado)}
                     </Badge>
                   </div>
-                  {presupuesto.cliente_ruc && (
+                  {presupuesto.cliente_documento && (
                     <p className="text-sm text-gray-600 mb-2">
-                      RUC: {presupuesto.cliente_ruc}
+                      Documento: {presupuesto.cliente_documento}
                     </p>
                   )}
                   <p className="text-sm text-gray-500">
-                    {presupuesto.descripcion || 'Sin descripción'}
+                    {presupuesto.observaciones || 'Sin observaciones'}
                   </p>
                 </div>
                 <div className="text-right ml-6">
                   <p className="text-2xl font-bold text-gray-900">
-                    {formatCurrency(presupuesto.total_final, presupuesto.moneda)}
+                    {formatCurrency(
+                      presupuesto.total_neto + presupuesto.total_impuestos + presupuesto.total_comisiones,
+                      presupuesto.moneda
+                    )}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Validez: {presupuesto.dias_validez} días
+                    Neto: {formatCurrency(presupuesto.total_neto, presupuesto.moneda)}
                   </p>
                   <p className="text-xs text-gray-500">
                     Creado: {new Date(presupuesto.created_at).toLocaleDateString('es-PY')}

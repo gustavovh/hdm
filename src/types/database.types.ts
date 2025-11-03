@@ -58,6 +58,10 @@ export interface Presupuesto {
   vendedor?: User;
   items?: PresupuestoItem[];
   solicitudes_descuento?: SolicitudDescuento[];
+  cliente_ruc?: string;
+  descripcion?: string;
+  dias_validez?: number;
+  total_final?: number;
 }
 
 export interface PresupuestoItem {
