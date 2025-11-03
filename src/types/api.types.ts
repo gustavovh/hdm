@@ -83,6 +83,11 @@ export interface UpdatePresupuestoDTO {
   tasa_comision?: number;
   estado?: BudgetStatus;
   observaciones?: string;
+  total_bruto?: number;
+  total_descuento?: number;
+  total_neto?: number;
+  total_impuestos?: number;
+  total_comisiones?: number;
 }
 
 export interface FilterOptions {
