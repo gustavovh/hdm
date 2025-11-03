@@ -60,17 +60,17 @@ function AuthenticatedApp() {
             </div>
           </div>
 
-          <div className="flex gap-2 mt-4 border-t border-gray-200 pt-4">
+          <nav className="flex gap-3 mt-4 pt-4 border-t-2 border-blue-600 bg-blue-50 -mx-6 px-6 py-3">
             {isAdmin && (
               <button
                 onClick={() => setCurrentView('dashboard')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
                   currentView === 'dashboard'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
                 }`}
               >
-                <Users className="w-4 h-4 inline mr-2" />
+                <Users className="w-5 h-5" />
                 Panel de Aprobación
               </button>
             )}
@@ -79,16 +79,16 @@ function AuthenticatedApp() {
                 setCurrentView('list');
                 setSelectedPresupuestoId('');
               }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
                 currentView === 'list'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
               }`}
             >
-              <List className="w-4 h-4 inline mr-2" />
+              <List className="w-5 h-5" />
               Mis Presupuestos
             </button>
-          </div>
+          </nav>
         </div>
       </header>
 
