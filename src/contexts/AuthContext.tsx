@@ -23,49 +23,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🚀 AuthContext: Initializing...');
-
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('❌ Session error:', error);
-        supabase.auth.signOut();
-        setAuthUser(null);
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-
-      console.log('📋 Initial session check:', session ? 'Session found' : 'No session');
-      if (session?.user) {
-        console.log('👤 User in session:', session.user.id);
-      }
-
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setAuthUser(session?.user || null);
       if (session?.user) {
         loadUserProfile(session.user.id);
       } else {
         setLoading(false);
       }
-    }).catch((err) => {
-      console.error('❌ Fatal session error:', err);
-      supabase.auth.signOut();
-      setAuthUser(null);
-      setUser(null);
-      setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('🔄 Auth state changed:', event);
-        console.log('📋 New session:', session ? 'Session exists' : 'No session');
-
+      (_event, session) => {
         (async () => {
           setAuthUser(session?.user || null);
           if (session?.user) {
-            console.log('👤 Loading profile for user:', session.user.id);
             await loadUserProfile(session.user.id);
           } else {
-            console.log('❌ No user in session');
             setUser(null);
             setLoading(false);
           }
@@ -78,12 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUserProfile = async (userId: string) => {
     try {
-      console.log('🔍 Loading user profile for ID:', userId);
       const profile = await UserService.getById(userId);
-      console.log('✅ User profile loaded:', profile);
       setUser(profile);
     } catch (error) {
-      console.error('❌ Error loading user profile:', error);
+      console.error('Error loading user profile:', error);
       setUser(null);
     } finally {
       setLoading(false);
