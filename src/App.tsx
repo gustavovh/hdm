@@ -10,7 +10,7 @@ import { Input } from './components/ui/Input';
 import { LogOut, FileText, Users, List } from 'lucide-react';
 
 function AuthenticatedApp() {
-  const { user, signOut, isAdmin, isVendedor } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form'>(
     isAdmin ? 'dashboard' : 'list'
   );

@@ -50,7 +50,7 @@ export function DiscountRequestList({
 
   return (
     <div className="space-y-4">
-      {requests.map((request) => (
+      {(requests || []).map((request) => (
         <div
           key={request.id}
           className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"

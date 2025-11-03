@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import {
   Presupuesto,
+  PresupuestoItem,
   SolicitudDescuento,
   User,
   Notificacion,
@@ -187,6 +188,50 @@ export class PresupuestoService {
     }
 
     return data;
+  }
+
+  static async getAll(): Promise<Presupuesto[]> {
+    const { data, error } = await supabase
+      .from('presupuestos')
+      .select('*')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+}
+
+export class PresupuestoItemService {
+  static async create(data: Omit<PresupuestoItem, 'id' | 'created_at' | 'updated_at'>): Promise<PresupuestoItem> {
+    const { data: item, error } = await supabase
+      .from('presupuesto_items')
+      .insert(data)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return item;
+  }
+
+  static async getByPresupuesto(presupuestoId: string): Promise<PresupuestoItem[]> {
+    const { data, error } = await supabase
+      .from('presupuesto_items')
+      .select('*')
+      .eq('presupuesto_id', presupuestoId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  static async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('presupuesto_items')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
   }
 }
 
@@ -673,13 +718,24 @@ export class UserService {
   }
 
   static async getById(id: string): Promise<User | null> {
+    console.log('🔍 UserService.getById - Fetching user with ID:', id);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log('📋 Current session:', session ? 'Active' : 'None');
+    console.log('👤 Session user ID:', session?.user?.id);
+
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', id)
       .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ UserService.getById - Error:', error);
+      throw error;
+    }
+
+    console.log('✅ UserService.getById - User data:', data);
     return data;
   }
 }

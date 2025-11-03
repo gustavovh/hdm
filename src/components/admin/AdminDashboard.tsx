@@ -34,9 +34,10 @@ export function AdminDashboard() {
       };
 
       const response = await DiscountRequestService.list(filters, pagination);
-      setRequests(response.data);
+      setRequests(response.data || []);
     } catch (error) {
       console.error('Error loading requests:', error);
+      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -76,7 +77,7 @@ export function AdminDashboard() {
     await loadRequests();
   };
 
-  const filteredRequests = requests.filter((request) => {
+  const filteredRequests = (requests || []).filter((request) => {
     if (!searchTerm) return true;
 
     const search = searchTerm.toLowerCase();

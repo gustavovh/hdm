@@ -51,9 +51,10 @@ export function NotificationCenter() {
         page: 1,
         limit: 10,
       });
-      setNotifications(response.data);
+      setNotifications(response.data || []);
     } catch (error) {
       console.error('Error loading notifications:', error);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
@@ -167,7 +168,7 @@ export function NotificationCenter() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {notifications.map((notification) => (
+                  {(notifications || []).map((notification) => (
                     <div
                       key={notification.id}
                       className={`p-4 hover:bg-gray-50 transition-colors ${
