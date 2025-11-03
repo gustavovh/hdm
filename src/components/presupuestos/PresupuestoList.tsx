@@ -28,9 +28,10 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
     try {
       setLoading(true);
       const data = await PresupuestoService.getAll();
-      setPresupuestos(data);
+      setPresupuestos(data || []);
     } catch (error) {
       console.error('Error loading presupuestos:', error);
+      setPresupuestos([]);
     } finally {
       setLoading(false);
     }
@@ -58,7 +59,7 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
     return labels[status] || status;
   };
 
-  const filteredPresupuestos = presupuestos.filter((p) => {
+  const filteredPresupuestos = (presupuestos || []).filter((p) => {
     const matchesSearch =
       p.cliente_nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.cliente_documento?.toLowerCase().includes(searchTerm.toLowerCase());
