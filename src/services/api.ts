@@ -718,13 +718,24 @@ export class UserService {
   }
 
   static async getById(id: string): Promise<User | null> {
+    console.log('🔍 UserService.getById - Fetching user with ID:', id);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log('📋 Current session:', session ? 'Active' : 'None');
+    console.log('👤 Session user ID:', session?.user?.id);
+
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', id)
       .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ UserService.getById - Error:', error);
+      throw error;
+    }
+
+    console.log('✅ UserService.getById - User data:', data);
     return data;
   }
 }
