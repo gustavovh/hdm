@@ -25,7 +25,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log('🚀 AuthContext: Initializing...');
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('❌ Session error:', error);
+        supabase.auth.signOut();
+        setAuthUser(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       console.log('📋 Initial session check:', session ? 'Session found' : 'No session');
       if (session?.user) {
         console.log('👤 User in session:', session.user.id);
@@ -37,6 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setLoading(false);
       }
+    }).catch((err) => {
+      console.error('❌ Fatal session error:', err);
+      supabase.auth.signOut();
+      setAuthUser(null);
+      setUser(null);
+      setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
