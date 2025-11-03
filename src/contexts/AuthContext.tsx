@@ -23,7 +23,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🚀 AuthContext: Initializing...');
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('📋 Initial session check:', session ? 'Session found' : 'No session');
+      if (session?.user) {
+        console.log('👤 User in session:', session.user.id);
+      }
+
       setAuthUser(session?.user || null);
       if (session?.user) {
         loadUserProfile(session.user.id);
@@ -33,12 +40,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        console.log('🔄 Auth state changed:', event);
+        console.log('📋 New session:', session ? 'Session exists' : 'No session');
+
         (async () => {
           setAuthUser(session?.user || null);
           if (session?.user) {
+            console.log('👤 Loading profile for user:', session.user.id);
             await loadUserProfile(session.user.id);
           } else {
+            console.log('❌ No user in session');
             setUser(null);
             setLoading(false);
           }
