@@ -4,11 +4,11 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
   helperText?: string;
-  options: Array<{ value: string; label: string }>;
+  options?: Array<{ value: string; label: string }>;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, helperText, options = [], className = '', ...props }, ref) => {
+  ({ label, error, helperText, options = [], className = '', children, ...props }, ref) => {
     return (
       <div className="w-full">
         {label && (
@@ -26,11 +26,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           } ${className}`}
           {...props}
         >
-          {Array.isArray(options) && options.map((option) => (
+          {children || (options.length > 0 && options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
-          ))}
+          )))}
         </select>
         {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
         {helperText && !error && (
