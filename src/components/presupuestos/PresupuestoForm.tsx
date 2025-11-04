@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, X } from 'lucide-react';
+import { Plus, Trash2, Save, X, Package } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
-import { Presupuesto, PresupuestoItem } from '../../types/database.types';
+import { Modal } from '../ui/Modal';
+import { Presupuesto, PresupuestoItem, Producto } from '../../types/database.types';
 import { PresupuestoService, PresupuestoItemService } from '../../services/api';
+import { ProductosList } from '../catalogo/ProductosList';
 import { supabase } from '../../lib/supabase';
 
 interface PresupuestoFormProps {
@@ -21,6 +23,7 @@ interface ItemForm extends Omit<PresupuestoItem, 'id' | 'presupuesto_id' | 'crea
 export function PresupuestoForm({ presupuestoId, onSave, onCancel }: PresupuestoFormProps) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showCatalogo, setShowCatalogo] = useState(false);
 
   const [formData, setFormData] = useState({
     concepto: '',
@@ -96,6 +99,21 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         moneda_item: formData.moneda,
       },
     ]);
+  };
+
+  const addProductoFromCatalogo = (producto: Producto) => {
+    setItems([
+      ...items,
+      {
+        tempId: Date.now().toString(),
+        descripcion: producto.nombre + (producto.descripcion ? ` - ${producto.descripcion}` : ''),
+        cantidad: 1,
+        precio_unitario: producto.precio_base,
+        unidad_medida: producto.unidad_medida,
+        moneda_item: 'PYG',
+      },
+    ]);
+    setShowCatalogo(false);
   };
 
   const removeItem = (index: number) => {
@@ -393,10 +411,16 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Ítems</h3>
-              <Button variant="outline" size="sm" onClick={addNewItem}>
-                <Plus className="w-4 h-4 mr-2" />
-                Agregar Ítem
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowCatalogo(true)}>
+                  <Package className="w-4 h-4 mr-2" />
+                  Del Catálogo
+                </Button>
+                <Button variant="outline" size="sm" onClick={addNewItem}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Agregar Ítem
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -555,6 +579,18 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={showCatalogo}
+        onClose={() => setShowCatalogo(false)}
+        title="Seleccionar producto del catálogo"
+        size="large"
+      >
+        <ProductosList
+          selectionMode={true}
+          onSelectProducto={addProductoFromCatalogo}
+        />
+      </Modal>
     </div>
   );
 }

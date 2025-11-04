@@ -19,6 +19,36 @@ export type DiscountRequestStatus =
 
 export type DiscountScope = 'GLOBAL' | 'ITEM';
 
+export interface Categoria {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  activa: boolean;
+  orden: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Producto {
+  id: string;
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  categoria_id?: string;
+  categoria?: Categoria;
+  precio_base: number;
+  precio_usd?: number;
+  unidad_medida: string;
+  stock_disponible?: number;
+  stock_minimo?: number;
+  activo: boolean;
+  imagen_url?: string;
+  notas?: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string;
+}
+
 export interface User {
   id: string;
   email: string;
