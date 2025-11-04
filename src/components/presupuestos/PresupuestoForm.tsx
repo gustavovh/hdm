@@ -151,18 +151,17 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
 
       if (!categorias) return;
 
-      await ProductosService.create({
+      await ProductosService.createProducto({
+        codigo: undefined,
         nombre: item.descripcion,
         descripcion: null,
         categoria_id: categorias.id,
-        tipo: 'producto',
         precio_base: item.precio_unitario,
         precio_usd: null,
-        unidad: 'unidad',
+        unidad_medida: 'unidad',
         stock_minimo: null,
-        stock_actual: null,
+        stock_disponible: null,
         activo: true,
-        sku: null,
       });
     } catch (error) {
       console.error('Error saving item to catalogo:', error);

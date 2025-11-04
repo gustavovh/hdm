@@ -65,10 +65,26 @@ export class ProductosService {
   }
 
   static async createProducto(producto: Partial<Producto>): Promise<Producto> {
+    let codigo = producto.codigo;
+
+    if (!codigo) {
+      const { data: lastProduct } = await supabase
+        .from('productos')
+        .select('codigo')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const lastNumber = lastProduct?.codigo
+        ? parseInt(lastProduct.codigo.replace(/\D/g, '')) || 0
+        : 0;
+      codigo = `PROD-${String(lastNumber + 1).padStart(6, '0')}`;
+    }
+
     const { data, error } = await supabase
       .from('productos')
       .insert({
-        codigo: producto.codigo,
+        codigo: codigo,
         nombre: producto.nombre,
         descripcion: producto.descripcion,
         categoria_id: producto.categoria_id,
@@ -161,5 +177,9 @@ export class ProductosService {
 
     if (error) throw error;
     return data;
+  }
+
+  static async search(query: string): Promise<Producto[]> {
+    return this.searchProductos(query);
   }
 }
