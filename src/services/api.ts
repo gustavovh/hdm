@@ -18,6 +18,7 @@ import {
   NotificationPayload,
 } from '../types/api.types';
 import { BudgetCalculator } from './budgetCalculator';
+import { EmailService } from './emailService';
 
 export class PresupuestoService {
   static async create(
@@ -283,7 +284,7 @@ export class DiscountRequestService {
 
     const { data: admins } = await supabase
       .from('users')
-      .select('id')
+      .select('*')
       .eq('role', 'admin');
 
     if (admins && admins.length > 0) {
@@ -295,6 +296,21 @@ export class DiscountRequestService {
         entidad_id: solicitud.id,
         usuario_ids: admins.map((a) => a.id),
       });
+
+      const { data: vendedorData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', vendedor_id)
+        .single();
+
+      if (vendedorData) {
+        await EmailService.notifyNewDiscountRequest(
+          solicitud,
+          presupuesto,
+          vendedorData,
+          admins as User[]
+        );
+      }
     }
 
     return solicitud;
@@ -440,6 +456,27 @@ export class DiscountRequestService {
       usuario_ids: [solicitud.vendedor_id],
     });
 
+    const { data: vendedorData } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', solicitud.vendedor_id)
+      .single();
+
+    const { data: adminData } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', admin_id)
+      .single();
+
+    if (vendedorData && adminData) {
+      await EmailService.notifyDiscountApproved(
+        data,
+        presupuesto,
+        vendedorData,
+        adminData
+      );
+    }
+
     return data;
   }
 
@@ -511,6 +548,27 @@ export class DiscountRequestService {
       usuario_ids: [solicitud.vendedor_id],
     });
 
+    const { data: vendedorData } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', solicitud.vendedor_id)
+      .single();
+
+    const { data: adminData } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', admin_id)
+      .single();
+
+    if (vendedorData && adminData) {
+      await EmailService.notifyDiscountApprovedWithModification(
+        data,
+        presupuesto,
+        vendedorData,
+        adminData
+      );
+    }
+
     return data;
   }
 
@@ -559,6 +617,27 @@ export class DiscountRequestService {
       entidad_id: id,
       usuario_ids: [solicitud.vendedor_id],
     });
+
+    const { data: vendedorData } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', solicitud.vendedor_id)
+      .single();
+
+    const { data: adminData } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', admin_id)
+      .single();
+
+    if (vendedorData && adminData && presupuesto) {
+      await EmailService.notifyDiscountRejected(
+        data,
+        presupuesto,
+        vendedorData,
+        adminData
+      );
+    }
 
     return data;
   }

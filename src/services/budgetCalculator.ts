@@ -129,6 +129,23 @@ export class BudgetCalculator {
     return (total_neto * tasa_comision) / 100;
   }
 
+  static async calculateCommissionsWithTiers(
+    total_neto: number,
+    moneda: 'PYG' | 'USD'
+  ): Promise<{ tasa: number; monto: number }> {
+    try {
+      const { CommissionsService } = await import('./commissionsService');
+      const tier = await CommissionsService.calculateTier(total_neto, moneda);
+      const tasa = tier?.tasa_comision || 3.0;
+      const monto = (total_neto * tasa) / 100;
+      return { tasa, monto };
+    } catch (error) {
+      const tasa = 3.0;
+      const monto = (total_neto * tasa) / 100;
+      return { tasa, monto };
+    }
+  }
+
   static validateDiscountValue(
     tipo: DiscountType,
     valor: number,
