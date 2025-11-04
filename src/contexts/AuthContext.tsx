@@ -53,7 +53,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadUserProfile = async (userId: string) => {
     try {
       console.log('🔄 loadUserProfile - Starting for userId:', userId);
-      const profile = await UserService.getById(userId);
+
+      const { data: profile, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('❌ loadUserProfile - Database error:', error);
+        throw error;
+      }
+
       console.log('✅ loadUserProfile - Profile loaded:', profile);
 
       if (!profile) {
@@ -70,7 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     } catch (error) {
       console.error('❌ loadUserProfile - Error:', error);
-      console.error('❌ Error details:', error);
       await supabase.auth.signOut();
       setUser(null);
       setLoading(false);
