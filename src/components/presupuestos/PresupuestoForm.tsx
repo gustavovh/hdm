@@ -8,6 +8,9 @@ import { Modal } from '../ui/Modal';
 import { Presupuesto, PresupuestoItem, Producto } from '../../types/database.types';
 import { PresupuestoService, PresupuestoItemService } from '../../services/api';
 import { ProductosList } from '../catalogo/ProductosList';
+import { ProductoFormModal } from '../catalogo/ProductoFormModal';
+import { ImageUpload } from './ImageUpload';
+import { ProductosService } from '../../services/productosService';
 import { supabase } from '../../lib/supabase';
 
 interface PresupuestoFormProps {
@@ -24,6 +27,8 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showCatalogo, setShowCatalogo] = useState(false);
+  const [showProductoForm, setShowProductoForm] = useState(false);
+  const [savedPresupuestoId, setSavedPresupuestoId] = useState<string | undefined>(presupuestoId);
 
   const [formData, setFormData] = useState({
     concepto: '',
@@ -129,6 +134,46 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
     return { totalBruto, totalImpuestos, totalComisiones, totalFinal };
   };
 
+  const saveItemToCatalogo = async (item: ItemForm) => {
+    try {
+      const exists = await ProductosService.search(item.descripcion.substring(0, 50));
+      const alreadyExists = exists.some(
+        p => p.nombre.toLowerCase() === item.descripcion.toLowerCase()
+      );
+
+      if (alreadyExists) return;
+
+      const { data: categorias } = await supabase
+        .from('categorias')
+        .select('id')
+        .eq('nombre', 'Sin Categoría')
+        .maybeSingle();
+
+      if (!categorias) return;
+
+      await ProductosService.create({
+        nombre: item.descripcion,
+        descripcion: null,
+        categoria_id: categorias.id,
+        tipo: 'producto',
+        precio_base: item.precio_unitario,
+        precio_usd: null,
+        unidad: 'unidad',
+        stock_minimo: null,
+        stock_actual: null,
+        activo: true,
+        sku: null,
+      });
+    } catch (error) {
+      console.error('Error saving item to catalogo:', error);
+    }
+  };
+
+  const handleProductoCreated = async (producto: Producto) => {
+    addProductoFromCatalogo(producto);
+    setShowProductoForm(false);
+  };
+
   const handleSubmit = async (estado: Presupuesto['estado']) => {
     if (!formData.concepto.trim()) {
       alert('El concepto es obligatorio');
@@ -213,6 +258,8 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
             descuento_aplicado: 0,
             orden: items.indexOf(item) + 1,
           });
+
+          await saveItemToCatalogo(item);
         }
       } else {
         const { data: newPresupuesto, error } = await supabase
@@ -234,7 +281,11 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
             descuento_aplicado: 0,
             orden: items.indexOf(item) + 1,
           });
+
+          await saveItemToCatalogo(item);
         }
+
+        setSavedPresupuestoId(newPresupuesto.id);
       }
 
       onSave();
@@ -409,6 +460,10 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
                   <Package className="w-4 h-4 mr-2" />
                   Del Catálogo
                 </Button>
+                <Button variant="secondary" size="sm" onClick={() => setShowProductoForm(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Crear Producto
+                </Button>
                 <Button variant="outline" size="sm" onClick={addNewItem}>
                   <Plus className="w-4 h-4 mr-2" />
                   Agregar Ítem
@@ -521,6 +576,15 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
             </div>
           </div>
 
+          {savedPresupuestoId && (
+            <div className="border-t border-gray-200 pt-6">
+              <ImageUpload
+                presupuestoId={savedPresupuestoId}
+                onUploadComplete={() => {}}
+              />
+            </div>
+          )}
+
           <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
             <Button variant="outline" onClick={onCancel} disabled={saving}>
               Cancelar
@@ -552,6 +616,14 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
           onSelectProducto={addProductoFromCatalogo}
         />
       </Modal>
+
+      {showProductoForm && (
+        <ProductoFormModal
+          isOpen={showProductoForm}
+          onClose={() => setShowProductoForm(false)}
+          onSave={handleProductoCreated}
+        />
+      )}
     </div>
   );
 }
