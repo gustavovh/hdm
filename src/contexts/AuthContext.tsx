@@ -54,6 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('🔄 loadUserProfile - Starting for userId:', userId);
 
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const { data: profile, error } = await supabase
         .from('users')
         .select('*')
