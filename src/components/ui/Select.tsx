@@ -26,11 +26,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           } ${className}`}
           {...props}
         >
-          {children || (options.length > 0 && options.map((option) => (
+          {children || (options.length > 0 ? options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
-          )))}
+          )) : null)}
         </select>
         {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
         {helperText && !error && (
