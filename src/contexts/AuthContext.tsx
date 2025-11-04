@@ -58,16 +58,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!profile) {
         console.error('❌ loadUserProfile - No profile found for user');
+        console.error('❌ This usually means RLS is blocking the query or user does not exist in public.users table');
         await supabase.auth.signOut();
         setUser(null);
       } else {
+        console.log('✅ Profile successfully loaded, setting user state');
         setUser(profile);
       }
     } catch (error) {
       console.error('❌ loadUserProfile - Error:', error);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
       await supabase.auth.signOut();
       setUser(null);
     } finally {
+      console.log('🏁 loadUserProfile - Finished, setting loading to false');
       setLoading(false);
     }
   };
