@@ -80,17 +80,21 @@ Deno.serve(async (req: Request) => {
     if (createError) throw createError;
     if (!authData.user) throw new Error('Failed to create user');
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    const { data: newUser, error: fetchError } = await supabaseAdmin
+    const { data: newUser, error: insertError } = await supabaseAdmin
       .from('users')
+      .insert({
+        id: authData.user.id,
+        email,
+        full_name,
+        role,
+        active: true,
+      })
       .select()
-      .eq('id', authData.user.id)
-      .maybeSingle();
+      .single();
 
-    if (fetchError || !newUser) {
+    if (insertError) {
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      throw new Error('User created in auth but not found in database');
+      throw insertError;
     }
 
     return new Response(
