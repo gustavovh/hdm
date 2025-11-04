@@ -51,6 +51,11 @@ export interface Presupuesto {
   fecha_presentacion?: string;
   fecha_aceptacion?: string;
   fecha_facturacion?: string;
+  numero_factura?: string;
+  monto_factura?: number;
+  condicion_pago?: string;
+  medio_pago?: string;
+  enlace_comprobante?: string;
   observaciones?: string;
   created_at: string;
   updated_at: string;

@@ -5,6 +5,7 @@ import { PresupuestoService, DiscountRequestService } from '../services/api';
 import { DiscountRequestForm } from '../components/discount/DiscountRequestForm';
 import { DiscountRequestList } from '../components/discount/DiscountRequestList';
 import { AuditTimeline } from '../components/audit/AuditTimeline';
+import { PresupuestoStatusManager } from '../components/presupuestos/PresupuestoStatusManager';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { BudgetCalculator } from '../services/budgetCalculator';
@@ -132,6 +133,11 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
           </div>
 
           <div className="flex gap-2">
+            <PresupuestoStatusManager
+              presupuesto={presupuesto}
+              onUpdate={loadPresupuesto}
+              isAdmin={isAdmin}
+            />
             <Button size="sm" variant="ghost" onClick={handlePreviewPDF}>
               <Eye className="w-4 h-4 mr-2" />
               Vista Previa

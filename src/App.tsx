@@ -5,6 +5,8 @@ import { PresupuestoDetail } from './pages/PresupuestoDetail';
 import { PresupuestoList } from './components/presupuestos/PresupuestoList';
 import { PresupuestoForm } from './components/presupuestos/PresupuestoForm';
 import { NotificationCenter } from './components/notifications/NotificationCenter';
+import { UserList } from './components/users/UserList';
+import { ReportsDashboard } from './components/reports/ReportsDashboard';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
 import { LogOut, FileText, Users, List, BarChart3, UserCog } from 'lucide-react';
@@ -130,24 +132,8 @@ function AuthenticatedApp() {
 
       <main className="py-8">
         {currentView === 'dashboard' && <AdminDashboard />}
-        {currentView === 'reports' && (
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-              <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Reportes y Análisis</h3>
-              <p className="text-gray-600">Funcionalidad en desarrollo</p>
-            </div>
-          </div>
-        )}
-        {currentView === 'users' && (
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-              <UserCog className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Gestión de Usuarios</h3>
-              <p className="text-gray-600">Funcionalidad en desarrollo</p>
-            </div>
-          </div>
-        )}
+        {currentView === 'reports' && <ReportsDashboard />}
+        {currentView === 'users' && <UserList />}
         {currentView === 'list' && (
           <PresupuestoList
             onSelectPresupuesto={(id) => {
