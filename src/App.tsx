@@ -42,10 +42,14 @@ function AuthenticatedApp() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <FileText className="w-8 h-8 text-blue-600" />
+              <img
+                src="/hdm logo copy.png"
+                alt="HDM Ingeniería"
+                className="h-12 w-auto object-contain"
+              />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  HDM - Sistema de Presupuestos
+                <h1 className="text-xl font-bold text-gray-900">
+                  Sistema de Presupuestos
                 </h1>
                 <p className="text-sm text-gray-600">
                   Gestión de Solicitudes de Descuento
@@ -206,9 +210,13 @@ function LoginForm() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-6">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <FileText className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Sistema HDM
+          <img
+            src="/hdm logo copy.png"
+            alt="HDM Ingeniería"
+            className="h-16 w-auto mx-auto mb-4 object-contain"
+          />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Sistema de Presupuestos
           </h1>
           <p className="text-gray-600">Gestión de Presupuestos y Descuentos</p>
         </div>

@@ -37,13 +37,13 @@ export class HDMPDFGenerator {
     let yPosition = topMargin;
 
     try {
-      const logoBase64 = await this.loadImageAsBase64('/hdm logo.png');
-      doc.addImage(logoBase64, 'PNG', leftMargin, yPosition, 50, 15);
+      const logoBase64 = await this.loadImageAsBase64('/hdm logo copy.png');
+      doc.addImage(logoBase64, 'PNG', leftMargin, yPosition, 60, 18);
     } catch (error) {
       console.error('Error loading logo:', error);
     }
 
-    yPosition += 18;
+    yPosition += 20;
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(0, 0, 0);
