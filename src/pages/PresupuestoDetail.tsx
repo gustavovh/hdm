@@ -9,7 +9,7 @@ import { PresupuestoStatusManager } from '../components/presupuestos/Presupuesto
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { BudgetCalculator } from '../services/budgetCalculator';
-import { CorporatePDFGenerator } from '../services/pdfGeneratorCorporate';
+import { HDMPDFGenerator } from '../services/pdfGeneratorHDM';
 import {
   FileText,
   Download,
@@ -68,22 +68,12 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
 
   const handleDownloadPDF = async () => {
     if (!presupuesto) return;
-
-    const solicitudAprobada = presupuesto.solicitudes_descuento?.find(
-      (s) => s.estado === 'APROBADO' || s.estado === 'APROBADO_MODIFICADO'
-    );
-
-    await CorporatePDFGenerator.downloadPresupuestoPDF(presupuesto, solicitudAprobada);
+    HDMPDFGenerator.downloadPresupuestoPDF(presupuesto);
   };
 
   const handlePreviewPDF = async () => {
     if (!presupuesto) return;
-
-    const solicitudAprobada = presupuesto.solicitudes_descuento?.find(
-      (s) => s.estado === 'APROBADO' || s.estado === 'APROBADO_MODIFICADO'
-    );
-
-    await CorporatePDFGenerator.previewPresupuestoPDF(presupuesto, solicitudAprobada);
+    HDMPDFGenerator.previewPresupuestoPDF(presupuesto);
   };
 
   const getStatusBadge = (estado: Presupuesto['estado']) => {
