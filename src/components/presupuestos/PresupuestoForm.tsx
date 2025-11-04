@@ -28,14 +28,12 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
   const [formData, setFormData] = useState({
     concepto: '',
     cliente_nombre: '',
-    cliente_ruc: '',
-    cliente_direccion: '',
+    cliente_documento: '',
     cliente_telefono: '',
     cliente_email: '',
     descripcion: '',
     moneda: 'PYG' as 'PYG' | 'USD',
     tipo_cambio: 7500,
-    dias_validez: 30,
     tasa_impuesto: 10,
     tasa_comision: 0,
   });
@@ -58,14 +56,12 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       setFormData({
         concepto: presupuesto.concepto || '',
         cliente_nombre: presupuesto.cliente_nombre,
-        cliente_ruc: presupuesto.cliente_ruc || '',
-        cliente_direccion: presupuesto.cliente_direccion || '',
+        cliente_documento: presupuesto.cliente_documento || '',
         cliente_telefono: presupuesto.cliente_telefono || '',
         cliente_email: presupuesto.cliente_email || '',
-        descripcion: presupuesto.descripcion || '',
+        descripcion: presupuesto.observaciones || '',
         moneda: presupuesto.moneda,
         tipo_cambio: presupuesto.tipo_cambio,
-        dias_validez: presupuesto.dias_validez,
         tasa_impuesto: presupuesto.tasa_impuesto,
         tasa_comision: presupuesto.tasa_comision,
       });
@@ -185,23 +181,20 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       const presupuestoData: any = {
         concepto: formData.concepto,
         cliente_nombre: formData.cliente_nombre,
-        cliente_ruc: formData.cliente_ruc || null,
-        cliente_direccion: formData.cliente_direccion || null,
+        cliente_documento: formData.cliente_documento || null,
         cliente_telefono: formData.cliente_telefono || null,
         cliente_email: formData.cliente_email || null,
-        descripcion: formData.descripcion || null,
+        observaciones: formData.descripcion || null,
         moneda: formData.moneda,
         tipo_cambio: formData.tipo_cambio,
-        dias_validez: formData.dias_validez,
         tasa_impuesto: formData.tasa_impuesto,
         tasa_comision: formData.tasa_comision,
         estado,
         total_bruto: totals.totalBruto,
         total_descuento: 0,
-        total_neto: totals.totalBruto,
+        total_neto: totals.totalFinal,
         total_impuestos: totals.totalImpuestos,
         total_comisiones: totals.totalComisiones,
-        total_final: totals.totalFinal,
       };
 
       if (!presupuestoId) {
@@ -325,17 +318,10 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
                 required
               />
               <Input
-                label="RUC"
-                value={formData.cliente_ruc}
+                label="RUC/CI"
+                value={formData.cliente_documento}
                 onChange={(e) =>
-                  setFormData({ ...formData, cliente_ruc: e.target.value })
-                }
-              />
-              <Input
-                label="Dirección"
-                value={formData.cliente_direccion}
-                onChange={(e) =>
-                  setFormData({ ...formData, cliente_direccion: e.target.value })
+                  setFormData({ ...formData, cliente_documento: e.target.value })
                 }
               />
               <Input
@@ -360,7 +346,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Configuración
             </h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <Select
                 label="Moneda"
                 value={formData.moneda}
@@ -382,17 +368,6 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
                   setFormData({
                     ...formData,
                     tipo_cambio: parseFloat(e.target.value) || 0,
-                  })
-                }
-              />
-              <Input
-                label="Días de Validez"
-                type="number"
-                value={formData.dias_validez}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    dias_validez: parseInt(e.target.value) || 0,
                   })
                 }
               />
