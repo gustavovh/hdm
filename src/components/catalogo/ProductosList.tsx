@@ -228,7 +228,7 @@ export function ProductosList({ onSelectProducto, onEdit, selectionMode = false 
                 </div>
               </div>
 
-              {isAdmin && !selectionMode && (
+              {!selectionMode && (
                 <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
                   <Button
                     variant="outline"
@@ -242,16 +242,18 @@ export function ProductosList({ onSelectProducto, onEdit, selectionMode = false 
                     <Edit className="w-4 h-4 mr-2" />
                     Editar
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(producto.id);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(producto.id);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               )}
             </div>

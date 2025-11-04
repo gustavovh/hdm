@@ -4,10 +4,8 @@ import { ProductosList } from './ProductosList';
 import { ProductoFormModal } from './ProductoFormModal';
 import { Button } from '../ui/Button';
 import { Producto } from '../../types/database.types';
-import { useAuth } from '../../contexts/AuthContext';
 
 export function CatalogoPage() {
-  const { isAdmin } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [selectedProducto, setSelectedProducto] = useState<Producto | undefined>(undefined);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -40,12 +38,10 @@ export function CatalogoPage() {
           <p className="text-gray-600 mt-1">Gestiona tu inventario de productos y servicios</p>
         </div>
 
-        {isAdmin && (
-          <Button onClick={handleCreate}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Producto
-          </Button>
-        )}
+        <Button onClick={handleCreate}>
+          <Plus className="w-4 h-4 mr-2" />
+          Nuevo Producto
+        </Button>
       </div>
 
       <ProductosList
