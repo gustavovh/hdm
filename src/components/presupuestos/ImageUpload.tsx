@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { Upload, X, ImageIcon } from 'lucide-react';
@@ -39,18 +39,21 @@ export function ImageUpload({ presupuestoId, onUploadComplete }: ImageUploadProp
     }
   };
 
-  useState(() => {
+  useEffect(() => {
     if (presupuestoId) {
       loadImages();
     }
-  });
+  }, [presupuestoId]);
 
   const uploadImage = async (file: File) => {
     try {
       setUploading(true);
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
       const fileExt = file.name.split('.').pop();
-      const fileName = `${presupuestoId}/${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/${presupuestoId}_${Date.now()}.${fileExt}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('presupuesto-images')
@@ -65,9 +68,6 @@ export function ImageUpload({ presupuestoId, onUploadComplete }: ImageUploadProp
         .from('presupuesto-images')
         .getPublicUrl(uploadData.path);
 
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Usuario no autenticado');
-
       const { error: dbError } = await supabase
         .from('presupuesto_imagenes')
         .insert({
@@ -77,7 +77,7 @@ export function ImageUpload({ presupuestoId, onUploadComplete }: ImageUploadProp
           tipo_mime: file.type,
           tamanio: file.size,
           orden: images.length,
-          created_by: user.user.id
+          created_by: user.id
         });
 
       if (dbError) throw dbError;

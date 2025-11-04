@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Presupuesto, SolicitudDescuento } from '../types/database.types';
+import { Presupuesto, SolicitudDescuento, PresupuestoImagen } from '../types/database.types';
 import { PresupuestoService, DiscountRequestService } from '../services/api';
 import { DiscountRequestForm } from '../components/discount/DiscountRequestForm';
 import { DiscountRequestList } from '../components/discount/DiscountRequestList';
@@ -10,6 +10,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { BudgetCalculator } from '../services/budgetCalculator';
 import { HDMPDFGenerator } from '../services/pdfGeneratorHDM';
+import { supabase } from '../lib/supabase';
 import {
   FileText,
   Download,
@@ -28,6 +29,7 @@ interface PresupuestoDetailProps {
 export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
   const { user, isVendedor, isAdmin } = useAuth();
   const [presupuesto, setPresupuesto] = useState<Presupuesto | null>(null);
+  const [imagenes, setImagenes] = useState<PresupuestoImagen[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'detalles' | 'solicitudes' | 'historial'>(
@@ -36,6 +38,7 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
 
   useEffect(() => {
     loadPresupuesto();
+    loadImagenes();
   }, [presupuestoId]);
 
   const loadPresupuesto = async () => {
@@ -47,6 +50,21 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
       console.error('Error loading presupuesto:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadImagenes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('presupuesto_imagenes')
+        .select('*')
+        .eq('presupuesto_id', presupuestoId)
+        .order('orden', { ascending: true });
+
+      if (error) throw error;
+      setImagenes(data || []);
+    } catch (error) {
+      console.error('Error loading images:', error);
     }
   };
 
@@ -68,12 +86,12 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
 
   const handleDownloadPDF = async () => {
     if (!presupuesto) return;
-    await HDMPDFGenerator.downloadPresupuestoPDF(presupuesto);
+    await HDMPDFGenerator.downloadPresupuestoPDF(presupuesto, imagenes);
   };
 
   const handlePreviewPDF = async () => {
     if (!presupuesto) return;
-    await HDMPDFGenerator.previewPresupuestoPDF(presupuesto);
+    await HDMPDFGenerator.previewPresupuestoPDF(presupuesto, imagenes);
   };
 
   const getStatusBadge = (estado: Presupuesto['estado']) => {
