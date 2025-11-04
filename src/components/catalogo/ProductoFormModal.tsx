@@ -82,10 +82,16 @@ export function ProductoFormModal({ isOpen, onClose, onSave, producto }: Product
     setLoading(true);
 
     try {
+      const dataToSave = {
+        ...formData,
+        categoria_id: formData.categoria_id || null,
+        codigo: formData.codigo || undefined,
+      };
+
       if (producto) {
-        await ProductosService.updateProducto(producto.id, formData);
+        await ProductosService.updateProducto(producto.id, dataToSave);
       } else {
-        await ProductosService.createProducto(formData);
+        await ProductosService.createProducto(dataToSave);
       }
       onSave();
       onClose();
@@ -103,13 +109,12 @@ export function ProductoFormModal({ isOpen, onClose, onSave, producto }: Product
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Código *
+              Código / SKU
             </label>
             <Input
-              required
               value={formData.codigo}
               onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-              placeholder="Ej: PROD-001"
+              placeholder="Ej: PROD-001 (opcional, se genera automático)"
             />
           </div>
 
