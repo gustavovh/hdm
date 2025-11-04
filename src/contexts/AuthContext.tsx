@@ -54,31 +54,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('🔄 loadUserProfile - Starting for userId:', userId);
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      let retries = 3;
+      let profile = null;
+      let lastError = null;
 
-      const { data: profile, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+      while (retries > 0 && !profile) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
 
-      if (error) {
-        console.error('❌ loadUserProfile - Database error:', error);
-        throw error;
+        if (data) {
+          profile = data;
+          break;
+        }
+
+        lastError = error;
+        retries--;
+        if (retries > 0) {
+          console.log(`⏳ Retry ${3 - retries}/3 - waiting 200ms...`);
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
       }
 
-      console.log('✅ loadUserProfile - Profile loaded:', profile);
-
       if (!profile) {
-        console.error('❌ loadUserProfile - No profile found for user');
-        console.error('❌ Signing out and clearing session');
+        console.error('❌ loadUserProfile - No profile found after retries');
+        if (lastError) {
+          console.error('❌ Last error:', lastError);
+        }
         await supabase.auth.signOut();
         setUser(null);
         setLoading(false);
         return;
       }
 
-      console.log('✅ Profile successfully loaded, setting user state');
+      console.log('✅ Profile successfully loaded:', profile);
       setUser(profile);
       setLoading(false);
     } catch (error) {
