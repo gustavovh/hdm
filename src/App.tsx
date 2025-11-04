@@ -7,11 +7,11 @@ import { PresupuestoForm } from './components/presupuestos/PresupuestoForm';
 import { NotificationCenter } from './components/notifications/NotificationCenter';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
-import { LogOut, FileText, Users, List } from 'lucide-react';
+import { LogOut, FileText, Users, List, BarChart3, UserCog } from 'lucide-react';
 
 function AuthenticatedApp() {
   const { user, signOut, isAdmin } = useAuth();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form'>(
+  const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form' | 'reports' | 'users'>(
     isAdmin ? 'dashboard' : 'list'
   );
   const [selectedPresupuestoId, setSelectedPresupuestoId] = useState<string>('');
@@ -72,39 +72,82 @@ function AuthenticatedApp() {
           </div>
 
           <nav className="flex gap-3 mt-4 pt-4 border-t-2 border-blue-600 bg-blue-50 -mx-6 px-6 py-3">
-            {isAdmin && (
+            {isAdmin ? (
+              <>
+                <button
+                  onClick={() => setCurrentView('dashboard')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
+                    currentView === 'dashboard'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
+                  }`}
+                >
+                  <Users className="w-5 h-5" />
+                  Aprobaciones
+                </button>
+                <button
+                  onClick={() => setCurrentView('reports')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
+                    currentView === 'reports'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
+                  }`}
+                >
+                  <BarChart3 className="w-5 h-5" />
+                  Reportes
+                </button>
+                <button
+                  onClick={() => setCurrentView('users')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
+                    currentView === 'users'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
+                  }`}
+                >
+                  <UserCog className="w-5 h-5" />
+                  Usuarios
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => setCurrentView('dashboard')}
+                onClick={() => {
+                  setCurrentView('list');
+                  setSelectedPresupuestoId('');
+                }}
                 className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
-                  currentView === 'dashboard'
+                  currentView === 'list'
                     ? 'bg-blue-600 text-white shadow-lg'
                     : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
                 }`}
               >
-                <Users className="w-5 h-5" />
-                Panel de Aprobación
+                <List className="w-5 h-5" />
+                Mis Presupuestos
               </button>
             )}
-            <button
-              onClick={() => {
-                setCurrentView('list');
-                setSelectedPresupuestoId('');
-              }}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
-                currentView === 'list'
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
-              }`}
-            >
-              <List className="w-5 h-5" />
-              Mis Presupuestos
-            </button>
           </nav>
         </div>
       </header>
 
       <main className="py-8">
         {currentView === 'dashboard' && <AdminDashboard />}
+        {currentView === 'reports' && (
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+              <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Reportes y Análisis</h3>
+              <p className="text-gray-600">Funcionalidad en desarrollo</p>
+            </div>
+          </div>
+        )}
+        {currentView === 'users' && (
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+              <UserCog className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Gestión de Usuarios</h3>
+              <p className="text-gray-600">Funcionalidad en desarrollo</p>
+            </div>
+          </div>
+        )}
         {currentView === 'list' && (
           <PresupuestoList
             onSelectPresupuesto={(id) => {
