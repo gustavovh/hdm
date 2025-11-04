@@ -4,7 +4,27 @@ import { Presupuesto } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
 export class HDMPDFGenerator {
-  static generatePresupuestoPDF(presupuesto: Presupuesto): jsPDF {
+  private static async loadImageAsBase64(url: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } else {
+          reject(new Error('Failed to get canvas context'));
+        }
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+  static async generatePresupuestoPDF(presupuesto: Presupuesto): Promise<jsPDF> {
     const doc = new jsPDF({
       unit: 'mm',
       format: 'a4',
@@ -16,9 +36,9 @@ export class HDMPDFGenerator {
     const topMargin = 15;
     let yPosition = topMargin;
 
-    const logoPath = '/hdm logo.png';
     try {
-      doc.addImage(logoPath, 'PNG', leftMargin, yPosition, 50, 15);
+      const logoBase64 = await this.loadImageAsBase64('/hdm logo.png');
+      doc.addImage(logoBase64, 'PNG', leftMargin, yPosition, 50, 15);
     } catch (error) {
       console.error('Error loading logo:', error);
     }
@@ -199,7 +219,7 @@ export class HDMPDFGenerator {
     doc.text('Estamos a su disposición ante cualquier consulta.', leftMargin, yPosition);
 
     doc.setFontSize(55);
-    doc.setTextColor(230, 230, 230);
+    doc.setTextColor(245, 245, 245);
     doc.setFont('helvetica', 'bold');
     doc.saveGraphicsState();
     doc.text('PRESUPUESTO', pageWidth / 2, pageHeight / 2, {
@@ -208,34 +228,34 @@ export class HDMPDFGenerator {
     });
     doc.restoreGraphicsState();
 
-    const footerY = pageHeight - 25;
+    yPosition += 20;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(0, 0, 0);
-    doc.text('_______________________', pageWidth - rightMargin - 45, footerY);
-    let signatureY = footerY + 4;
+    doc.text('_______________________', pageWidth - rightMargin - 45, yPosition);
+    yPosition += 4;
     doc.setFont('helvetica', 'bold');
-    doc.text('Ing. Hernan Miño', pageWidth - rightMargin - 42, signatureY);
-    signatureY += 4;
-    doc.text('Cat. A - 7822', pageWidth - rightMargin - 42, signatureY);
+    doc.text('Ing. Hernan Miño', pageWidth - rightMargin - 42, yPosition);
+    yPosition += 4;
+    doc.text('Cat. A - 7822', pageWidth - rightMargin - 42, yPosition);
 
     return doc;
   }
 
-  static downloadPresupuestoPDF(presupuesto: Presupuesto): void {
-    const doc = this.generatePresupuestoPDF(presupuesto);
+  static async downloadPresupuestoPDF(presupuesto: Presupuesto): Promise<void> {
+    const doc = await this.generatePresupuestoPDF(presupuesto);
     doc.save(`presupuesto-${presupuesto.codigo}.pdf`);
   }
 
-  static previewPresupuestoPDF(presupuesto: Presupuesto): void {
-    const doc = this.generatePresupuestoPDF(presupuesto);
+  static async previewPresupuestoPDF(presupuesto: Presupuesto): Promise<void> {
+    const doc = await this.generatePresupuestoPDF(presupuesto);
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
   }
 
-  static getPDFBlob(presupuesto: Presupuesto): Blob {
-    const doc = this.generatePresupuestoPDF(presupuesto);
+  static async getPDFBlob(presupuesto: Presupuesto): Promise<Blob> {
+    const doc = await this.generatePresupuestoPDF(presupuesto);
     return doc.output('blob');
   }
 }

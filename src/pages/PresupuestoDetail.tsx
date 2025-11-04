@@ -68,12 +68,12 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
 
   const handleDownloadPDF = async () => {
     if (!presupuesto) return;
-    HDMPDFGenerator.downloadPresupuestoPDF(presupuesto);
+    await HDMPDFGenerator.downloadPresupuestoPDF(presupuesto);
   };
 
   const handlePreviewPDF = async () => {
     if (!presupuesto) return;
-    HDMPDFGenerator.previewPresupuestoPDF(presupuesto);
+    await HDMPDFGenerator.previewPresupuestoPDF(presupuesto);
   };
 
   const getStatusBadge = (estado: Presupuesto['estado']) => {
