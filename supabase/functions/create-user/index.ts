@@ -39,22 +39,13 @@ Deno.serve(async (req: Request) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
-    );
-
-    const { data: { user: currentUser }, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    const { data: { user: currentUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !currentUser) {
       throw new Error('Unauthorized');
     }
 
-    const { data: userData, error: userError } = await supabaseClient
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .select('role')
       .eq('id', currentUser.id)
@@ -89,21 +80,17 @@ Deno.serve(async (req: Request) => {
     if (createError) throw createError;
     if (!authData.user) throw new Error('Failed to create user');
 
-    const { data: newUser, error: insertError } = await supabaseAdmin
-      .from('users')
-      .insert({
-        id: authData.user.id,
-        email,
-        full_name,
-        role,
-        active: true,
-      })
-      .select()
-      .single();
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    if (insertError) {
+    const { data: newUser, error: fetchError } = await supabaseAdmin
+      .from('users')
+      .select()
+      .eq('id', authData.user.id)
+      .maybeSingle();
+
+    if (fetchError || !newUser) {
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      throw insertError;
+      throw new Error('User created in auth but not found in database');
     }
 
     return new Response(
