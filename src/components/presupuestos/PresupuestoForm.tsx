@@ -72,8 +72,6 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
           descripcion: item.descripcion,
           cantidad: item.cantidad,
           precio_unitario: item.precio_unitario,
-          unidad_medida: item.unidad_medida,
-          moneda_item: item.moneda_item,
         }))
       );
     } catch (error) {
@@ -91,8 +89,6 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         descripcion: '',
         cantidad: 1,
         precio_unitario: 0,
-        unidad_medida: 'unidad',
-        moneda_item: formData.moneda,
       },
     ]);
   };
@@ -105,8 +101,6 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         descripcion: producto.nombre + (producto.descripcion ? ` - ${producto.descripcion}` : ''),
         cantidad: 1,
         precio_unitario: producto.precio_base,
-        unidad_medida: producto.unidad_medida,
-        moneda_item: 'PYG',
       },
     ]);
     setShowCatalogo(false);
@@ -125,12 +119,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
 
   const calculateTotals = () => {
     const totalBruto = items.reduce((sum, item) => {
-      const precio = item.moneda_item === formData.moneda
-        ? item.precio_unitario
-        : item.moneda_item === 'USD'
-        ? item.precio_unitario * formData.tipo_cambio
-        : item.precio_unitario / formData.tipo_cambio;
-      return sum + item.cantidad * precio;
+      return sum + item.cantidad * item.precio_unitario;
     }, 0);
 
     const totalImpuestos = totalBruto * (formData.tasa_impuesto / 100);
@@ -214,13 +203,15 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         }
 
         for (const item of items) {
+          const subtotal = item.cantidad * item.precio_unitario;
           await PresupuestoItemService.create({
             presupuesto_id: presupuestoId,
             descripcion: item.descripcion,
             cantidad: item.cantidad,
             precio_unitario: item.precio_unitario,
-            unidad_medida: item.unidad_medida,
-            moneda_item: item.moneda_item,
+            subtotal: subtotal,
+            descuento_aplicado: 0,
+            orden: items.indexOf(item) + 1,
           });
         }
       } else {
@@ -233,13 +224,15 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         if (error) throw error;
 
         for (const item of items) {
+          const subtotal = item.cantidad * item.precio_unitario;
           await PresupuestoItemService.create({
             presupuesto_id: newPresupuesto.id,
             descripcion: item.descripcion,
             cantidad: item.cantidad,
             precio_unitario: item.precio_unitario,
-            unidad_medida: item.unidad_medida,
-            moneda_item: item.moneda_item,
+            subtotal: subtotal,
+            descuento_aplicado: 0,
+            orden: items.indexOf(item) + 1,
           });
         }
       }
@@ -430,7 +423,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
                   className="border border-gray-200 rounded-lg p-4"
                 >
                   <div className="grid grid-cols-12 gap-4">
-                    <div className="col-span-4">
+                    <div className="col-span-6">
                       <Input
                         label="Descripción *"
                         value={item.descripcion}
@@ -454,7 +447,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
                         }
                       />
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-3">
                       <Input
                         label="Precio Unit."
                         type="number"
@@ -467,38 +460,6 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
                           )
                         }
                       />
-                    </div>
-                    <div className="col-span-2">
-                      <Select
-                        label="Unidad"
-                        value={item.unidad_medida}
-                        onChange={(e) =>
-                          updateItem(index, 'unidad_medida', e.target.value)
-                        }
-                      >
-                        <option value="unidad">Unidad</option>
-                        <option value="kg">Kilogramo</option>
-                        <option value="m">Metro</option>
-                        <option value="m2">Metro²</option>
-                        <option value="litro">Litro</option>
-                        <option value="hora">Hora</option>
-                      </Select>
-                    </div>
-                    <div className="col-span-1">
-                      <Select
-                        label="Mon."
-                        value={item.moneda_item}
-                        onChange={(e) =>
-                          updateItem(
-                            index,
-                            'moneda_item',
-                            e.target.value as 'PYG' | 'USD'
-                          )
-                        }
-                      >
-                        <option value="PYG">₲</option>
-                        <option value="USD">$</option>
-                      </Select>
                     </div>
                     <div className="col-span-1 flex items-end">
                       <Button
@@ -515,7 +476,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
                     <span className="text-sm font-medium text-gray-700">
                       Subtotal:{' '}
                       {formatCurrency(item.cantidad * item.precio_unitario)}{' '}
-                      {item.moneda_item}
+                      {formData.moneda}
                     </span>
                   </div>
                 </div>
