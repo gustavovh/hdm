@@ -145,6 +145,11 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
   };
 
   const handleSubmit = async (estado: Presupuesto['estado']) => {
+    if (!formData.concepto.trim()) {
+      alert('El concepto es obligatorio');
+      return;
+    }
+
     if (!formData.cliente_nombre.trim()) {
       alert('El nombre del cliente es obligatorio');
       return;
@@ -163,6 +168,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       if (!user) throw new Error('No autenticado');
 
       const presupuestoData: any = {
+        concepto: formData.concepto,
         cliente_nombre: formData.cliente_nombre,
         cliente_ruc: formData.cliente_ruc || null,
         cliente_direccion: formData.cliente_direccion || null,
