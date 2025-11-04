@@ -23,6 +23,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
   const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
+    concepto: '',
     cliente_nombre: '',
     cliente_ruc: '',
     cliente_direccion: '',
@@ -52,6 +53,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       setLoading(true);
       const presupuesto = await PresupuestoService.getById(presupuestoId);
       setFormData({
+        concepto: presupuesto.concepto || '',
         cliente_nombre: presupuesto.cliente_nombre,
         cliente_ruc: presupuesto.cliente_ruc || '',
         cliente_direccion: presupuesto.cliente_direccion || '',
@@ -249,6 +251,23 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         </div>
 
         <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Información del Presupuesto
+            </h3>
+            <div className="mb-4">
+              <Input
+                label="Concepto / Título del Presupuesto *"
+                value={formData.concepto}
+                onChange={(e) =>
+                  setFormData({ ...formData, concepto: e.target.value })
+                }
+                placeholder="Ej: Suministro de materiales de construcción"
+                required
+              />
+            </div>
+          </div>
+
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Información del Cliente

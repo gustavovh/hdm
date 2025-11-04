@@ -33,6 +33,7 @@ export interface User {
 export interface Presupuesto {
   id: string;
   codigo: string;
+  concepto: string;
   cliente_nombre: string;
   cliente_email?: string;
   cliente_telefono?: string;
