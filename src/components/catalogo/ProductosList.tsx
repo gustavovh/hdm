@@ -95,24 +95,19 @@ export function ProductosList({ onSelectProducto, onEdit, selectionMode = false 
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            {selectionMode ? 'Seleccionar Producto' : 'Catálogo de Productos'}
-          </h2>
-          <p className="text-gray-600 mt-1">
-            {productos.length} producto(s) disponible(s)
-          </p>
+    <div>
+      {selectionMode && (
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Seleccionar Producto
+            </h2>
+            <p className="text-gray-600 mt-1">
+              {productos.length} producto(s) disponible(s)
+            </p>
+          </div>
         </div>
-
-        {isAdmin && !selectionMode && (
-          <Button onClick={() => setShowCreateModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Producto
-          </Button>
-        )}
-      </div>
+      )}
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
         <div className="flex gap-4">
