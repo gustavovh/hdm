@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { VendedorDashboard } from './components/dashboard/VendedorDashboard';
 import { PresupuestoDetail } from './pages/PresupuestoDetail';
 import { PresupuestoList } from './components/presupuestos/PresupuestoList';
 import { PresupuestoForm } from './components/presupuestos/PresupuestoForm';
@@ -9,13 +10,11 @@ import { UserList } from './components/users/UserList';
 import { ReportsDashboard } from './components/reports/ReportsDashboard';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
-import { LogOut, FileText, Users, List, BarChart3, UserCog } from 'lucide-react';
+import { LogOut, FileText, Users, List, BarChart3, UserCog, LayoutDashboard } from 'lucide-react';
 
 function AuthenticatedApp() {
   const { user, signOut, isAdmin } = useAuth();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form' | 'reports' | 'users'>(
-    isAdmin ? 'dashboard' : 'list'
-  );
+  const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form' | 'reports' | 'users'>('dashboard');
   const [selectedPresupuestoId, setSelectedPresupuestoId] = useState<string>('');
 
   if (!user) {
@@ -111,27 +110,42 @@ function AuthenticatedApp() {
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => {
-                  setCurrentView('list');
-                  setSelectedPresupuestoId('');
-                }}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
-                  currentView === 'list'
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
-                }`}
-              >
-                <List className="w-5 h-5" />
-                Mis Presupuestos
-              </button>
+              <>
+                <button
+                  onClick={() => setCurrentView('dashboard')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
+                    currentView === 'dashboard'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
+                  }`}
+                >
+                  <LayoutDashboard className="w-5 h-5" />
+                  Mi Dashboard
+                </button>
+                <button
+                  onClick={() => {
+                    setCurrentView('list');
+                    setSelectedPresupuestoId('');
+                  }}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
+                    currentView === 'list'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
+                  }`}
+                >
+                  <List className="w-5 h-5" />
+                  Mis Presupuestos
+                </button>
+              </>
             )}
           </nav>
         </div>
       </header>
 
       <main className="py-8">
-        {currentView === 'dashboard' && <AdminDashboard />}
+        {currentView === 'dashboard' && (
+          isAdmin ? <AdminDashboard /> : <VendedorDashboard />
+        )}
         {currentView === 'reports' && <ReportsDashboard />}
         {currentView === 'users' && <UserList />}
         {currentView === 'list' && (

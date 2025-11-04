@@ -89,6 +89,86 @@ export class PresupuestoService {
     return presupuesto;
   }
 
+  static async clone(id: string, vendedor_id: string): Promise<Presupuesto> {
+    const original = await this.getById(id);
+    if (!original) throw new Error('Presupuesto no encontrado');
+
+    const items = original.items || [];
+
+    const { data: lastCode } = await supabase
+      .from('presupuestos')
+      .select('codigo')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    const newCodeNumber = lastCode ? parseInt(lastCode.codigo.split('-')[1]) + 1 : 1;
+    const newCode = `PRES-${String(newCodeNumber).padStart(6, '0')}`;
+
+    const presupuestoData = {
+      codigo: newCode,
+      concepto: `${original.concepto} (Copia)`,
+      cliente_nombre: original.cliente_nombre,
+      cliente_email: original.cliente_email,
+      cliente_telefono: original.cliente_telefono,
+      cliente_documento: original.cliente_documento,
+      cliente_ruc: original.cliente_ruc,
+      vendedor_id,
+      moneda: original.moneda,
+      tipo_cambio: original.tipo_cambio,
+      tasa_impuesto: original.tasa_impuesto,
+      tasa_comision: original.tasa_comision,
+      total_bruto: original.total_bruto,
+      total_descuento: 0,
+      total_neto: original.total_bruto,
+      total_impuestos: original.total_impuestos,
+      total_comisiones: original.total_comisiones,
+      estado: 'BORRADOR' as const,
+      observaciones: original.observaciones,
+      descripcion: original.descripcion,
+      dias_validez: original.dias_validez,
+    };
+
+    const { data: presupuesto, error: presupuestoError } = await supabase
+      .from('presupuestos')
+      .insert(presupuestoData)
+      .select()
+      .single();
+
+    if (presupuestoError) throw presupuestoError;
+
+    if (items.length > 0) {
+      const clonedItems = items.map((item) => ({
+        presupuesto_id: presupuesto.id,
+        descripcion: item.descripcion,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+        subtotal: item.subtotal,
+        descuento_aplicado: 0,
+        orden: item.orden,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('presupuesto_items')
+        .insert(clonedItems);
+
+      if (itemsError) throw itemsError;
+    }
+
+    await AuditService.log({
+      accion: 'CLONAR_PRESUPUESTO',
+      entidad: 'presupuestos',
+      entidad_id: presupuesto.id,
+      usuario_id: vendedor_id,
+      cambios: {
+        original_id: id,
+        after: presupuesto
+      },
+    });
+
+    return presupuesto;
+  }
+
   static async getById(id: string): Promise<Presupuesto | null> {
     const { data, error } = await supabase
       .from('presupuestos')

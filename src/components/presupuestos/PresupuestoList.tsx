@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Search, Filter } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Copy } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
@@ -23,6 +23,24 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
   useEffect(() => {
     loadPresupuestos();
   }, []);
+
+  const handleClone = async (e: React.MouseEvent, presupuestoId: string) => {
+    e.stopPropagation();
+    if (!user) return;
+
+    if (!confirm('¿Deseas clonar este presupuesto? Se creará una copia en estado Borrador.')) {
+      return;
+    }
+
+    try {
+      await PresupuestoService.clone(presupuestoId, user.id);
+      await loadPresupuestos();
+      alert('Presupuesto clonado exitosamente');
+    } catch (error) {
+      console.error('Error clonando presupuesto:', error);
+      alert('Error al clonar el presupuesto');
+    }
+  };
 
   const loadPresupuestos = async () => {
     try {
@@ -169,6 +187,11 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
                       {getStatusLabel(presupuesto.estado)}
                     </Badge>
                   </div>
+                  {presupuesto.concepto && (
+                    <p className="text-sm font-medium text-gray-700 mb-1">
+                      {presupuesto.concepto}
+                    </p>
+                  )}
                   {presupuesto.cliente_documento && (
                     <p className="text-sm text-gray-600 mb-2">
                       Documento: {presupuesto.cliente_documento}
@@ -178,19 +201,30 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
                     {presupuesto.observaciones || 'Sin observaciones'}
                   </p>
                 </div>
-                <div className="text-right ml-6">
-                  <p className="text-2xl font-bold text-gray-900">
-                    {formatCurrency(
-                      presupuesto.total_neto + presupuesto.total_impuestos + presupuesto.total_comisiones,
-                      presupuesto.moneda
-                    )}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Neto: {formatCurrency(presupuesto.total_neto, presupuesto.moneda)}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Creado: {new Date(presupuesto.created_at).toLocaleDateString('es-PY')}
-                  </p>
+                <div className="flex flex-col items-end gap-3">
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatCurrency(
+                        presupuesto.total_neto + presupuesto.total_impuestos + presupuesto.total_comisiones,
+                        presupuesto.moneda
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Neto: {formatCurrency(presupuesto.total_neto, presupuesto.moneda)}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Creado: {new Date(presupuesto.created_at).toLocaleDateString('es-PY')}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => handleClone(e, presupuesto.id)}
+                    title="Clonar presupuesto"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Clonar
+                  </Button>
                 </div>
               </div>
             </div>
