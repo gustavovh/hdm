@@ -16,14 +16,17 @@ export class HDMPDFGenerator {
     const topMargin = 15;
     let yPosition = topMargin;
 
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('Ingeniería S.A.', leftMargin, yPosition);
+    const logoPath = '/hdm logo.png';
+    try {
+      doc.addImage(logoPath, 'PNG', leftMargin, yPosition, 50, 15);
+    } catch (error) {
+      console.error('Error loading logo:', error);
+    }
 
-    yPosition += 8;
+    yPosition += 18;
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
     doc.text('Sistemas eléctricos de potencia - Obras civiles - Metalúrgica', leftMargin, yPosition);
     yPosition += 3;
     doc.text('Domotica - Electrónica de Potencia - Media Tensión 23kV', leftMargin, yPosition);
@@ -168,12 +171,8 @@ export class HDMPDFGenerator {
     yPosition += 16;
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.text('Forma de pago:', leftMargin, yPosition);
-    doc.setFont('helvetica', 'normal');
     const diasPago = presupuesto.dias_validez || 30;
-    doc.text(`${diasPago}`, pageWidth - rightMargin, yPosition, { align: 'right' });
-    yPosition += 4;
-    doc.text('DIAS', pageWidth - rightMargin, yPosition, { align: 'right' });
+    doc.text(`Forma de pago: ${diasPago} DIAS`, leftMargin, yPosition);
 
     yPosition += 10;
     doc.setFont('helvetica', 'bold');
