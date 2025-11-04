@@ -8,7 +8,7 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, helperText, options, className = '', ...props }, ref) => {
+  ({ label, error, helperText, options = [], className = '', ...props }, ref) => {
     return (
       <div className="w-full">
         {label && (
@@ -26,7 +26,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           } ${className}`}
           {...props}
         >
-          {options.map((option) => (
+          {Array.isArray(options) && options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

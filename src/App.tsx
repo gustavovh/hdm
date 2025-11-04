@@ -16,6 +16,17 @@ function AuthenticatedApp() {
   );
   const [selectedPresupuestoId, setSelectedPresupuestoId] = useState<string>('');
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <FileText className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-pulse" />
+          <p className="text-gray-600">Cargando perfil de usuario...</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleSignOut = async () => {
     try {
       await signOut();

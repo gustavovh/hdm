@@ -52,10 +52,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUserProfile = async (userId: string) => {
     try {
+      console.log('🔄 loadUserProfile - Starting for userId:', userId);
       const profile = await UserService.getById(userId);
-      setUser(profile);
+      console.log('✅ loadUserProfile - Profile loaded:', profile);
+
+      if (!profile) {
+        console.error('❌ loadUserProfile - No profile found for user');
+        await supabase.auth.signOut();
+        setUser(null);
+      } else {
+        setUser(profile);
+      }
     } catch (error) {
-      console.error('Error loading user profile:', error);
+      console.error('❌ loadUserProfile - Error:', error);
+      await supabase.auth.signOut();
       setUser(null);
     } finally {
       setLoading(false);
