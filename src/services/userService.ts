@@ -36,34 +36,33 @@ export class UserService {
   }
 
   static async create(userData: CreateUserDTO): Promise<User> {
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: userData.email,
-      password: userData.password,
-      options: {
-        data: {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('No hay sesión activa');
+
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userData.email,
+          password: userData.password,
           full_name: userData.full_name,
           role: userData.role,
-        },
-      },
-    });
+        }),
+      }
+    );
 
-    if (authError) throw authError;
-    if (!authData.user) throw new Error('Error al crear usuario');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error al crear usuario');
+    }
 
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .insert({
-        id: authData.user.id,
-        email: userData.email,
-        full_name: userData.full_name,
-        role: userData.role,
-        active: true,
-      })
-      .select()
-      .single();
-
-    if (userError) throw userError;
-    return user;
+    const result = await response.json();
+    return result.user;
   }
 
   static async update(id: string, updates: UpdateUserDTO): Promise<User> {
