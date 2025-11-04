@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Presupuesto } from '../types/database.types';
+import { Presupuesto, PresupuestoImagen } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
 export class HDMPDFGenerator {
@@ -24,7 +24,10 @@ export class HDMPDFGenerator {
       img.src = url;
     });
   }
-  static async generatePresupuestoPDF(presupuesto: Presupuesto): Promise<jsPDF> {
+  static async generatePresupuestoPDF(
+    presupuesto: Presupuesto,
+    imagenes: PresupuestoImagen[] = []
+  ): Promise<jsPDF> {
     const doc = new jsPDF({
       unit: 'mm',
       format: 'a4',
@@ -218,6 +221,69 @@ export class HDMPDFGenerator {
     yPosition += 8;
     doc.text('Estamos a su disposición ante cualquier consulta.', leftMargin, yPosition);
 
+    // Agregar imágenes si existen
+    if (imagenes.length > 0) {
+      yPosition += 10;
+
+      // Verificar si hay espacio en la página actual, si no, agregar nueva página
+      if (yPosition > pageHeight - 80) {
+        doc.addPage();
+        yPosition = topMargin;
+      }
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Imágenes de Referencia:', leftMargin, yPosition);
+      yPosition += 6;
+
+      const imgWidth = 80;
+      const imgHeight = 60;
+      const imgsPerRow = 2;
+      const spacing = 10;
+
+      for (let i = 0; i < imagenes.length; i++) {
+        try {
+          const imgBase64 = await this.loadImageAsBase64(imagenes[i].url);
+
+          const col = i % imgsPerRow;
+          const row = Math.floor(i / imgsPerRow);
+
+          const xPos = leftMargin + col * (imgWidth + spacing);
+          const yPos = yPosition + row * (imgHeight + spacing);
+
+          // Verificar si necesitamos nueva página
+          if (yPos + imgHeight > pageHeight - 20) {
+            doc.addPage();
+            yPosition = topMargin;
+            const newRow = 0;
+            const newYPos = yPosition + newRow * (imgHeight + spacing);
+            doc.addImage(imgBase64, 'JPEG', xPos, newYPos, imgWidth, imgHeight);
+          } else {
+            doc.addImage(imgBase64, 'JPEG', xPos, yPos, imgWidth, imgHeight);
+          }
+
+          // Agregar descripción si existe
+          if (imagenes[i].descripcion) {
+            doc.setFontSize(7);
+            doc.setFont('helvetica', 'normal');
+            doc.text(
+              imagenes[i].descripcion!,
+              xPos + imgWidth / 2,
+              yPos + imgHeight + 3,
+              { align: 'center', maxWidth: imgWidth }
+            );
+          }
+        } catch (error) {
+          console.error(`Error loading image ${i}:`, error);
+        }
+      }
+
+      // Calcular espacio usado por imágenes
+      const totalRows = Math.ceil(imagenes.length / imgsPerRow);
+      yPosition += totalRows * (imgHeight + spacing) + 10;
+    }
+
     doc.setFontSize(55);
     doc.setTextColor(245, 245, 245);
     doc.setFont('helvetica', 'bold');
@@ -228,7 +294,13 @@ export class HDMPDFGenerator {
     });
     doc.restoreGraphicsState();
 
-    yPosition += 20;
+    // Verificar si hay espacio para la firma
+    if (yPosition > pageHeight - 40) {
+      doc.addPage();
+      yPosition = topMargin;
+    } else {
+      yPosition += 20;
+    }
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(0, 0, 0);
@@ -242,20 +314,29 @@ export class HDMPDFGenerator {
     return doc;
   }
 
-  static async downloadPresupuestoPDF(presupuesto: Presupuesto): Promise<void> {
-    const doc = await this.generatePresupuestoPDF(presupuesto);
+  static async downloadPresupuestoPDF(
+    presupuesto: Presupuesto,
+    imagenes: PresupuestoImagen[] = []
+  ): Promise<void> {
+    const doc = await this.generatePresupuestoPDF(presupuesto, imagenes);
     doc.save(`presupuesto-${presupuesto.codigo}.pdf`);
   }
 
-  static async previewPresupuestoPDF(presupuesto: Presupuesto): Promise<void> {
-    const doc = await this.generatePresupuestoPDF(presupuesto);
+  static async previewPresupuestoPDF(
+    presupuesto: Presupuesto,
+    imagenes: PresupuestoImagen[] = []
+  ): Promise<void> {
+    const doc = await this.generatePresupuestoPDF(presupuesto, imagenes);
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
   }
 
-  static async getPDFBlob(presupuesto: Presupuesto): Promise<Blob> {
-    const doc = await this.generatePresupuestoPDF(presupuesto);
+  static async getPDFBlob(
+    presupuesto: Presupuesto,
+    imagenes: PresupuestoImagen[] = []
+  ): Promise<Blob> {
+    const doc = await this.generatePresupuestoPDF(presupuesto, imagenes);
     return doc.output('blob');
   }
 }

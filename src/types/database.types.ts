@@ -112,6 +112,19 @@ export interface PresupuestoItem {
   created_at: string;
 }
 
+export interface PresupuestoImagen {
+  id: string;
+  presupuesto_id: string;
+  url: string;
+  nombre_archivo: string;
+  tipo_mime: string;
+  tamanio: number;
+  orden: number;
+  descripcion?: string;
+  created_at: string;
+  created_by: string;
+}
+
 export interface SolicitudDescuento {
   id: string;
   presupuesto_id: string;
