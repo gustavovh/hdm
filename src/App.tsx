@@ -8,13 +8,14 @@ import { PresupuestoForm } from './components/presupuestos/PresupuestoForm';
 import { NotificationCenter } from './components/notifications/NotificationCenter';
 import { UserList } from './components/users/UserList';
 import { ReportsDashboard } from './components/reports/ReportsDashboard';
+import { CatalogoPage } from './components/catalogo/CatalogoPage';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
-import { LogOut, FileText, Users, List, BarChart3, UserCog, LayoutDashboard } from 'lucide-react';
+import { LogOut, FileText, Users, List, BarChart3, UserCog, LayoutDashboard, Package } from 'lucide-react';
 
 function AuthenticatedApp() {
   const { user, signOut, isAdmin } = useAuth();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form' | 'reports' | 'users'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form' | 'reports' | 'users' | 'catalogo'>('dashboard');
   const [selectedPresupuestoId, setSelectedPresupuestoId] = useState<string>('');
 
   if (!user) {
@@ -102,6 +103,17 @@ function AuthenticatedApp() {
                   Reportes
                 </button>
                 <button
+                  onClick={() => setCurrentView('catalogo')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
+                    currentView === 'catalogo'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
+                  }`}
+                >
+                  <Package className="w-5 h-5" />
+                  Catálogo
+                </button>
+                <button
                   onClick={() => setCurrentView('users')}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
                     currentView === 'users'
@@ -140,6 +152,17 @@ function AuthenticatedApp() {
                   <List className="w-5 h-5" />
                   Mis Presupuestos
                 </button>
+                <button
+                  onClick={() => setCurrentView('catalogo')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
+                    currentView === 'catalogo'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
+                  }`}
+                >
+                  <Package className="w-5 h-5" />
+                  Catálogo
+                </button>
               </>
             )}
           </nav>
@@ -152,6 +175,7 @@ function AuthenticatedApp() {
         )}
         {currentView === 'reports' && <ReportsDashboard />}
         {currentView === 'users' && <UserList />}
+        {currentView === 'catalogo' && <CatalogoPage />}
         {currentView === 'list' && (
           <PresupuestoList
             onSelectPresupuesto={(id) => {
