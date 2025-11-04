@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Limpiar Cache y Login</title>
+</head>
+<body>
+    <h1>Limpiando cache...</h1>
+    <div id="status"></div>
+    
+    <script type="module">
+        const status = document.getElementById('status');
+        
+        // Configuración de Supabase desde .env
+        const SUPABASE_URL = 'https://ubjcszefxwhzmejtkbeo.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViamNzemVmeHdoem1lanRrYmVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA0NTk2MDIsImV4cCI6MjA0NjAzNTYwMn0.T6e3kvCNzW6u64iWRJZq2j5oQyf1ZLlKLKCQG3N65s0';
+        
+        async function clearAndLogin() {
+            try {
+                status.innerHTML += '<p>1. Limpiando localStorage...</p>';
+                localStorage.clear();
+                
+                status.innerHTML += '<p>2. Limpiando sessionStorage...</p>';
+                sessionStorage.clear();
+                
+                status.innerHTML += '<p>3. Limpiando cookies...</p>';
+                document.cookie.split(";").forEach(c => {
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                });
+                
+                status.innerHTML += '<p>✅ Cache limpiado</p>';
+                status.innerHTML += '<p>4. Esperando 2 segundos...</p>';
+                
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                status.innerHTML += '<p>5. Redirigiendo a la aplicación...</p>';
+                window.location.href = '/';
+                
+            } catch (error) {
+                status.innerHTML += '<p style="color: red;">❌ Error: ' + error.message + '</p>';
+            }
+        }
+        
+        clearAndLogin();
+    </script>
+</body>
+</html>
