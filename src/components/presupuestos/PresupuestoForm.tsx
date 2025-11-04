@@ -167,6 +167,21 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No autenticado');
 
+      let codigo = '';
+      if (!presupuestoId) {
+        const { data: lastPresupuesto } = await supabase
+          .from('presupuestos')
+          .select('codigo')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const lastNumber = lastPresupuesto?.codigo
+          ? parseInt(lastPresupuesto.codigo.split('-')[1])
+          : 0;
+        codigo = `PRE-${String(lastNumber + 1).padStart(6, '0')}`;
+      }
+
       const presupuestoData: any = {
         concepto: formData.concepto,
         cliente_nombre: formData.cliente_nombre,
@@ -190,7 +205,11 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       };
 
       if (!presupuestoId) {
+        presupuestoData.codigo = codigo;
         presupuestoData.vendedor_id = user.id;
+        if (estado === 'PRESENTADO') {
+          presupuestoData.fecha_presentacion = new Date().toISOString().split('T')[0];
+        }
       }
 
       if (presupuestoId) {
