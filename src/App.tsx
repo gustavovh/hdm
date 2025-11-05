@@ -31,9 +31,12 @@ function AuthenticatedApp() {
 
   const handleSignOut = async () => {
     try {
+      console.log('🔘 Sign out button clicked');
       await signOut();
+      console.log('✅ Sign out completed in App');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('❌ Error signing out:', error);
+      alert('Error al cerrar sesión. Por favor, intente de nuevo.');
     }
   };
 
@@ -70,7 +73,13 @@ function AuthenticatedApp() {
 
               <NotificationCenter />
 
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="z-50 relative"
+              >
                 <LogOut className="w-4 h-4 mr-2" />
                 Salir
               </Button>
