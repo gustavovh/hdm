@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { supabase } from './lib/supabase';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { VendedorDashboard } from './components/dashboard/VendedorDashboard';
 import { PresupuestoDetail } from './pages/PresupuestoDetail';
@@ -11,7 +12,7 @@ import { ReportsDashboard } from './components/reports/ReportsDashboard';
 import { CatalogoPage } from './components/catalogo/CatalogoPage';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
-import { LogOut, FileText, Users, List, BarChart3, UserCog, LayoutDashboard, Package } from 'lucide-react';
+import { LogOut, FileText, Users, List, BarChart3, UserCog, LayoutDashboard, Package, Eye, EyeOff } from 'lucide-react';
 
 function AuthenticatedApp() {
   const { user, signOut, isAdmin } = useAuth();
@@ -224,6 +225,8 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,6 +241,10 @@ function LoginForm() {
       setLoading(false);
     }
   };
+
+  if (showForgotPassword) {
+    return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-6">
@@ -264,14 +271,37 @@ function LoginForm() {
             required
           />
 
-          <Input
-            label="Contraseña"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            required
-          />
+          <div className="relative">
+            <Input
+              label="Contraseña"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+
+          <div className="text-right">
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
 
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -302,8 +332,202 @@ function LoginForm() {
   );
 }
 
+function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      setSuccess(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al enviar el correo de recuperación');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-6">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-8">
+        <div className="text-center mb-8">
+          <img
+            src="/hdm logo copy.png"
+            alt="HDM Ingeniería"
+            className="h-16 w-auto mx-auto mb-4 object-contain"
+          />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Recuperar Contraseña
+          </h1>
+          <p className="text-gray-600">
+            Te enviaremos un enlace para restablecer tu contraseña
+          </p>
+        </div>
+
+        {success ? (
+          <div className="space-y-4">
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-800 text-center">
+                ¡Correo enviado! Revisa tu bandeja de entrada para restablecer tu contraseña.
+              </p>
+            </div>
+            <Button type="button" fullWidth onClick={onBack}>
+              Volver al inicio de sesión
+            </Button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="Correo Electrónico"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="usuario@hdm.com"
+              required
+            />
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            <Button type="submit" fullWidth loading={loading}>
+              Enviar enlace de recuperación
+            </Button>
+
+            <Button type="button" variant="ghost" fullWidth onClick={onBack}>
+              Volver al inicio de sesión
+            </Button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ResetPasswordForm({ onSuccess }: { onSuccess: () => void }) {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: password,
+      });
+
+      if (error) throw error;
+
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cambiar la contraseña');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-6">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-8">
+        <div className="text-center mb-8">
+          <img
+            src="/hdm logo copy.png"
+            alt="HDM Ingeniería"
+            className="h-16 w-auto mx-auto mb-4 object-contain"
+          />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Nueva Contraseña
+          </h1>
+          <p className="text-gray-600">Ingresa tu nueva contraseña</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="relative">
+            <Input
+              label="Nueva Contraseña"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+
+          <Input
+            label="Confirmar Contraseña"
+            type={showPassword ? "text" : "password"}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="••••••••"
+            required
+          />
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          <Button type="submit" fullWidth loading={loading}>
+            Cambiar Contraseña
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function AppContent() {
   const { user, loading } = useAuth();
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [passwordResetSuccess, setPasswordResetSuccess] = useState(false);
+
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    if (hashParams.get('type') === 'recovery') {
+      setIsResettingPassword(true);
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -311,6 +535,49 @@ function AppContent() {
         <div className="text-center">
           <FileText className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-pulse" />
           <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isResettingPassword && !passwordResetSuccess) {
+    return (
+      <ResetPasswordForm
+        onSuccess={() => {
+          setPasswordResetSuccess(true);
+          setIsResettingPassword(false);
+          window.location.hash = '';
+        }}
+      />
+    );
+  }
+
+  if (passwordResetSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-6">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-8 text-center">
+          <div className="mb-6">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              ¡Contraseña actualizada!
+            </h2>
+            <p className="text-gray-600">
+              Tu contraseña ha sido cambiada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.
+            </p>
+          </div>
+          <Button
+            fullWidth
+            onClick={() => {
+              setPasswordResetSuccess(false);
+              window.location.reload();
+            }}
+          >
+            Ir al inicio de sesión
+          </Button>
         </div>
       </div>
     );
