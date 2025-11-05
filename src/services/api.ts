@@ -274,7 +274,10 @@ export class PresupuestoService {
   static async getAll(): Promise<Presupuesto[]> {
     const { data, error } = await supabase
       .from('presupuestos')
-      .select('*')
+      .select(`
+        *,
+        vendedor:users!presupuestos_vendedor_id_fkey(*)
+      `)
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 

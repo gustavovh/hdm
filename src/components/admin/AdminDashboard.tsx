@@ -141,7 +141,9 @@ export function AdminDashboard() {
     const matchesSearch =
       p.cliente_nombre.toLowerCase().includes(presupuestoSearch.toLowerCase()) ||
       p.codigo.toLowerCase().includes(presupuestoSearch.toLowerCase()) ||
-      p.cliente_documento?.toLowerCase().includes(presupuestoSearch.toLowerCase());
+      p.cliente_documento?.toLowerCase().includes(presupuestoSearch.toLowerCase()) ||
+      p.vendedor?.full_name?.toLowerCase().includes(presupuestoSearch.toLowerCase()) ||
+      p.vendedor?.email?.toLowerCase().includes(presupuestoSearch.toLowerCase());
     const matchesStatus = presupuestoStatusFilter === 'all' || p.estado === presupuestoStatusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -331,7 +333,7 @@ export function AdminDashboard() {
             <div className="bg-white rounded-lg shadow p-4 space-y-4 mb-6">
               <div className="flex gap-4">
                 <Input
-                  placeholder="Buscar por código, cliente o documento..."
+                  placeholder="Buscar por código, cliente, documento o vendedor..."
                   value={presupuestoSearch}
                   onChange={(e) => setPresupuestoSearch(e.target.value)}
                   className="flex-1"
@@ -398,9 +400,13 @@ export function AdminDashboard() {
                           </p>
                         )}
                         <p className="text-xs text-gray-500 mt-2">
-                          Creado: {new Date(presupuesto.created_at).toLocaleDateString('es-PY')} -
-                          Vendedor ID: {presupuesto.vendedor_id?.substring(0, 8)}...
+                          Creado: {new Date(presupuesto.created_at).toLocaleDateString('es-PY')}
                         </p>
+                        {presupuesto.vendedor && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            Vendedor: {presupuesto.vendedor.full_name} ({presupuesto.vendedor.email})
+                          </p>
+                        )}
                       </div>
                       <div className="flex flex-col items-end gap-3">
                         <div className="text-right">
