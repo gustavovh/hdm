@@ -11,6 +11,7 @@ interface CreateUserDTO {
 interface UpdateUserDTO {
   full_name?: string;
   role?: 'admin' | 'vendedor';
+  password?: string;
 }
 
 export class UserService {
@@ -66,11 +67,51 @@ export class UserService {
   }
 
   static async update(id: string, updates: UpdateUserDTO): Promise<User> {
+    if (updates.password) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No hay sesión activa');
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-user-password`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: id,
+            new_password: updates.password,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al cambiar contraseña');
+      }
+    }
+
+    const userUpdates: { full_name?: string; role?: 'admin' | 'vendedor' } = {};
+    if (updates.full_name !== undefined) userUpdates.full_name = updates.full_name;
+    if (updates.role !== undefined) userUpdates.role = updates.role;
+
+    if (Object.keys(userUpdates).length > 0) {
+      const { data, error } = await supabase
+        .from('users')
+        .update(userUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+
     const { data, error } = await supabase
       .from('users')
-      .update(updates)
-      .eq('id', id)
       .select()
+      .eq('id', id)
       .single();
 
     if (error) throw error;

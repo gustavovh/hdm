@@ -27,6 +27,7 @@ export function UserFormModal({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPasswordField, setShowPasswordField] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -36,6 +37,7 @@ export function UserFormModal({
         role: user.role,
         password: '',
       });
+      setShowPasswordField(false);
     } else {
       setFormData({
         email: '',
@@ -43,6 +45,7 @@ export function UserFormModal({
         role: 'vendedor',
         password: '',
       });
+      setShowPasswordField(false);
     }
     setError('');
   }, [user, isOpen]);
@@ -54,10 +57,21 @@ export function UserFormModal({
 
     try {
       if (user) {
-        await UserService.update(user.id, {
+        const updates: { full_name: string; role: 'admin' | 'vendedor'; password?: string } = {
           full_name: formData.full_name,
           role: formData.role,
-        });
+        };
+
+        if (showPasswordField && formData.password) {
+          if (formData.password.length < 6) {
+            setError('La contraseña debe tener al menos 6 caracteres');
+            setLoading(false);
+            return;
+          }
+          updates.password = formData.password;
+        }
+
+        await UserService.update(user.id, updates);
       } else {
         if (!formData.password || formData.password.length < 6) {
           setError('La contraseña debe tener al menos 6 caracteres');
@@ -124,7 +138,7 @@ export function UserFormModal({
           <option value="admin">Administrador</option>
         </Select>
 
-        {!user && (
+        {!user ? (
           <Input
             label="Contraseña"
             type="password"
@@ -135,6 +149,46 @@ export function UserFormModal({
             required
             placeholder="Mínimo 6 caracteres"
           />
+        ) : (
+          <>
+            {!showPasswordField ? (
+              <div className="pt-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPasswordField(true)}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  Cambiar Contraseña
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Input
+                  label="Nueva Contraseña"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  placeholder="Mínimo 6 caracteres"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowPasswordField(false);
+                    setFormData({ ...formData, password: '' });
+                  }}
+                  className="text-gray-600 hover:text-gray-700"
+                >
+                  Cancelar cambio de contraseña
+                </Button>
+              </div>
+            )}
+          </>
         )}
 
         {error && (
