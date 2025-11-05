@@ -15,10 +15,12 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const userId = body.user_id;
+    const newPassword = body.new_password || body.password;
 
-    if (!email || !password) {
-      throw new Error('Email and password are required');
+    if (!userId || !newPassword) {
+      throw new Error('User ID and password are required');
     }
 
     const supabaseAdmin = createClient(
@@ -32,20 +34,10 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    const { data: users, error: getUserError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (getUserError) throw getUserError;
-
-    const user = users.users.find(u => u.email === email);
-
-    if (!user) {
-      throw new Error(`User with email ${email} not found`);
-    }
-
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
-      user.id,
+      userId,
       {
-        password: password,
+        password: newPassword,
         email_confirm: true,
       }
     );
@@ -53,9 +45,9 @@ Deno.serve(async (req: Request) => {
     if (error) throw error;
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Password updated for ${email}`,
+      JSON.stringify({
+        success: true,
+        message: `Password updated successfully`,
         user: { id: data.user.id, email: data.user.email }
       }),
       {
