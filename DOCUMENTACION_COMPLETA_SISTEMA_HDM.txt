@@ -1,0 +1,2326 @@
+================================================================================
+    SISTEMA DE GESTIÓN DE PRESUPUESTOS HDM
+    DOCUMENTACIÓN COMPLETA DEL SISTEMA
+================================================================================
+
+Versión: 2.0.0
+Fecha: 05 de Noviembre de 2025
+Estado: Producción
+Build Status: ✓ EXITOSO
+
+================================================================================
+ÍNDICE
+================================================================================
+
+1. RESUMEN EJECUTIVO
+2. ARQUITECTURA DEL SISTEMA
+3. MÓDULOS IMPLEMENTADOS
+4. BASE DE DATOS
+5. SERVICIOS Y APIs
+6. COMPONENTES UI
+7. FLUJOS DE TRABAJO
+8. GUÍA DE USUARIO - VENDEDOR
+9. GUÍA DE USUARIO - ADMINISTRADOR
+10. SEGURIDAD Y PERMISOS
+11. EXPORTACIÓN DE DATOS
+12. INSTALACIÓN Y CONFIGURACIÓN
+13. MANTENIMIENTO
+14. PREGUNTAS FRECUENTES
+15. GLOSARIO DE TÉRMINOS
+
+================================================================================
+1. RESUMEN EJECUTIVO
+================================================================================
+
+El Sistema de Gestión de Presupuestos HDM es una aplicación web completa para
+la gestión, seguimiento y análisis de presupuestos comerciales. Permite a
+vendedores crear y gestionar presupuestos mientras que los administradores
+pueden supervisar, aprobar y analizar la performance del equipo.
+
+CARACTERÍSTICAS PRINCIPALES:
+-----------------------------
+✓ Gestión completa de presupuestos con múltiples estados
+✓ Sistema de seguimiento con timeline de actividades
+✓ Recordatorios y alertas automáticas
+✓ Análisis de performance por vendedor
+✓ Evaluación de KPIs y métricas de conversión
+✓ Catálogo de productos con imágenes
+✓ Sistema de aprobación de descuentos
+✓ Generación automática de PDFs
+✓ Envío de emails con notificaciones
+✓ Exportación completa a Excel
+✓ Seguridad con Row Level Security (RLS)
+✓ Auditoría completa de acciones
+
+USUARIOS DEL SISTEMA:
+---------------------
+- Vendedores: Crean, gestionan y hacen seguimiento de presupuestos
+- Administradores: Supervisan, aprueban y analizan performance
+
+TECNOLOGÍAS UTILIZADAS:
+-----------------------
+- Frontend: React + TypeScript + Vite
+- Base de Datos: Supabase (PostgreSQL)
+- Autenticación: Supabase Auth
+- Storage: Supabase Storage
+- PDFs: jsPDF + jsPDF-AutoTable
+- Estilos: Tailwind CSS
+- Iconos: Lucide React
+
+================================================================================
+2. ARQUITECTURA DEL SISTEMA
+================================================================================
+
+ESTRUCTURA DE CAPAS:
+--------------------
+
+[Capa de Presentación]
+    ↓
+[Capa de Lógica de Negocio]
+    ↓
+[Capa de Servicios]
+    ↓
+[Capa de Datos - Supabase]
+
+COMPONENTES PRINCIPALES:
+------------------------
+
+1. Frontend (React)
+   - Componentes UI reutilizables
+   - Páginas por rol (Vendedor/Admin)
+   - Contexto de autenticación
+   - Gestión de estado local
+
+2. Servicios
+   - API de presupuestos
+   - Servicio de actividades
+   - Servicio de recordatorios
+   - Servicio de reportes
+   - Servicio de productos
+   - Servicio de comisiones
+   - Generadores de PDF
+   - Servicio de emails
+
+3. Base de Datos (Supabase)
+   - Tablas principales
+   - Relaciones y foreign keys
+   - Row Level Security (RLS)
+   - Triggers automáticos
+   - Funciones personalizadas
+
+4. Storage
+   - Imágenes de productos
+   - Documentos adjuntos
+
+5. Edge Functions
+   - Creación de usuarios
+   - Reseteo de contraseñas
+   - Envío de emails
+   - Recordatorios automáticos
+   - Auto-anulación de presupuestos
+
+FLUJO DE DATOS:
+---------------
+
+Usuario → Frontend → Servicio → Supabase Client → PostgreSQL
+                                      ↓
+                                 RLS Policies
+                                      ↓
+                              Datos Autorizados
+
+================================================================================
+3. MÓDULOS IMPLEMENTADOS
+================================================================================
+
+3.1. MÓDULO DE AUTENTICACIÓN
+-----------------------------
+✓ Login con email/password
+✓ Gestión de sesiones
+✓ Roles: vendedor, admin
+✓ Protección de rutas
+✓ Contexto global de usuario
+
+ARCHIVOS:
+- src/contexts/AuthContext.tsx
+- src/components/Login.tsx (si existe)
+
+3.2. MÓDULO DE PRESUPUESTOS
+----------------------------
+✓ Creación de presupuestos
+✓ Edición y clonación
+✓ Cambio de estados
+✓ Carga de imágenes
+✓ Generación de PDFs
+✓ Envío por email
+✓ Cálculo automático de totales
+✓ Gestión de descuentos
+
+ESTADOS DEL PRESUPUESTO:
+- BORRADOR: En creación
+- PRESENTADO: Enviado al cliente
+- ACEPTADO: Aprobado por cliente
+- FACTURADO: Convertido en venta
+- ANULADO: Rechazado o cancelado
+
+ARCHIVOS:
+- src/components/presupuestos/PresupuestoForm.tsx
+- src/components/presupuestos/PresupuestoList.tsx
+- src/components/presupuestos/PresupuestoStatusManager.tsx
+- src/components/presupuestos/ImageUpload.tsx
+- src/pages/PresupuestoDetail.tsx
+- src/services/api.ts
+- src/services/budgetCalculator.ts
+- src/services/pdfGenerator.ts
+
+3.3. MÓDULO DE SEGUIMIENTO
+---------------------------
+✓ Timeline de actividades por presupuesto
+✓ Registro de llamadas, emails, visitas, notas
+✓ Cálculo de días sin movimiento
+✓ Vista "Mis Pendientes" para vendedores
+✓ Indicadores de prioridad
+✓ Filtros y búsquedas
+
+TIPOS DE ACTIVIDAD:
+- creado: Presupuesto creado
+- cambio_estado: Estado modificado
+- llamada: Llamada telefónica
+- mail: Email enviado
+- visita: Visita presencial
+- nota: Nota interna
+- recordatorio_creado: Recordatorio programado
+- recordatorio_cumplido: Recordatorio completado
+- imagen_agregada: Imagen adjuntada
+- documento_adjunto: Documento agregado
+- factura_registrada: Factura cargada
+- descuento_solicitado: Descuento pedido
+- descuento_aprobado: Descuento autorizado
+
+ARCHIVOS:
+- src/services/actividadesService.ts
+- src/components/seguimiento/TimelinePresupuesto.tsx
+- src/components/seguimiento/MisPendientes.tsx
+
+3.4. MÓDULO DE RECORDATORIOS
+-----------------------------
+✓ Creación de recordatorios
+✓ Estados: pendiente, cumplido, vencido, cancelado
+✓ Tipos: llamada, mail, visita, seguimiento, revisión, otro
+✓ Vista de recordatorios de hoy
+✓ Vista de recordatorios vencidos
+✓ Notificaciones visuales
+✓ Actualización automática de vencidos
+
+ARCHIVOS:
+- src/services/recordatoriosService.ts
+- supabase/functions/discount-reminders/index.ts
+
+3.5. MÓDULO DE CATÁLOGO DE PRODUCTOS
+-------------------------------------
+✓ Gestión completa de productos
+✓ Campos: código, nombre, descripción, precio, categoría
+✓ Carga de imágenes
+✓ Búsqueda y filtros
+✓ Activar/desactivar productos
+✓ Solo admins pueden gestionar
+
+ARCHIVOS:
+- src/components/catalogo/CatalogoPage.tsx
+- src/components/catalogo/ProductosList.tsx
+- src/components/catalogo/ProductoFormModal.tsx
+- src/services/productosService.ts
+
+3.6. MÓDULO DE DESCUENTOS
+--------------------------
+✓ Solicitud de descuentos por vendedor
+✓ Aprobación por administrador
+✓ Historial de solicitudes
+✓ Estados: pendiente, aprobada, rechazada
+✓ Comentarios y justificaciones
+
+ARCHIVOS:
+- src/components/discount/DiscountRequestForm.tsx
+- src/components/discount/DiscountRequestList.tsx
+
+3.7. MÓDULO DE USUARIOS
+------------------------
+✓ Gestión de usuarios (solo admin)
+✓ Creación con Edge Function
+✓ Asignación de roles
+✓ Activar/desactivar usuarios
+✓ Reseteo de contraseñas
+✓ Lista completa con filtros
+
+ARCHIVOS:
+- src/components/users/UserList.tsx
+- src/components/users/UserFormModal.tsx
+- src/services/userService.ts
+- supabase/functions/create-user/index.ts
+- supabase/functions/create-admin-user/index.ts
+- supabase/functions/reset-user-password/index.ts
+
+3.8. MÓDULO DE REPORTES Y ANÁLISIS
+-----------------------------------
+✓ Dashboard de reportes para admin
+✓ Performance de vendedores
+✓ KPIs principales
+✓ Análisis de tiempos del ciclo
+✓ Top clientes y productos
+✓ Calidad de presupuestos
+✓ Comparativas históricas
+✓ Exportación a Excel multi-hoja
+
+KPIS CALCULADOS:
+- Cantidad de presupuestos (emitidos, presentados, aceptados, facturados)
+- Montos (cotizado, aceptado, facturado)
+- Tasas de conversión (aceptados/presentados, facturados/aceptados)
+- Ticket promedio
+- Tiempo promedio por etapa
+- % presupuestos con seguimiento
+- % presupuestos con imágenes
+- Días con/sin actividad
+
+ARCHIVOS:
+- src/components/reports/ReportsDashboard.tsx
+- src/components/reports/VendedoresListView.tsx
+- src/components/reports/VendedorDetailView.tsx
+- src/services/reportsService.ts
+- src/services/vendedoresReportsService.ts
+
+3.9. MÓDULO DE COMISIONES
+--------------------------
+✓ Cálculo automático de comisiones
+✓ Configuración de tasas por vendedor
+✓ Historial de comisiones
+✓ Reportes de comisiones
+
+ARCHIVOS:
+- src/services/commissionsService.ts
+
+3.10. MÓDULO DE NOTIFICACIONES
+-------------------------------
+✓ Centro de notificaciones
+✓ Notificaciones en tiempo real
+✓ Alertas de descuentos, recordatorios, etc.
+
+ARCHIVOS:
+- src/components/notifications/NotificationCenter.tsx
+
+3.11. MÓDULO DE AUDITORÍA
+--------------------------
+✓ Registro de todas las acciones
+✓ Timeline de auditoría
+✓ Trazabilidad completa
+
+ARCHIVOS:
+- src/components/audit/AuditTimeline.tsx
+
+================================================================================
+4. BASE DE DATOS
+================================================================================
+
+4.1. TABLAS PRINCIPALES
+-----------------------
+
+USERS (Usuarios del sistema)
+----------------------------
+- id: uuid (PK)
+- email: text (unique)
+- full_name: text
+- role: text (vendedor, admin)
+- active: boolean
+- created_at: timestamptz
+- updated_at: timestamptz
+
+PRESUPUESTOS (Cotizaciones)
+---------------------------
+- id: uuid (PK)
+- codigo: text (unique, auto-generado)
+- vendedor_id: uuid (FK → users)
+- cliente_nombre: text
+- cliente_email: text
+- cliente_telefono: text
+- cliente_ruc: text
+- cliente_direccion: text
+- concepto: text
+- observaciones: text
+- estado: text (BORRADOR, PRESENTADO, ACEPTADO, FACTURADO, ANULADO)
+- moneda: text (PYG, USD)
+- total_neto: numeric
+- descuento_porcentaje: numeric
+- descuento_monto: numeric
+- total_con_descuento: numeric
+- iva_monto: numeric
+- total_final: numeric
+- vigencia_dias: integer
+- condiciones_pago: text
+- fecha_presentacion: timestamptz
+- fecha_aceptacion: timestamptz
+- fecha_facturacion: timestamptz
+- numero_factura: text
+- clonado_desde: uuid (FK → presupuestos)
+- created_at: timestamptz
+- updated_at: timestamptz
+- deleted_at: timestamptz
+
+PRESUPUESTO_ITEMS (Líneas de presupuesto)
+-----------------------------------------
+- id: uuid (PK)
+- presupuesto_id: uuid (FK → presupuestos)
+- producto_id: uuid (FK → productos, nullable)
+- descripcion: text
+- cantidad: numeric
+- precio_unitario: numeric
+- subtotal: numeric
+- orden: integer
+
+PRESUPUESTO_IMAGENES (Imágenes adjuntas)
+----------------------------------------
+- id: uuid (PK)
+- presupuesto_id: uuid (FK → presupuestos)
+- imagen_url: text
+- nombre_archivo: text
+- orden: integer
+- created_at: timestamptz
+
+PRESUPUESTO_ACTIVIDAD (Timeline de actividades)
+-----------------------------------------------
+- id: uuid (PK)
+- presupuesto_id: uuid (FK → presupuestos)
+- usuario_id: uuid (FK → users)
+- tipo_evento: text (creado, cambio_estado, llamada, mail, nota, etc.)
+- estado_anterior: text
+- estado_nuevo: text
+- detalle: text
+- metadatos: jsonb
+- created_at: timestamptz
+
+RECORDATORIOS (Seguimientos programados)
+----------------------------------------
+- id: uuid (PK)
+- presupuesto_id: uuid (FK → presupuestos)
+- usuario_id: uuid (FK → users)
+- titulo: text
+- descripcion: text
+- fecha_recordatorio: timestamptz
+- tipo_accion: text (llamada, mail, visita, seguimiento, revision, otro)
+- estado: text (pendiente, cumplido, vencido, cancelado)
+- completado_en: timestamptz
+- notas_finalizacion: text
+- created_at: timestamptz
+- updated_at: timestamptz
+
+PRODUCTOS (Catálogo de productos)
+---------------------------------
+- id: uuid (PK)
+- codigo: text (unique)
+- nombre: text
+- descripcion: text
+- precio_base: numeric
+- moneda: text
+- categoria: text
+- imagen_url: text
+- activo: boolean
+- created_at: timestamptz
+- updated_at: timestamptz
+
+DISCOUNT_REQUESTS (Solicitudes de descuento)
+--------------------------------------------
+- id: uuid (PK)
+- presupuesto_id: uuid (FK → presupuestos)
+- solicitante_id: uuid (FK → users)
+- descuento_solicitado: numeric
+- justificacion: text
+- estado: text (pendiente, aprobada, rechazada)
+- aprobador_id: uuid (FK → users)
+- fecha_respuesta: timestamptz
+- comentario_aprobador: text
+- created_at: timestamptz
+
+COMMISSIONS (Comisiones)
+------------------------
+- id: uuid (PK)
+- vendedor_id: uuid (FK → users)
+- presupuesto_id: uuid (FK → presupuestos)
+- monto_venta: numeric
+- porcentaje_comision: numeric
+- monto_comision: numeric
+- estado: text
+- fecha_calculo: timestamptz
+- created_at: timestamptz
+
+4.2. ÍNDICES
+------------
+
+Performance optimizado con índices en:
+- presupuesto_actividad: por presupuesto_id, usuario_id, tipo_evento
+- recordatorios: por usuario_id, fecha_recordatorio, estado
+- presupuestos: por vendedor_id, estado, created_at
+- presupuesto_items: por presupuesto_id
+- productos: por codigo, categoria, activo
+
+4.3. TRIGGERS AUTOMÁTICOS
+--------------------------
+
+1. trigger_presupuesto_creado
+   → Al crear presupuesto, registra evento "creado" en actividad
+
+2. trigger_presupuesto_cambio_estado
+   → Al cambiar estado, registra evento "cambio_estado"
+
+3. trigger_recordatorios_updated
+   → Actualiza campo updated_at al modificar recordatorio
+
+4. trigger_generate_presupuesto_code
+   → Genera código único automático (ej: PRES-2025-0001)
+
+5. trigger_actualizar_comisiones
+   → Calcula comisión al facturar presupuesto
+
+4.4. FUNCIONES DE BASE DE DATOS
+--------------------------------
+
+actualizar_recordatorios_vencidos()
+→ Cambia estado a "vencido" de recordatorios pendientes que pasaron su fecha
+
+generate_presupuesto_code()
+→ Genera código secuencial único
+
+calculate_commission()
+→ Calcula monto de comisión según configuración
+
+4.5. ROW LEVEL SECURITY (RLS)
+------------------------------
+
+POLÍTICAS PRINCIPALES:
+
+Users:
+- Admins ven todos
+- Vendedores solo ven su propio perfil
+
+Presupuestos:
+- Admins ven todos
+- Vendedores solo los suyos
+- Solo pueden editar los propios en estado BORRADOR
+
+Presupuesto_actividad:
+- Admins ven todo
+- Vendedores solo actividades de sus presupuestos
+- Pueden insertar en sus propios presupuestos
+
+Recordatorios:
+- Admins ven todos
+- Vendedores solo los suyos
+- Pueden gestionar sus propios recordatorios
+
+Productos:
+- Todos pueden ver (si activo=true)
+- Solo admins pueden crear/editar/eliminar
+
+Discount_requests:
+- Vendedores ven las suyas
+- Admins ven todas
+- Solo admins pueden aprobar/rechazar
+
+================================================================================
+5. SERVICIOS Y APIs
+================================================================================
+
+5.1. ActividadesService
+-----------------------
+UBICACIÓN: src/services/actividadesService.ts
+
+MÉTODOS:
+- registrar() - Registrar actividad genérica
+- getTimeline() - Timeline completo de presupuesto
+- registrarLlamada() - Registrar llamada
+- registrarMail() - Registrar email
+- registrarVisita() - Registrar visita
+- registrarNota() - Registrar nota interna
+- getByTipo() - Filtrar por tipo de evento
+- getUltimaActividad() - Última actividad de presupuesto
+- contarPorTipo() - Contar actividades por tipo
+- getByUsuario() - Actividades de un usuario
+- getEstadisticasVendedor() - Estadísticas de vendedor
+- getDiasConActividad() - Días con actividad en período
+
+EJEMPLO DE USO:
+```typescript
+// Registrar una llamada
+await ActividadesService.registrarLlamada(
+  presupuestoId,
+  'Contacté al cliente, interesado en el producto',
+  usuarioId
+);
+
+// Obtener timeline
+const timeline = await ActividadesService.getTimeline(presupuestoId);
+```
+
+5.2. RecordatoriosService
+-------------------------
+UBICACIÓN: src/services/recordatoriosService.ts
+
+MÉTODOS:
+- crear() - Crear recordatorio
+- marcarCumplido() - Completar recordatorio
+- cancelar() - Cancelar recordatorio
+- getByUsuario() - Recordatorios de usuario
+- getByPresupuesto() - Recordatorios de presupuesto
+- getHoy() - Recordatorios de hoy
+- getVencidos() - Recordatorios vencidos
+- getProximos() - Próximos N días
+- getStats() - Estadísticas
+- actualizarVencidos() - Actualizar vencidos
+- editar() - Editar recordatorio
+- eliminar() - Eliminar recordatorio
+- getByRango() - Por rango de fechas
+- contarPorPresupuesto() - Contar por presupuesto
+
+EJEMPLO DE USO:
+```typescript
+// Crear recordatorio
+await RecordatoriosService.crear({
+  presupuesto_id: '...',
+  titulo: 'Llamar al cliente',
+  descripcion: 'Cliente pidió que lo llame en 3 días',
+  fecha_recordatorio: '2025-11-08T10:00:00',
+  tipo_accion: 'llamada'
+}, usuarioId);
+
+// Marcar cumplido
+await RecordatoriosService.marcarCumplido(
+  recordatorioId,
+  'Cliente confirmó interés'
+);
+```
+
+5.3. VendedoresReportsService
+------------------------------
+UBICACIÓN: src/services/vendedoresReportsService.ts
+
+MÉTODOS:
+- getVendedoresList() - Lista de vendedores con stats
+- getVendedorKPIs() - KPIs completos de vendedor
+- getActividadDiaria() - Actividad día por día
+- getTiemposCiclo() - Análisis de tiempos
+- getCalidadPresupuestos() - Indicadores de calidad
+- getTopClientes() - Top 10 clientes
+- getTopProductos() - Top 10 productos
+- getAlertas() - Alertas de seguimiento
+- getComparativaHistorica() - Comparación períodos
+- getPresupuestosVendedor() - Listado completo
+
+EJEMPLO DE USO:
+```typescript
+// Obtener KPIs de vendedor
+const kpis = await VendedoresReportsService.getVendedorKPIs(
+  vendedorId,
+  '2025-11-01',
+  '2025-11-30'
+);
+
+// Ver: emitidos, aceptados, facturados, montos, conversión, etc.
+```
+
+5.4. ProductosService
+---------------------
+UBICACIÓN: src/services/productosService.ts
+
+MÉTODOS:
+- getAll() - Listar productos
+- getById() - Obtener por ID
+- create() - Crear producto
+- update() - Actualizar producto
+- delete() - Eliminar producto
+- uploadImage() - Subir imagen
+- search() - Buscar productos
+
+5.5. BudgetCalculator
+---------------------
+UBICACIÓN: src/services/budgetCalculator.ts
+
+FUNCIONES:
+- calculateTotals() - Calcular totales del presupuesto
+- calculateItemSubtotal() - Calcular subtotal de línea
+- applyDiscount() - Aplicar descuento
+- calculateIVA() - Calcular IVA
+
+5.6. PDFGenerator
+-----------------
+UBICACIÓN: src/services/pdfGenerator.ts
+         src/services/pdfGeneratorHDM.ts
+         src/services/pdfGeneratorCorporate.ts
+
+MÉTODOS:
+- generatePDF() - Generar PDF de presupuesto
+- generateWithTemplate() - Con template específico
+
+PLANTILLAS DISPONIBLES:
+- HDM: Plantilla estándar con logo HDM
+- Corporate: Plantilla corporativa formal
+
+5.7. EmailService
+-----------------
+UBICACIÓN: src/services/emailService.ts
+
+MÉTODOS:
+- sendPresupuesto() - Enviar presupuesto por email
+- sendNotification() - Enviar notificación
+- sendReminder() - Enviar recordatorio
+
+5.8. API (Presupuestos)
+-----------------------
+UBICACIÓN: src/services/api.ts
+
+MÉTODOS:
+- getPresupuestos() - Listar presupuestos
+- getPresupuestoById() - Obtener por ID
+- createPresupuesto() - Crear presupuesto
+- updatePresupuesto() - Actualizar presupuesto
+- deletePresupuesto() - Eliminar (soft delete)
+- changeStatus() - Cambiar estado
+- clonePresupuesto() - Clonar presupuesto
+
+================================================================================
+6. COMPONENTES UI
+================================================================================
+
+6.1. COMPONENTES DE PRESUPUESTOS
+---------------------------------
+
+PresupuestoForm
+- Formulario completo de creación/edición
+- Validaciones
+- Cálculo automático de totales
+- Gestión de items
+
+PresupuestoList
+- Lista de presupuestos con filtros
+- Búsqueda
+- Ordenamiento
+- Acciones por presupuesto
+
+PresupuestoStatusManager
+- Cambio de estados
+- Validaciones por estado
+- Registro de fechas clave
+
+ImageUpload
+- Carga de imágenes
+- Preview
+- Eliminación
+- Integración con Storage
+
+6.2. COMPONENTES DE SEGUIMIENTO
+--------------------------------
+
+TimelinePresupuesto
+- Timeline visual de actividades
+- Iconos por tipo de evento
+- Colores distintivos
+- Modal para nueva actividad
+- Formato de fechas amigable
+
+MisPendientes
+- Lista de presupuestos pendientes
+- Cálculo de días sin movimiento
+- Indicadores de prioridad (colores)
+- Filtros múltiples
+- Estadísticas de recordatorios
+- Exportación a Excel
+
+6.3. COMPONENTES DE REPORTES
+-----------------------------
+
+ReportsDashboard
+- Dashboard principal de reportes
+- Tabs por tipo de reporte
+- Selector de período
+- Atajos de fecha
+
+VendedoresListView
+- Lista de vendedores con métricas
+- Ordenamiento
+- Filtros
+- Exportación
+
+VendedorDetailView
+- Análisis completo de vendedor
+- KPIs principales
+- Actividad diaria
+- Tiempos de ciclo
+- Top clientes/productos
+- Listado de presupuestos
+- Comparativa histórica
+- Exportación multi-hoja
+
+6.4. COMPONENTES DE CATÁLOGO
+-----------------------------
+
+CatalogoPage
+- Página principal de catálogo
+- Búsqueda y filtros
+- Grid de productos
+
+ProductosList
+- Lista de productos
+- Acciones CRUD
+
+ProductoFormModal
+- Modal de creación/edición
+- Carga de imagen
+- Validaciones
+
+6.5. COMPONENTES DE USUARIOS
+-----------------------------
+
+UserList
+- Lista de usuarios
+- Filtros
+- Activar/desactivar
+- Resetear contraseña
+
+UserFormModal
+- Modal de creación
+- Asignación de rol
+- Validaciones
+
+6.6. COMPONENTES UI REUTILIZABLES
+----------------------------------
+
+Button
+- Botón con variantes (primary, outline, danger)
+- Estados (loading, disabled)
+
+Input
+- Input con label
+- Validaciones
+- Tipos (text, email, number, date, etc.)
+
+Select
+- Select con label
+- Opciones dinámicas
+
+Textarea
+- Textarea con label
+- Auto-resize
+
+Modal
+- Modal genérico
+- Header, body, footer
+- Animaciones
+
+Badge
+- Badge con variantes
+- Colores por tipo
+
+================================================================================
+7. FLUJOS DE TRABAJO
+================================================================================
+
+7.1. FLUJO: CREAR PRESUPUESTO
+------------------------------
+
+1. Vendedor ingresa al sistema
+2. Click en "Nuevo Presupuesto"
+3. Completa datos del cliente
+4. Agrega items (productos o descripción manual)
+5. Sistema calcula totales automáticamente
+6. Agrega imágenes (opcional)
+7. Guarda como BORRADOR
+8. Sistema genera código único (ej: PRES-2025-0001)
+9. Sistema registra evento "creado" en actividad
+
+VALIDACIONES:
+- Cliente nombre es requerido
+- Al menos 1 item es requerido
+- Precios deben ser > 0
+- Descuento no puede ser > 100%
+
+7.2. FLUJO: PRESENTAR PRESUPUESTO
+----------------------------------
+
+1. Vendedor abre presupuesto en estado BORRADOR
+2. Revisa información
+3. Click en "Presentar"
+4. Sistema valida datos completos
+5. Sistema cambia estado a PRESENTADO
+6. Sistema registra fecha_presentacion = NOW()
+7. Sistema registra evento "cambio_estado" en actividad
+8. Vendedor puede generar PDF
+9. Vendedor puede enviar por email
+10. Sistema envía email con PDF adjunto
+
+VALIDACIONES:
+- Presupuesto debe estar completo
+- Cliente email es requerido para envío
+
+7.3. FLUJO: ACEPTAR PRESUPUESTO
+--------------------------------
+
+1. Cliente acepta presupuesto (fuera del sistema)
+2. Vendedor abre presupuesto en estado PRESENTADO
+3. Click en "Aceptar"
+4. Sistema cambia estado a ACEPTADO
+5. Sistema registra fecha_aceptacion = NOW()
+6. Sistema registra evento "cambio_estado"
+7. Presupuesto queda listo para facturar
+
+7.4. FLUJO: FACTURAR PRESUPUESTO
+---------------------------------
+
+1. Vendedor/Admin abre presupuesto ACEPTADO
+2. Click en "Facturar"
+3. Ingresa número de factura
+4. Ingresa fecha de facturación
+5. Sistema cambia estado a FACTURADO
+6. Sistema registra fecha_facturacion y numero_factura
+7. Sistema registra evento "factura_registrada"
+8. Sistema calcula comisión del vendedor
+9. Presupuesto se marca como venta exitosa
+
+7.5. FLUJO: SEGUIMIENTO DIARIO DEL VENDEDOR
+--------------------------------------------
+
+1. Vendedor ingresa al sistema
+2. Ve saludo personalizado: "Hola {nombre}"
+3. Ve dashboard con:
+   - Recordatorios de hoy
+   - Recordatorios vencidos
+   - Presupuestos pendientes
+4. Click en "Mis Pendientes"
+5. Ve presupuestos Presentados/Aceptados
+6. Identifica presupuestos en rojo (>14 días sin movimiento)
+7. Click en "Registrar llamada"
+8. Escribe nota de la conversación
+9. Sistema registra actividad tipo "llamada"
+10. Días sin movimiento se recalculan
+11. Presupuesto baja en prioridad (color)
+
+7.6. FLUJO: CREAR RECORDATORIO
+-------------------------------
+
+1. Vendedor/Admin abre presupuesto
+2. Click en "Crear recordatorio"
+3. Completa formulario:
+   - Título (ej: "Llamar al cliente")
+   - Descripción
+   - Fecha y hora
+   - Tipo de acción (llamada, email, visita, etc.)
+4. Sistema crea recordatorio con estado "pendiente"
+5. Sistema registra evento "recordatorio_creado"
+6. En la fecha programada, aparece en "Recordatorios de hoy"
+7. Vendedor realiza la acción
+8. Click en "Marcar cumplido"
+9. Agrega notas de finalización
+10. Sistema cambia estado a "cumplido"
+11. Sistema registra evento "recordatorio_cumplido"
+
+7.7. FLUJO: SOLICITAR DESCUENTO
+--------------------------------
+
+1. Vendedor necesita descuento mayor al autorizado
+2. Click en "Solicitar descuento"
+3. Completa formulario:
+   - % de descuento solicitado
+   - Justificación
+4. Sistema crea solicitud con estado "pendiente"
+5. Sistema registra evento "descuento_solicitado"
+6. Sistema notifica a administrador
+7. Admin revisa solicitud
+8. Admin aprueba o rechaza
+9. Sistema notifica al vendedor
+10. Si aprobado, vendedor puede aplicar el descuento
+
+7.8. FLUJO: ANÁLISIS DE PERFORMANCE (ADMIN)
+--------------------------------------------
+
+1. Admin ingresa al sistema
+2. Click en "Reportes"
+3. Tab "Performance de Vendedores"
+4. Selecciona período (fecha desde/hasta)
+5. Ve lista de vendedores con métricas:
+   - Emitidos, Aceptados, Facturados
+   - Montos
+   - Tasa de conversión
+6. Ordena por criterio (ej: "Más ventas")
+7. Click en un vendedor
+8. Ve análisis completo:
+   - KPIs del período
+   - Evolución diaria
+   - Tiempos promedio del ciclo
+   - Calidad de presupuestos
+   - Top clientes y productos
+   - Alertas de seguimiento
+   - Comparativa histórica
+9. Exporta a Excel para análisis offline
+10. Identifica áreas de mejora
+11. Programa reunión de coaching
+
+================================================================================
+8. GUÍA DE USUARIO - VENDEDOR
+================================================================================
+
+8.1. INICIO DE SESIÓN
+---------------------
+
+1. Abrir navegador e ir a la URL del sistema
+2. Ingresar email y contraseña
+3. Click en "Iniciar Sesión"
+4. El sistema carga el dashboard del vendedor
+
+8.2. DASHBOARD DEL VENDEDOR
+----------------------------
+
+Al ingresar verás:
+
+SALUDO PERSONALIZADO:
+"Hola {Tu Nombre}"
+
+RESUMEN DEL DÍA:
+- Recordatorios para hoy: X
+- Recordatorios vencidos: X
+- Presupuestos pendientes: X
+
+ACCIONES RÁPIDAS:
+- Nuevo Presupuesto
+- Mis Pendientes
+- Ver Catálogo
+- Mi Performance
+
+8.3. CREAR UN PRESUPUESTO
+--------------------------
+
+PASO 1: DATOS DEL CLIENTE
+1. Click en "Nuevo Presupuesto"
+2. Completar:
+   - Nombre del cliente (requerido)
+   - Email
+   - Teléfono
+   - RUC
+   - Dirección
+3. Agregar concepto/motivo del presupuesto
+
+PASO 2: AGREGAR PRODUCTOS/SERVICIOS
+1. Click en "Agregar Item"
+2. Dos opciones:
+   a) Buscar producto del catálogo:
+      - Click en "Buscar en catálogo"
+      - Buscar producto
+      - Seleccionar
+      - Ingresar cantidad
+   b) Agregar descripción manual:
+      - Escribir descripción
+      - Ingresar cantidad
+      - Ingresar precio unitario
+3. Sistema calcula subtotal automáticamente
+4. Agregar más items según necesidad
+
+PASO 3: DESCUENTOS (Opcional)
+1. Ingresar % de descuento
+2. O ingresar monto fijo
+3. Sistema recalcula totales
+
+IMPORTANTE: Si necesitas descuento mayor al autorizado:
+- Click en "Solicitar descuento"
+- Justificar solicitud
+- Esperar aprobación de administrador
+
+PASO 4: IMÁGENES (Opcional)
+1. Click en "Agregar imagen"
+2. Seleccionar archivo
+3. Imagen se sube automáticamente
+4. Puedes agregar múltiples imágenes
+5. Para eliminar: Click en X en la imagen
+
+PASO 5: CONDICIONES
+1. Seleccionar moneda (PYG o USD)
+2. Establecer vigencia (días)
+3. Escribir condiciones de pago
+
+PASO 6: GUARDAR
+1. Click en "Guardar como Borrador"
+2. Sistema genera código único
+3. Presupuesto queda guardado
+
+8.4. PRESENTAR UN PRESUPUESTO
+------------------------------
+
+1. Abrir presupuesto en estado BORRADOR
+2. Revisar toda la información
+3. Asegurarse que datos están completos
+4. Click en "Presentar"
+5. Sistema cambia estado a PRESENTADO
+6. Ahora puedes:
+   - Generar PDF: Click en "Generar PDF"
+   - Enviar por email: Click en "Enviar Email"
+   - Compartir por WhatsApp
+
+CONSEJOS:
+- Revisa que el email del cliente sea correcto
+- Agrega observaciones si es necesario
+- El PDF se genera con los datos actuales
+
+8.5. GESTIONAR PRESUPUESTOS
+----------------------------
+
+VER LISTA DE PRESUPUESTOS:
+1. Click en "Presupuestos" en el menú
+2. Verás lista de todos tus presupuestos
+3. Puedes filtrar por:
+   - Estado
+   - Cliente
+   - Rango de fechas
+   - Rango de monto
+4. Click en un presupuesto para ver detalle
+
+ACCIONES DISPONIBLES:
+- Editar (solo si está en BORRADOR)
+- Clonar (crear uno similar)
+- Cambiar estado
+- Ver timeline
+- Agregar actividad
+- Crear recordatorio
+- Generar PDF
+- Enviar email
+- Eliminar (soft delete)
+
+8.6. HACER SEGUIMIENTO
+----------------------
+
+VER "MIS PENDIENTES":
+1. Click en "Mis Pendientes"
+2. Verás presupuestos que necesitan atención:
+   - En rojo: >14 días sin movimiento (URGENTE)
+   - En amarillo: 7-14 días sin movimiento (ATENCIÓN)
+   - En verde: <7 días (OK)
+
+REGISTRAR ACTIVIDAD:
+1. Click en botón de teléfono (llamada)
+2. O click en botón de email
+3. O click en "Ver Detalle" → "Registrar actividad"
+4. Escribir nota de la conversación/acción
+5. Guardar
+
+BENEFICIO:
+- El sistema recalcula "días sin movimiento"
+- Presupuesto baja en prioridad
+- Queda registro de tu gestión
+
+8.7. GESTIONAR RECORDATORIOS
+-----------------------------
+
+CREAR RECORDATORIO:
+1. Abrir presupuesto
+2. Click en "Crear recordatorio"
+3. Completar:
+   - Título (ej: "Llamar al cliente")
+   - Descripción
+   - Fecha y hora
+   - Tipo (llamada, email, visita, seguimiento)
+4. Guardar
+
+VER RECORDATORIOS:
+1. En dashboard verás:
+   - Recordatorios de hoy
+   - Recordatorios vencidos
+
+MARCAR CUMPLIDO:
+1. Click en recordatorio
+2. Click en "Marcar cumplido"
+3. Agregar notas de cierre
+4. Guardar
+
+CONSEJO:
+Usa recordatorios para no olvidar seguimientos importantes.
+El cliente aprecia la puntualidad y organización.
+
+8.8. USAR EL CATÁLOGO
+----------------------
+
+VER CATÁLOGO:
+1. Click en "Catálogo"
+2. Verás todos los productos con imágenes
+3. Puedes buscar por nombre o código
+4. Filtrar por categoría
+
+AGREGAR AL PRESUPUESTO:
+1. Desde el catálogo, click en producto
+2. O desde formulario de presupuesto, buscar producto
+
+NOTA:
+Solo administradores pueden agregar/editar productos.
+Si necesitas un producto nuevo, solicítalo al admin.
+
+8.9. VER MI PERFORMANCE
+-----------------------
+
+1. Click en "Mi Performance" o "Reportes"
+2. Selecciona período (mes actual por defecto)
+3. Verás tus KPIs:
+   - Presupuestos emitidos
+   - Tasa de aceptación
+   - Monto facturado
+   - Ticket promedio
+   - Comparación con mes anterior
+
+CONSEJO:
+Revisa tus métricas semanalmente para identificar
+oportunidades de mejora y celebrar logros.
+
+8.10. CONSEJOS Y BUENAS PRÁCTICAS
+----------------------------------
+
+✓ REGISTRA TODAS LAS INTERACCIONES
+  Cada llamada, email o visita debe quedar registrada
+  en el timeline del presupuesto.
+
+✓ USA RECORDATORIOS
+  Si el cliente dice "llámame en 3 días", crea un
+  recordatorio para no olvidar.
+
+✓ REVISA "MIS PENDIENTES" DIARIAMENTE
+  Identifica presupuestos que requieren atención
+  antes de que se pongan "rojos".
+
+✓ AGREGA IMÁGENES
+  Presupuestos con imágenes tienen mayor tasa
+  de aceptación.
+
+✓ COMPLETA TODOS LOS DATOS
+  Presupuestos completos se ven más profesionales
+  y generan mayor confianza.
+
+✓ RESPONDE RÁPIDO
+  Clientes aprecian respuestas rápidas.
+  Intenta presentar presupuestos el mismo día.
+
+✓ HAZ SEGUIMIENTO
+  No esperes que el cliente te llame.
+  Sé proactivo en el seguimiento.
+
+✓ MANTÉN ACTUALIZADO EL ESTADO
+  Cuando un presupuesto es aceptado, márcalo
+  inmediatamente para que se calcule tu comisión.
+
+================================================================================
+9. GUÍA DE USUARIO - ADMINISTRADOR
+================================================================================
+
+9.1. DASHBOARD DEL ADMINISTRADOR
+---------------------------------
+
+Al ingresar como admin verás:
+
+RESUMEN GENERAL:
+- Total de presupuestos activos
+- Monto total en pipeline
+- Solicitudes de descuento pendientes
+- Alertas del sistema
+
+ACCESO A MÓDULOS:
+- Gestión de Usuarios
+- Catálogo de Productos
+- Reportes y Análisis
+- Aprobación de Descuentos
+- Configuración del Sistema
+
+9.2. GESTIONAR USUARIOS
+------------------------
+
+CREAR USUARIO:
+1. Click en "Usuarios"
+2. Click en "Nuevo Usuario"
+3. Completar:
+   - Nombre completo
+   - Email
+   - Rol (vendedor o admin)
+   - Contraseña temporal
+4. Guardar
+5. Sistema envía email al usuario con credenciales
+
+EDITAR USUARIO:
+1. Click en usuario en la lista
+2. Click en "Editar"
+3. Modificar datos
+4. Guardar
+
+DESACTIVAR USUARIO:
+1. Click en toggle "Activo"
+2. Usuario no podrá ingresar al sistema
+3. Sus presupuestos quedan intactos
+
+RESETEAR CONTRASEÑA:
+1. Click en usuario
+2. Click en "Resetear contraseña"
+3. Sistema genera nueva contraseña temporal
+4. Sistema envía email al usuario
+
+9.3. GESTIONAR CATÁLOGO DE PRODUCTOS
+-------------------------------------
+
+AGREGAR PRODUCTO:
+1. Click en "Catálogo"
+2. Click en "Nuevo Producto"
+3. Completar:
+   - Código (único)
+   - Nombre
+   - Descripción
+   - Precio base
+   - Moneda
+   - Categoría
+4. Subir imagen
+5. Guardar
+
+EDITAR PRODUCTO:
+1. Click en producto
+2. Click en "Editar"
+3. Modificar datos
+4. Guardar
+
+DESACTIVAR PRODUCTO:
+1. Click en toggle "Activo"
+2. Producto no aparecerá en catálogo de vendedores
+3. Presupuestos existentes no se afectan
+
+CATEGORÍAS SUGERIDAS:
+- Productos
+- Servicios
+- Paquetes
+- Soluciones
+- Otros
+
+9.4. APROBAR DESCUENTOS
+------------------------
+
+VER SOLICITUDES PENDIENTES:
+1. Click en "Solicitudes de Descuento"
+2. Verás lista de solicitudes pendientes
+3. Para cada solicitud verás:
+   - Vendedor que solicita
+   - Cliente
+   - Presupuesto
+   - % solicitado
+   - Justificación
+
+APROBAR:
+1. Click en solicitud
+2. Revisar justificación
+3. Click en "Aprobar"
+4. (Opcional) Agregar comentario
+5. Sistema notifica al vendedor
+6. Vendedor puede aplicar el descuento
+
+RECHAZAR:
+1. Click en solicitud
+2. Click en "Rechazar"
+3. Agregar comentario explicando motivo
+4. Sistema notifica al vendedor
+
+CONSEJO:
+Establece políticas claras de descuentos.
+Por ejemplo:
+- Hasta 10%: Aprobación automática
+- 10-20%: Requiere aprobación
+- Más de 20%: Requiere justificación detallada
+
+9.5. REPORTES Y ANÁLISIS
+-------------------------
+
+DASHBOARD DE REPORTES:
+1. Click en "Reportes"
+2. Verás tabs:
+   - Resumen General
+   - Performance de Vendedores
+   - Análisis de Productos
+   - Análisis de Clientes
+
+PERFORMANCE DE VENDEDORES:
+1. Tab "Performance de Vendedores"
+2. Seleccionar período (fecha desde/hasta)
+3. Verás lista de vendedores con:
+   - Presupuestos emitidos
+   - Tasa de aceptación
+   - Monto facturado
+   - Ticket promedio
+   - Conversión
+
+ORDENAR Y FILTRAR:
+- Click en columna para ordenar
+- Usa filtros para segmentar
+- Busca vendedor específico
+
+VER DETALLE DE VENDEDOR:
+1. Click en vendedor
+2. Verás análisis completo:
+
+   KPIS PRINCIPALES:
+   - Emitidos, Presentados, Aceptados, Facturados
+   - Montos totales
+   - Tasas de conversión
+   - Ticket promedio
+   - Objetivo vs cumplimiento
+   - Comisión estimada
+
+   ACTIVIDAD DIARIA:
+   - Tabla con actividad por día
+   - Última actividad registrada
+   - Días sin actividad
+
+   TIEMPOS DEL CICLO:
+   - Promedio Creación → Presentación
+   - Promedio Presentado → Aceptado
+   - Promedio Aceptado → Facturado
+   - Presupuestos vencidos
+
+   CALIDAD:
+   - % con imágenes
+   - % completos
+   - Clonados vs desde cero
+
+   TOP CLIENTES:
+   - Principales clientes por cantidad y monto
+
+   TOP PRODUCTOS:
+   - Productos más cotizados
+
+   ALERTAS:
+   - Presentados sin respuesta (>X días)
+   - Aceptados sin facturar
+   - Sin seguimiento
+
+   COMPARATIVA HISTÓRICA:
+   - Vs período anterior
+   - % de mejora/empeoramiento
+
+   LISTADO COMPLETO:
+   - Todos los presupuestos del período
+   - Filtrable por estado, cliente, monto
+
+EXPORTAR DATOS:
+1. Click en "Exportar a Excel"
+2. Sistema genera archivo con múltiples hojas:
+   - Hoja 1: KPIs
+   - Hoja 2: Actividad Diaria
+   - Hoja 3: Tiempos de Ciclo
+   - Hoja 4: Top Clientes
+   - Hoja 5: Top Productos
+   - Hoja 6: Todos los Presupuestos
+3. Archivo se descarga automáticamente
+
+USO DE REPORTES:
+- Reuniones semanales de equipo
+- Evaluación de performance
+- Identificación de capacitación
+- Reconocimiento de logros
+- Ajuste de objetivos
+
+9.6. SUPERVISAR PRESUPUESTOS
+-----------------------------
+
+VER TODOS LOS PRESUPUESTOS:
+1. Click en "Presupuestos"
+2. Verás todos los presupuestos de todos los vendedores
+3. Puedes filtrar por:
+   - Vendedor
+   - Estado
+   - Cliente
+   - Rango de fechas
+   - Rango de monto
+
+VER TIMELINE COMPLETO:
+1. Abrir presupuesto
+2. Ver tab "Timeline"
+3. Verás todas las actividades:
+   - Quién hizo qué
+   - Cuándo
+   - Detalles
+
+BENEFICIO:
+Trazabilidad completa para resolver disputas
+o entender por qué un presupuesto no avanzó.
+
+9.7. ANÁLISIS Y TOMA DE DECISIONES
+-----------------------------------
+
+IDENTIFICAR CUELLOS DE BOTELLA:
+1. Revisar tiempos promedio del ciclo
+2. Si "Presentado → Aceptado" es muy largo:
+   - Revisar calidad de presupuestos
+   - Capacitar en técnicas de cierre
+   - Mejorar seguimiento
+
+EVALUAR CALIDAD:
+1. Revisar % de presupuestos con imágenes
+2. Si es bajo:
+   - Capacitar en uso del sistema
+   - Explicar importancia de imágenes
+   - Reconocer a quienes lo hacen bien
+
+OPTIMIZAR CATÁLOGO:
+1. Revisar "Top Productos"
+2. Productos más cotizados merecen:
+   - Mejores imágenes
+   - Descripciones detalladas
+   - Stock asegurado
+3. Productos poco cotizados:
+   - Evaluar si mantener
+   - O descatalogar
+
+COACHING INDIVIDUALIZADO:
+1. Identificar vendedor con baja conversión
+2. Revisar su detalle completo
+3. Identificar problema específico:
+   - ¿Pocos presupuestos presentados? → Agilidad
+   - ¿Baja aceptación? → Calidad/Precio
+   - ¿No factura aceptados? → Seguimiento
+4. Programar reunión 1-a-1
+5. Establecer plan de acción
+6. Hacer seguimiento semanal
+
+ESTABLECER OBJETIVOS:
+1. Basándote en datos históricos
+2. Establecer objetivos SMART:
+   - Específicos
+   - Medibles
+   - Alcanzables
+   - Relevantes
+   - Temporales
+3. Ejemplo: "Facturar 50 millones en noviembre"
+4. Comunicar objetivos al equipo
+5. Hacer seguimiento semanal
+
+9.8. CONFIGURACIÓN DEL SISTEMA
+-------------------------------
+
+PARÁMETROS CONFIGURABLES:
+- Días para considerar presupuesto "urgente" (default: 14)
+- Días para auto-anular presentados sin respuesta (default: 30)
+- % de descuento máximo sin aprobación (default: 10%)
+- Condiciones de pago por defecto
+- Vigencia de presupuestos por defecto (días)
+- Tasas de comisión por vendedor
+
+MANTENIMIENTO:
+- Revisar logs de errores
+- Monitorear performance de queries
+- Limpiar datos antiguos (soft deleted)
+- Backup de base de datos
+
+9.9. MEJORES PRÁCTICAS
+-----------------------
+
+✓ REVISA REPORTES SEMANALMENTE
+  Mantente al tanto de la performance del equipo.
+
+✓ APRUEBA/RECHAZA DESCUENTOS RÁPIDO
+  Vendedores no pueden avanzar hasta tu respuesta.
+
+✓ MANTÉN CATÁLOGO ACTUALIZADO
+  Productos con buenas imágenes venden más.
+
+✓ DA FEEDBACK OPORTUNO
+  Usa los datos para coaching efectivo.
+
+✓ CELEBRA LOGROS
+  Reconoce públicamente buenos resultados.
+
+✓ CAPACITA CONTINUAMENTE
+  Usa casos reales del sistema para capacitar.
+
+✓ ESTABLECE EXPECTATIVAS CLARAS
+  Comunica objetivos y estándares de calidad.
+
+✓ REVISA TIMELINE EN DISPUTAS
+  Antes de tomar decisiones, revisa el historial completo.
+
+================================================================================
+10. SEGURIDAD Y PERMISOS
+================================================================================
+
+10.1. AUTENTICACIÓN
+-------------------
+
+MÉTODO:
+- Email + Password
+- Sesiones manejadas por Supabase Auth
+- JWT tokens
+- Refresh tokens automáticos
+
+CONTRASEÑAS:
+- Hasheadas con bcrypt
+- No se almacenan en texto plano
+- Reseteo vía email
+
+10.2. AUTORIZACIÓN (RLS)
+------------------------
+
+ROW LEVEL SECURITY (RLS):
+Cada tabla tiene políticas que controlan:
+- Quién puede ver datos (SELECT)
+- Quién puede insertar (INSERT)
+- Quién puede actualizar (UPDATE)
+- Quién puede eliminar (DELETE)
+
+REGLAS PRINCIPALES:
+
+VENDEDORES:
+✓ Ven solo sus propios presupuestos
+✓ Pueden crear presupuestos
+✓ Pueden editar solo BORRADORES propios
+✓ Ven solo sus actividades y recordatorios
+✓ Pueden crear actividades en sus presupuestos
+✓ Ven todo el catálogo (productos activos)
+✓ NO pueden editar productos
+✓ Pueden solicitar descuentos
+✓ NO pueden aprobar descuentos
+
+ADMINISTRADORES:
+✓ Ven todos los presupuestos
+✓ Pueden editar cualquier presupuesto
+✓ Ven todas las actividades
+✓ Pueden crear actividades en cualquier presupuesto
+✓ Gestionan catálogo completo
+✓ Gestionan usuarios
+✓ Aprueban/rechazan descuentos
+✓ Acceso completo a reportes
+
+10.3. AUDITORÍA
+---------------
+
+TRAZABILIDAD:
+- Cada acción queda registrada
+- Tabla presupuesto_actividad registra:
+  - Quién hizo la acción (usuario_id)
+  - Qué acción (tipo_evento)
+  - Cuándo (created_at)
+  - Detalles (detalle, metadatos)
+
+EVENTOS AUDITADOS:
+- Creación de presupuesto
+- Cambios de estado
+- Ediciones
+- Eliminaciones (soft delete)
+- Solicitudes de descuento
+- Aprobaciones/rechazos
+- Llamadas y seguimientos
+
+INTEGRIDAD:
+- No se pueden eliminar registros de auditoría
+- Timeline es inmutable
+- Solo admins pueden ver auditoría completa
+
+10.4. PROTECCIÓN DE DATOS
+--------------------------
+
+DATOS SENSIBLES:
+- Contraseñas: hasheadas
+- Emails de clientes: protegidos por RLS
+- Datos de presupuestos: solo accesibles por owner y admins
+
+SOFT DELETE:
+- Presupuestos eliminados no se borran
+- Se marca campo deleted_at
+- Quedan en BD para auditoría
+- No aparecen en listados normales
+
+BACKUPS:
+- Supabase hace backup automático diario
+- Punto de restauración disponible
+
+10.5. MEJORES PRÁCTICAS DE SEGURIDAD
+-------------------------------------
+
+✓ NUNCA COMPARTAS CONTRASEÑAS
+  Cada usuario debe tener su propio acceso.
+
+✓ CAMBIA CONTRASEÑA TEMPORAL
+  Al recibir usuario nuevo, cambia la contraseña inmediatamente.
+
+✓ DESACTIVA USUARIOS QUE SE VAN
+  No elimines, desactiva para mantener historial.
+
+✓ REVISA LOGS REGULARMENTE
+  Identifica accesos sospechosos.
+
+✓ CAPACITA EN SEGURIDAD
+  Todos deben entender importancia de proteger datos.
+
+✓ NO EXPONGAS CREDENCIALES
+  No envíes contraseñas por WhatsApp o email no cifrado.
+
+================================================================================
+11. EXPORTACIÓN DE DATOS
+================================================================================
+
+11.1. FORMATOS SOPORTADOS
+--------------------------
+
+EXCEL (.xlsx):
+✓ Formato principal
+✓ Multi-hoja soportado
+✓ Columnas con ancho ajustado
+✓ Headers en negrita
+✓ Compatible con Excel, Google Sheets, LibreOffice
+
+TEXTO (.txt):
+- No implementado actualmente
+- Puede agregarse fácilmente
+- Formato delimitado por tabulaciones o punto y coma
+
+11.2. VISTAS CON EXPORTACIÓN
+-----------------------------
+
+1. LISTA DE VENDEDORES
+   - Archivo: vendedores-{fecha}.xlsx
+   - Contenido: Todos los vendedores con métricas del período
+
+2. DETALLE DE VENDEDOR
+   - Archivo: vendedor-{nombre}-{fecha}.xlsx
+   - Contenido: 6 hojas
+     * Hoja 1: KPIs principales
+     * Hoja 2: Actividad diaria
+     * Hoja 3: Tiempos del ciclo
+     * Hoja 4: Top 10 clientes
+     * Hoja 5: Top 10 productos
+     * Hoja 6: Todos los presupuestos
+
+3. MIS PENDIENTES
+   - Archivo: mis-pendientes-{fecha}.xlsx
+   - Contenido: Presupuestos pendientes con filtros aplicados
+
+4. LISTA DE PRESUPUESTOS
+   - Archivo: presupuestos-{fecha}.xlsx
+   - Contenido: Todos los presupuestos con filtros aplicados
+
+11.3. CONTENIDO DE EXPORTACIONES
+---------------------------------
+
+LISTA DE VENDEDORES:
+Columnas:
+- Vendedor
+- Email
+- Emitidos
+- Presentados
+- Aceptados
+- Facturados
+- Monto Cotizado
+- Monto Aceptado
+- Monto Facturado
+- Ticket Promedio
+- Conversión Aceptados
+- Conversión Facturados
+
+DETALLE DE VENDEDOR:
+
+Hoja "KPIs":
+- Métrica | Valor | Comparativa
+- Emitidos | X | +Y%
+- Presentados | X | +Y%
+- (etc.)
+
+Hoja "Actividad Diaria":
+- Fecha | Emitidos | Presentados | Aceptados | Facturados
+
+Hoja "Tiempos":
+- Etapa | Promedio Días
+- Creación → Presentación | X
+- Presentación → Aceptación | Y
+- (etc.)
+
+Hoja "Top Clientes":
+- Cliente | Cantidad | Monto Total
+
+Hoja "Top Productos":
+- Producto | Cantidad | Monto Total
+
+Hoja "Presupuestos":
+- Código | Fecha | Cliente | Estado | Monto | (etc.)
+
+MIS PENDIENTES:
+Columnas:
+- Código
+- Cliente
+- Estado
+- Monto
+- Moneda
+- Fecha Creación
+- Días sin Movimiento
+- Última Actividad
+- Tiene Recordatorios
+
+11.4. CARACTERÍSTICAS DE EXPORTACIÓN
+-------------------------------------
+
+RESPETA FILTROS:
+✓ Solo exporta datos visibles/filtrados
+✓ Período seleccionado
+✓ Filtros de estado, cliente, etc.
+
+FORMATO:
+✓ Fechas en formato local (dd/mm/yyyy)
+✓ Montos con separador de miles
+✓ Columnas con ancho ajustado
+✓ Headers descriptivos
+
+NOMBRE DE ARCHIVO:
+✓ Descriptivo
+✓ Incluye fecha de exportación
+✓ Ejemplo: vendedor-juan-perez-2025-11-05.xlsx
+
+11.5. CÓMO EXPORTAR
+-------------------
+
+DESDE LISTA DE VENDEDORES:
+1. Aplicar filtros deseados
+2. Seleccionar período
+3. Click en "Exportar a Excel"
+4. Archivo se descarga automáticamente
+
+DESDE DETALLE DE VENDEDOR:
+1. Abrir detalle del vendedor
+2. Seleccionar período
+3. Click en "Exportar Todo a Excel"
+4. Archivo multi-hoja se descarga
+
+DESDE MIS PENDIENTES:
+1. Aplicar filtros deseados
+2. Click en "Exportar a Excel"
+3. Archivo se descarga
+
+11.6. USOS DE LOS DATOS EXPORTADOS
+-----------------------------------
+
+ANÁLISIS OFFLINE:
+- Abrir en Excel
+- Crear tablas dinámicas
+- Generar gráficos personalizados
+- Comparar períodos
+
+PRESENTACIONES:
+- Importar a PowerPoint
+- Crear reportes ejecutivos
+- Reuniones de equipo
+
+REPORTES EXTERNOS:
+- Enviar a gerencia
+- Compartir con stakeholders
+- Auditorías
+
+ANÁLISIS AVANZADO:
+- Importar a herramientas BI
+- Análisis estadístico
+- Forecasting
+
+================================================================================
+12. INSTALACIÓN Y CONFIGURACIÓN
+================================================================================
+
+12.1. REQUISITOS PREVIOS
+-------------------------
+
+SERVIDOR/HOSTING:
+- Node.js 18+ (para desarrollo)
+- Servidor web para producción (Nginx, Apache)
+- Dominio propio (opcional)
+
+BASE DE DATOS:
+- Cuenta de Supabase (gratuita o de pago)
+- Proyecto Supabase creado
+
+DESARROLLO LOCAL:
+- Node.js 18+
+- npm o yarn
+- Git
+- Editor de código (VS Code recomendado)
+
+12.2. INSTALACIÓN LOCAL
+------------------------
+
+PASO 1: CLONAR REPOSITORIO
+```bash
+git clone [URL_DEL_REPO]
+cd proyecto-hdm
+```
+
+PASO 2: INSTALAR DEPENDENCIAS
+```bash
+npm install
+```
+
+PASO 3: CONFIGURAR VARIABLES DE ENTORNO
+Crear archivo .env en la raíz:
+```
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu-anon-key-publica
+```
+
+Obtener credenciales desde:
+Supabase Dashboard → Settings → API
+
+PASO 4: EJECUTAR MIGRACIONES
+Las migraciones en supabase/migrations/ deben aplicarse
+en orden desde Supabase Dashboard:
+- SQL Editor
+- Copy/paste contenido de cada archivo .sql
+- Ejecutar
+
+O usar Supabase CLI:
+```bash
+supabase db push
+```
+
+PASO 5: CREAR USUARIO ADMINISTRADOR
+Ejecutar Edge Function create-admin-user
+o directamente en SQL:
+```sql
+-- Ver supabase/migrations/ para script
+```
+
+PASO 6: EJECUTAR EN DESARROLLO
+```bash
+npm run dev
+```
+
+Abrir navegador en http://localhost:5173
+
+12.3. DESPLIEGUE EN PRODUCCIÓN
+-------------------------------
+
+OPCIÓN 1: VERCEL (Recomendado)
+1. Crear cuenta en Vercel
+2. Conectar repositorio
+3. Configurar variables de entorno
+4. Deploy automático en cada push
+
+OPCIÓN 2: NETLIFY
+Similar a Vercel
+
+OPCIÓN 3: SERVIDOR PROPIO
+1. Build del proyecto:
+   ```bash
+   npm run build
+   ```
+2. Copiar carpeta dist/ al servidor
+3. Configurar web server (Nginx/Apache)
+4. Configurar dominio y SSL
+
+12.4. CONFIGURACIÓN DE SUPABASE
+--------------------------------
+
+AUTENTICACIÓN:
+1. Supabase Dashboard → Authentication
+2. Configurar Email Provider
+3. Email Templates (opcional)
+4. Configurar Email SMTP (producción)
+
+STORAGE:
+1. Supabase Dashboard → Storage
+2. Bucket "images" debe existir
+3. Políticas RLS configuradas
+4. Límite de tamaño: 5MB por archivo
+
+EDGE FUNCTIONS:
+Desplegar cada función:
+```bash
+supabase functions deploy create-user
+supabase functions deploy create-admin-user
+supabase functions deploy reset-user-password
+supabase functions deploy send-email-notification
+supabase functions deploy discount-reminders
+supabase functions deploy auto-anular-presentados
+```
+
+O usar Supabase MCP tool (ya incluido).
+
+ROW LEVEL SECURITY:
+✓ Todas las políticas RLS deben estar activas
+✓ Verificar en cada tabla: "RLS enabled"
+
+12.5. CONFIGURACIÓN INICIAL
+----------------------------
+
+1. CREAR PRIMER ADMIN:
+   - Usar Edge Function create-admin-user
+   - O script SQL
+
+2. CARGAR CATÁLOGO:
+   - Ingresar como admin
+   - Ir a Catálogo
+   - Agregar productos iniciales
+
+3. CREAR VENDEDORES:
+   - Ir a Usuarios
+   - Crear cada vendedor
+   - Enviar credenciales
+
+4. CONFIGURAR PARÁMETROS:
+   - Condiciones de pago por defecto
+   - Vigencia de presupuestos
+   - Políticas de descuento
+   - Tasas de comisión
+
+5. CAPACITAR USUARIOS:
+   - Mostrar funcionalidades
+   - Entregar esta documentación
+   - Responder dudas
+
+12.6. MANTENIMIENTO DE BASE DE DATOS
+-------------------------------------
+
+ACTUALIZAR RECORDATORIOS VENCIDOS:
+Ejecutar periódicamente (cron job recomendado):
+```sql
+SELECT actualizar_recordatorios_vencidos();
+```
+
+AUTO-ANULAR PRESUPUESTOS:
+Edge Function auto-anular-presentados
+debe ejecutarse diariamente (configurar cron).
+
+LIMPIAR DATOS ANTIGUOS:
+Presupuestos soft-deleted de hace >2 años
+pueden eliminarse permanentemente (opcional):
+```sql
+DELETE FROM presupuestos
+WHERE deleted_at < NOW() - INTERVAL '2 years';
+```
+
+BACKUP:
+Supabase hace backup automático.
+Para backup manual:
+- Supabase Dashboard → Database → Backups
+- Download backup
+
+MONITOREO:
+- Revisar logs de errores
+- Monitorear queries lentas
+- Revisar uso de storage
+
+================================================================================
+13. MANTENIMIENTO
+================================================================================
+
+13.1. MANTENIMIENTO DIARIO
+---------------------------
+
+VENDEDORES:
+✓ Revisar "Mis Pendientes"
+✓ Atender recordatorios de hoy
+✓ Registrar actividades del día
+✓ Responder a clientes
+
+ADMINISTRADORES:
+✓ Aprobar/rechazar solicitudes de descuento
+✓ Revisar alertas del sistema
+✓ Responder consultas de vendedores
+
+13.2. MANTENIMIENTO SEMANAL
+----------------------------
+
+ADMINISTRADORES:
+✓ Revisar reportes de performance
+✓ Identificar presupuestos estancados
+✓ Programar reuniones de coaching si es necesario
+✓ Actualizar catálogo si hay nuevos productos
+✓ Verificar que no haya errores en logs
+
+13.3. MANTENIMIENTO MENSUAL
+----------------------------
+
+ADMINISTRADORES:
+✓ Análisis completo de métricas del mes
+✓ Comparar con mes anterior
+✓ Evaluar cumplimiento de objetivos
+✓ Calcular y pagar comisiones
+✓ Planificar objetivos del próximo mes
+✓ Capacitación si se identifican gaps
+✓ Actualizar políticas si es necesario
+
+TÉCNICO:
+✓ Revisar uso de base de datos
+✓ Optimizar queries si es necesario
+✓ Verificar backups
+✓ Actualizar dependencias (security patches)
+
+13.4. MANTENIMIENTO TRIMESTRAL
+-------------------------------
+
+✓ Análisis de tendencias
+✓ Evaluar satisfacción de usuarios
+✓ Planificar mejoras al sistema
+✓ Revisar y actualizar documentación
+✓ Capacitación avanzada
+✓ Limpieza de datos antiguos
+
+13.5. RESOLUCIÓN DE PROBLEMAS COMUNES
+--------------------------------------
+
+PROBLEMA: Usuario no puede iniciar sesión
+SOLUCIÓN:
+1. Verificar email y contraseña
+2. Verificar que usuario está activo
+3. Resetear contraseña si es necesario
+4. Revisar logs de Supabase Auth
+
+PROBLEMA: No se generan PDFs
+SOLUCIÓN:
+1. Verificar que presupuesto tiene datos completos
+2. Revisar console del navegador por errores
+3. Verificar que librerías jsPDF están instaladas
+4. Revisar permisos del navegador para descargas
+
+PROBLEMA: No se envían emails
+SOLUCIÓN:
+1. Verificar configuración SMTP en Supabase
+2. Verificar que Edge Function está desplegada
+3. Revisar logs de la Edge Function
+4. Verificar email del destinatario
+
+PROBLEMA: Imágenes no se cargan
+SOLUCIÓN:
+1. Verificar que bucket "images" existe
+2. Verificar políticas RLS del bucket
+3. Verificar tamaño de archivo (<5MB)
+4. Revisar formato (jpg, png permitidos)
+
+PROBLEMA: Datos no se actualizan en reportes
+SOLUCIÓN:
+1. Verificar rango de fechas seleccionado
+2. Refrescar página (F5)
+3. Verificar filtros aplicados
+4. Revisar que presupuestos tienen fechas correctas
+
+PROBLEMA: Exportación no funciona
+SOLUCIÓN:
+1. Verificar que librería xlsx está instalada
+2. Revisar permisos del navegador para descargas
+3. Revisar console por errores
+4. Intentar con menos datos (filtrar primero)
+
+================================================================================
+14. PREGUNTAS FRECUENTES
+================================================================================
+
+Q: ¿Puedo editar un presupuesto después de presentarlo?
+A: No directamente. Una vez presentado, el presupuesto está "congelado"
+   para mantener trazabilidad. Si necesitas modificarlo:
+   1. Clónalo
+   2. Haz las modificaciones
+   3. Presenta el nuevo
+   4. Anula el anterior
+
+Q: ¿Cómo puedo ver presupuestos de otros vendedores?
+A: Solo administradores pueden ver presupuestos de todos.
+   Vendedores solo ven los propios.
+
+Q: ¿Los clientes pueden ver sus presupuestos en el sistema?
+A: No. Este sistema es interno. Los clientes reciben PDFs por email.
+   No tienen acceso al sistema.
+
+Q: ¿Puedo eliminar un presupuesto?
+A: Sí, pero es "soft delete". El presupuesto se marca como eliminado
+   pero queda en base de datos para auditoría.
+
+Q: ¿Cómo se calculan las comisiones?
+A: Automáticamente al marcar presupuesto como FACTURADO.
+   Se aplica % configurado para cada vendedor sobre el monto final.
+
+Q: ¿Puedo personalizar las plantillas de PDF?
+A: Actualmente hay 2 plantillas (HDM y Corporate).
+   Para personalizaciones adicionales, se requiere desarrollo.
+
+Q: ¿El sistema funciona en móvil?
+A: Sí, es responsive y funciona en navegadores móviles.
+   Sin embargo, la experiencia óptima es en desktop.
+
+Q: ¿Puedo cambiar el logo de los PDFs?
+A: Sí, modificando los archivos en src/services/pdfGenerator*.ts
+
+Q: ¿Cómo agrego un nuevo tipo de actividad al timeline?
+A: Requiere modificar:
+   1. Enum en tabla presupuesto_actividad (migration)
+   2. Tipo TipoEvento en actividadesService.ts
+   3. Iconos y colores en TimelinePresupuesto.tsx
+
+Q: ¿Los recordatorios se envían por email?
+A: No automáticamente. Aparecen en el sistema cuando el vendedor
+   ingresa. Para emails automáticos se requiere configurar cron job
+   con la Edge Function discount-reminders.
+
+Q: ¿Puedo exportar a PDF?
+A: Los presupuestos se exportan a PDF individualmente.
+   Los reportes se exportan a Excel.
+
+Q: ¿Cómo recupero una contraseña olvidada?
+A: El administrador puede resetear tu contraseña desde el panel
+   de Usuarios. Recibirás un email con nueva contraseña temporal.
+
+Q: ¿Puedo tener más de un administrador?
+A: Sí, puedes crear múltiples usuarios con rol "admin".
+
+Q: ¿Los datos están seguros?
+A: Sí, el sistema usa:
+   - Autenticación segura (JWT)
+   - Row Level Security (RLS)
+   - Encriptación en tránsito (HTTPS)
+   - Backups automáticos diarios
+
+Q: ¿Qué pasa si se va la luz mientras trabajo?
+A: Los datos se guardan en el servidor al hacer click en "Guardar".
+   Si no guardaste antes de perder conexión, los cambios se pierden.
+   Se recomienda guardar frecuentemente.
+
+Q: ¿Puedo trabajar offline?
+A: No, el sistema requiere conexión a internet para funcionar.
+
+Q: ¿Cuántos usuarios puedo tener?
+A: Ilimitados en el sistema. Las limitaciones dependen del plan
+   de Supabase contratado.
+
+Q: ¿El sistema tiene límites de almacenamiento?
+A: Depende del plan de Supabase:
+   - Plan gratuito: 500MB
+   - Plan Pro: 8GB
+   - Plan superiores: más
+
+================================================================================
+15. GLOSARIO DE TÉRMINOS
+================================================================================
+
+ACTIVIDAD:
+  Evento registrado en el timeline de un presupuesto.
+  Ejemplos: llamada, email, cambio de estado, nota.
+
+ADMIN/ADMINISTRADOR:
+  Usuario con permisos completos. Puede gestionar usuarios,
+  aprobar descuentos, ver reportes de todos, etc.
+
+AUDITORÍA:
+  Registro histórico de todas las acciones en el sistema.
+  Permite rastrear quién hizo qué y cuándo.
+
+BORRADOR:
+  Estado inicial de un presupuesto. Está en creación,
+  puede editarse libremente.
+
+CATÁLOGO:
+  Lista de productos/servicios disponibles para cotizar.
+  Facilita la creación de presupuestos.
+
+COMISIÓN:
+  Porcentaje del monto de venta que se paga al vendedor.
+  Se calcula automáticamente al facturar.
+
+CONVERSIÓN:
+  Relación entre presupuestos en una etapa y la siguiente.
+  Ejemplo: "Conversión de aceptación" = Aceptados / Presentados
+
+DASHBOARD:
+  Pantalla principal que muestra resumen e indicadores clave.
+  Cada rol tiene su dashboard personalizado.
+
+DÍAS SIN MOVIMIENTO:
+  Cantidad de días desde la última actividad registrada
+  en un presupuesto. Indica si requiere seguimiento.
+
+EDGE FUNCTION:
+  Función serverless que se ejecuta en la nube.
+  Ejemplos: enviar email, crear usuario, recordatorios.
+
+ESTADO:
+  Etapa del ciclo de vida de un presupuesto.
+  Estados: Borrador, Presentado, Aceptado, Facturado, Anulado.
+
+EXPORTACIÓN:
+  Descarga de datos del sistema en formato Excel o TXT
+  para análisis offline.
+
+FACTURADO:
+  Estado final de un presupuesto exitoso. Indica que
+  se generó factura y se concretó la venta.
+
+IVA:
+  Impuesto al Valor Agregado. Se calcula automáticamente
+  según la configuración (ej: 10% en Paraguay).
+
+JWT (JSON Web Token):
+  Token de autenticación que identifica al usuario
+  en cada petición al servidor.
+
+KPI (Key Performance Indicator):
+  Indicador clave de performance. Métricas que miden
+  éxito o eficiencia. Ejemplos: tasa de conversión,
+  ticket promedio, monto facturado.
+
+PIPELINE:
+  Embudo o flujo de presupuestos. Vista que muestra
+  cuántos presupuestos hay en cada estado.
+
+PRESENTADO:
+  Estado de presupuesto enviado al cliente. Esperando
+  respuesta. Ya no puede editarse.
+
+PRESUPUESTO:
+  Cotización o propuesta comercial. Documento que detalla
+  productos/servicios ofrecidos y su precio.
+
+RLS (Row Level Security):
+  Sistema de seguridad que controla qué filas de datos
+  puede ver/editar cada usuario según su rol.
+
+RECORDATORIO:
+  Alerta programada para realizar una acción futura.
+  Ejemplos: "Llamar al cliente en 3 días".
+
+SEGUIMIENTO:
+  Actividades registradas para mantener contacto con
+  el cliente y avanzar el presupuesto.
+
+SOFT DELETE:
+  Eliminación lógica (no física). El registro se marca
+  como eliminado pero permanece en base de datos.
+
+SUPABASE:
+  Plataforma de base de datos y backend utilizada.
+  Alternativa open-source a Firebase.
+
+TICKET PROMEDIO:
+  Monto promedio de cada presupuesto. Se calcula dividiendo
+  monto total entre cantidad de presupuestos.
+
+TIMELINE:
+  Línea de tiempo que muestra cronológicamente todas
+  las actividades de un presupuesto.
+
+TRIGGER:
+  Acción automática que se ejecuta cuando ocurre un
+  evento en base de datos. Ejemplos: registrar actividad
+  al cambiar estado.
+
+VENDEDOR:
+  Usuario que crea y gestiona presupuestos. Tiene acceso
+  limitado solo a sus propios datos.
+
+VENCIDO:
+  Recordatorio que pasó su fecha sin ser completado.
+
+VIGENCIA:
+  Cantidad de días que un presupuesto permanece válido
+  antes de que los precios puedan cambiar.
+
+================================================================================
+FIN DE LA DOCUMENTACIÓN
+================================================================================
+
+Para soporte técnico o consultas:
+- Revisar esta documentación completa
+- Consultar al administrador del sistema
+- Revisar logs en Supabase Dashboard
+- Contactar al equipo de desarrollo
+
+Versión del documento: 2.0.0
+Última actualización: 05 de Noviembre de 2025
+
+================================================================================
