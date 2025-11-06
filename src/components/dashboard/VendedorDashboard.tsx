@@ -12,7 +12,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { PresupuestoService } from '../../services/api';
 import { CommissionsService } from '../../services/commissionsService';
-import { Presupuesto } from '../../types/database.types';
+import { salesTargetsService } from '../../services/salesTargetsService';
+import { Presupuesto, SalesTarget } from '../../types/database.types';
 
 interface DashboardStats {
   total: number;
@@ -50,6 +51,7 @@ export function VendedorDashboard() {
   const [loading, setLoading] = useState(true);
   const [presupuestosPendientes, setPresupuestosPendientes] = useState<Presupuesto[]>([]);
   const [comisiones, setComisiones] = useState({ estimadas: 0, objetivo: 0, avance: 0 });
+  const [currentTarget, setCurrentTarget] = useState<SalesTarget | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -145,6 +147,13 @@ export function VendedorDashboard() {
         console.error('Error cargando comisiones:', error);
       }
 
+      try {
+        const target = await salesTargetsService.getCurrentTargetForUser(user.id);
+        setCurrentTarget(target);
+      } catch (error) {
+        console.error('Error cargando objetivo:', error);
+      }
+
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -178,13 +187,31 @@ export function VendedorDashboard() {
     );
   }
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return '¡Buenos días';
+    if (hour < 19) return '¡Buenas tardes';
+    return '¡Buenas noches';
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Mi Dashboard</h1>
-        <p className="text-gray-600 mt-2">
-          Vista general de tu actividad y rendimiento
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900">
+          {getGreeting()}, {user?.full_name}!
+        </h1>
+        {currentTarget ? (
+          <div className="mt-3 flex items-center gap-2">
+            <Target className="w-5 h-5 text-blue-600" />
+            <p className="text-lg text-gray-700">
+              Tu objetivo este mes: <span className="font-semibold text-blue-600">{formatCurrency(currentTarget.objetivo)} PYG</span>
+            </p>
+          </div>
+        ) : (
+          <p className="text-gray-600 mt-2">
+            Vista general de tu actividad y rendimiento
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

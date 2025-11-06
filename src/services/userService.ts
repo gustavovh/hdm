@@ -149,4 +149,17 @@ export class UserService {
     if (error) throw error;
     return data;
   }
+
+  static async getVendedores(): Promise<User[]> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('role', 'vendedor')
+      .order('full_name', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  }
 }
+
+export const userService = UserService;

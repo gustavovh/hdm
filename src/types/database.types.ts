@@ -182,6 +182,17 @@ export interface Configuracion {
   updated_at: string;
 }
 
+export interface SalesTarget {
+  id: string;
+  user_id: string;
+  mes: number;
+  año: number;
+  objetivo: number;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -219,6 +230,11 @@ export interface Database {
         Row: Configuracion;
         Insert: Omit<Configuracion, 'id' | 'updated_at'>;
         Update: Partial<Omit<Configuracion, 'id'>>;
+      };
+      sales_targets: {
+        Row: SalesTarget;
+        Insert: Omit<SalesTarget, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<SalesTarget, 'id' | 'created_at'>>;
       };
     };
   };
