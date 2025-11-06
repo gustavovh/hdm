@@ -12,7 +12,8 @@ import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Filter, RefreshCw, FileText, Trash2, Search, Target, TrendingUp, DollarSign, Users } from 'lucide-react';
+import { exportService } from '../../services/exportService';
+import { Filter, RefreshCw, FileText, Trash2, Search, Target, TrendingUp, DollarSign, Users, Download, Calendar } from 'lucide-react';
 
 interface GeneralStats {
   totalPresupuestos: number;
@@ -38,9 +39,14 @@ export function AdminDashboard() {
   const [presupuestoStatusFilter, setPresupuestoStatusFilter] = useState<string>('all');
   const [vendedores, setVendedores] = useState<User[]>([]);
   const [selectedVendedor, setSelectedVendedor] = useState<string>('all');
+  const [filterType, setFilterType] = useState<'month' | 'range'>('month');
   const [dateFilter, setDateFilter] = useState({
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
+  });
+  const [dateRangeFilter, setDateRangeFilter] = useState({
+    from: '',
+    to: '',
   });
   const [generalStats, setGeneralStats] = useState<GeneralStats>({
     totalPresupuestos: 0,
@@ -65,7 +71,7 @@ export function AdminDashboard() {
     } else if (activeTab === 'indicators') {
       loadPresupuestos();
     }
-  }, [activeTab, dateFilter, selectedVendedor]);
+  }, [activeTab, dateFilter, dateRangeFilter, selectedVendedor, filterType]);
 
   const loadVendedores = async () => {
     try {
@@ -113,9 +119,27 @@ export function AdminDashboard() {
   const calculateGeneralStats = (allPresupuestos: Presupuesto[]) => {
     const filteredData = allPresupuestos.filter(p => {
       const createdDate = new Date(p.created_at);
-      const matchesDate =
-        createdDate.getMonth() + 1 === dateFilter.month &&
-        createdDate.getFullYear() === dateFilter.year;
+
+      let matchesDate = false;
+      if (filterType === 'month') {
+        matchesDate =
+          createdDate.getMonth() + 1 === dateFilter.month &&
+          createdDate.getFullYear() === dateFilter.year;
+      } else {
+        const from = dateRangeFilter.from ? new Date(dateRangeFilter.from) : null;
+        const to = dateRangeFilter.to ? new Date(dateRangeFilter.to) : null;
+
+        if (from && to) {
+          matchesDate = createdDate >= from && createdDate <= to;
+        } else if (from) {
+          matchesDate = createdDate >= from;
+        } else if (to) {
+          matchesDate = createdDate <= to;
+        } else {
+          matchesDate = true;
+        }
+      }
+
       const matchesVendedor = selectedVendedor === 'all' || p.vendedor_id === selectedVendedor;
       return matchesDate && matchesVendedor && !p.deleted_at;
     });
@@ -236,6 +260,65 @@ export function AdminDashboard() {
     }).format(amount);
   };
 
+  const getFilterInfo = () => {
+    let info = '';
+
+    if (filterType === 'month') {
+      const monthName = new Date(2000, dateFilter.month - 1).toLocaleString('es', { month: 'long' });
+      info = `${monthName} ${dateFilter.year}`;
+    } else {
+      if (dateRangeFilter.from && dateRangeFilter.to) {
+        info = `Desde ${new Date(dateRangeFilter.from).toLocaleDateString('es-PY')} hasta ${new Date(dateRangeFilter.to).toLocaleDateString('es-PY')}`;
+      } else if (dateRangeFilter.from) {
+        info = `Desde ${new Date(dateRangeFilter.from).toLocaleDateString('es-PY')}`;
+      } else if (dateRangeFilter.to) {
+        info = `Hasta ${new Date(dateRangeFilter.to).toLocaleDateString('es-PY')}`;
+      } else {
+        info = 'Todas las fechas';
+      }
+    }
+
+    if (selectedVendedor !== 'all') {
+      const vendedor = vendedores.find(v => v.id === selectedVendedor);
+      if (vendedor) {
+        info += ` - Vendedor: ${vendedor.full_name}`;
+      }
+    } else {
+      info += ' - Todos los vendedores';
+    }
+
+    return info;
+  };
+
+  const getFilteredPresupuestosForExport = () => {
+    return presupuestos.filter(p => {
+      const createdDate = new Date(p.created_at);
+
+      let matchesDate = false;
+      if (filterType === 'month') {
+        matchesDate =
+          createdDate.getMonth() + 1 === dateFilter.month &&
+          createdDate.getFullYear() === dateFilter.year;
+      } else {
+        const from = dateRangeFilter.from ? new Date(dateRangeFilter.from) : null;
+        const to = dateRangeFilter.to ? new Date(dateRangeFilter.to) : null;
+
+        if (from && to) {
+          matchesDate = createdDate >= from && createdDate <= to;
+        } else if (from) {
+          matchesDate = createdDate >= from;
+        } else if (to) {
+          matchesDate = createdDate <= to;
+        } else {
+          matchesDate = true;
+        }
+      }
+
+      const matchesVendedor = selectedVendedor === 'all' || p.vendedor_id === selectedVendedor;
+      return matchesDate && matchesVendedor && !p.deleted_at;
+    });
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="mb-6">
@@ -293,32 +376,84 @@ export function AdminDashboard() {
 
         {activeTab === 'indicators' && (
           <>
-            <div className="bg-white rounded-lg shadow p-4 mb-6">
-              <div className="flex gap-4 items-end">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mes</label>
-                  <select
-                    value={dateFilter.month}
-                    onChange={(e) => setDateFilter({ ...dateFilter, month: parseInt(e.target.value) })}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                      <option key={m} value={m}>
-                        {new Date(2000, m - 1).toLocaleString('es', { month: 'long' })}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Año</label>
-                  <Input
-                    type="number"
-                    value={dateFilter.year}
-                    onChange={(e) => setDateFilter({ ...dateFilter, year: parseInt(e.target.value) })}
-                    min={2020}
-                    max={2100}
+            <div className="bg-white rounded-lg shadow p-4 mb-6 space-y-4">
+              <div className="flex gap-4 items-center">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="month"
+                    checked={filterType === 'month'}
+                    onChange={(e) => setFilterType(e.target.value as 'month')}
+                    className="text-blue-600"
                   />
-                </div>
+                  <span className="text-sm font-medium text-gray-700">Por Mes</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="range"
+                    checked={filterType === 'range'}
+                    onChange={(e) => setFilterType(e.target.value as 'range')}
+                    className="text-blue-600"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Rango de Fechas</span>
+                </label>
+              </div>
+
+              <div className="flex gap-4 items-end">
+                {filterType === 'month' ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Mes</label>
+                      <select
+                        value={dateFilter.month}
+                        onChange={(e) => setDateFilter({ ...dateFilter, month: parseInt(e.target.value) })}
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                          <option key={m} value={m}>
+                            {new Date(2000, m - 1).toLocaleString('es', { month: 'long' })}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Año</label>
+                      <Input
+                        type="number"
+                        value={dateFilter.year}
+                        onChange={(e) => setDateFilter({ ...dateFilter, year: parseInt(e.target.value) })}
+                        min={2020}
+                        max={2100}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <Calendar className="w-4 h-4 inline mr-1" />
+                        Desde
+                      </label>
+                      <Input
+                        type="date"
+                        value={dateRangeFilter.from}
+                        onChange={(e) => setDateRangeFilter({ ...dateRangeFilter, from: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <Calendar className="w-4 h-4 inline mr-1" />
+                        Hasta
+                      </label>
+                      <Input
+                        type="date"
+                        value={dateRangeFilter.to}
+                        onChange={(e) => setDateRangeFilter({ ...dateRangeFilter, to: e.target.value })}
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Vendedor</label>
                   <select
@@ -383,6 +518,50 @@ export function AdminDashboard() {
                 </div>
                 <h3 className="text-lg font-semibold">Vendedores Activos</h3>
                 <p className="text-sm opacity-90 mt-1">Total de vendedores en el sistema</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Exportar Datos</h3>
+              <div className="flex gap-4">
+                <Button
+                  onClick={() => {
+                    const filterInfo = getFilterInfo();
+                    const filteredData = getFilteredPresupuestosForExport();
+                    exportService.exportToTXT({
+                      presupuestos: filteredData,
+                      totalMonto: generalStats.totalMonto,
+                      totalPresentados: generalStats.totalPresentados,
+                      totalAceptados: generalStats.totalAceptados,
+                      totalFacturados: generalStats.totalFacturados,
+                      montoFacturado: generalStats.montoFacturado,
+                      filterInfo,
+                    });
+                  }}
+                  variant="outline"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar a TXT
+                </Button>
+                <Button
+                  onClick={() => {
+                    const filterInfo = getFilterInfo();
+                    const filteredData = getFilteredPresupuestosForExport();
+                    exportService.exportToXLS({
+                      presupuestos: filteredData,
+                      totalMonto: generalStats.totalMonto,
+                      totalPresentados: generalStats.totalPresentados,
+                      totalAceptados: generalStats.totalAceptados,
+                      totalFacturados: generalStats.totalFacturados,
+                      montoFacturado: generalStats.montoFacturado,
+                      filterInfo,
+                    });
+                  }}
+                  variant="outline"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar a Excel
+                </Button>
               </div>
             </div>
           </>
