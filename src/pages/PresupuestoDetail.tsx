@@ -28,6 +28,8 @@ interface PresupuestoDetailProps {
 }
 
 export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
+  console.log('🔄 PresupuestoDetail component mounted/updated, presupuestoId:', presupuestoId);
+
   const { user, isVendedor, isAdmin } = useAuth();
   const [presupuesto, setPresupuesto] = useState<Presupuesto | null>(null);
   const [imagenes, setImagenes] = useState<PresupuestoImagen[]>([]);
@@ -157,7 +159,16 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
               onUpdate={loadPresupuesto}
               isAdmin={isAdmin}
             />
-            <Button size="sm" variant="ghost" onClick={handlePreviewPDF}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖱️ Vista Previa button clicked!');
+                handlePreviewPDF();
+              }}
+            >
               <Eye className="w-4 h-4 mr-2" />
               Vista Previa
             </Button>
