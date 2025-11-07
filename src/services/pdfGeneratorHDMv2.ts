@@ -4,6 +4,13 @@ import { Presupuesto, User } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
 export class HDMPDFGeneratorV2 {
+  private static formatNumber(value: number): string {
+    return new Intl.NumberFormat('es-PY', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
+
   private static async loadImageAsBase64(url: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -135,8 +142,8 @@ export class HDMPDFGeneratorV2 {
       item.descripcion,
       item.cantidad.toFixed(2),
       item.unidad_medida || 'UNID',
-      BudgetCalculator.formatNumber(item.precio_unitario),
-      BudgetCalculator.formatNumber(item.total || (item.cantidad * item.precio_unitario))
+      this.formatNumber(item.precio_unitario),
+      this.formatNumber(item.total || (item.cantidad * item.precio_unitario))
     ]) || [];
 
     autoTable(doc, {
@@ -178,7 +185,7 @@ export class HDMPDFGeneratorV2 {
     // Total
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    const totalText = `TOTAL Gs.: ${BudgetCalculator.formatNumber(presupuesto.total_neto + presupuesto.total_impuestos)}`;
+    const totalText = `TOTAL Gs.: ${this.formatNumber(presupuesto.total_neto + presupuesto.total_impuestos)}`;
     doc.text(totalText, pageWidth - rightMargin, yPosition, { align: 'right' });
     yPosition += 8;
 
