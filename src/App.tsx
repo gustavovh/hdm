@@ -297,9 +297,14 @@ function LoginForm() {
     setLoading(true);
 
     try {
+      console.log('🔐 Attempting login with:', email);
       await signIn(email, password);
+      console.log('✅ Login successful');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+      console.error('❌ Login error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error al iniciar sesión';
+      setError(errorMessage);
+      alert(`Error de login: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
