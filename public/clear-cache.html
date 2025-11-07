@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Limpiar Caché</title>
+</head>
+<body>
+  <h1>Limpiando caché...</h1>
+  <script>
+    // Limpiar todos los service workers
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+          console.log('Service Worker unregistered');
+        }
+      });
+    }
+
+    // Limpiar caché
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (let name of names) {
+          caches.delete(name);
+          console.log('Cache deleted:', name);
+        }
+      });
+    }
+
+    // Limpiar localStorage y sessionStorage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    setTimeout(() => {
+      alert('Caché limpiado. Ahora recarga la página con Ctrl+Shift+R (o Cmd+Shift+R en Mac)');
+    }, 1000);
+  </script>
+</body>
+</html>
