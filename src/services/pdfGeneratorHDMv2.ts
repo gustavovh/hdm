@@ -4,7 +4,7 @@ import { Presupuesto, User } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
 export class HDMPDFGeneratorV2 {
-  private static readonly VERSION = 'v2.4.0-MANUAL-TRANSFORM';
+  private static readonly VERSION = 'v2.5.0-CENTERED';
 
   private static formatNumber(value: number): string {
     return new Intl.NumberFormat('es-PY', {
@@ -332,7 +332,7 @@ export class HDMPDFGeneratorV2 {
   }
 
   private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
-    console.log('💧 Adding watermark v2.4 - MANUAL TRANSFORM CENTERED');
+    console.log('💧 Adding watermark v2.5 - SIMPLIFIED CENTERED');
 
     // Configurar opacidad y color
     doc.saveGraphicsState();
@@ -341,7 +341,7 @@ export class HDMPDFGeneratorV2 {
     doc.setTextColor(120, 120, 120);
 
     // Tamaño grande
-    doc.setFontSize(120);
+    doc.setFontSize(100);
     doc.setFont('helvetica', 'bold');
 
     const text = 'PRESUPUESTO';
@@ -350,33 +350,21 @@ export class HDMPDFGeneratorV2 {
     const centerX = pageWidth / 2;
     const centerY = pageHeight / 2;
 
-    // Medir ancho del texto para centrarlo correctamente
+    // Medir ancho del texto
     const textWidth = doc.getTextWidth(text);
 
-    // Calcular altura aproximada del texto (en mm)
-    const textHeight = 120 * 0.352778; // Convertir puntos a mm
-
-    console.log('📏 Watermark - Text width:', textWidth, 'Text height:', textHeight);
+    console.log('📏 Watermark - Text width:', textWidth, 'mm');
     console.log('📍 Page center:', centerX, centerY);
 
-    // Posición ajustada para que el centro del texto coincida con el centro de la página cuando está rotado
-    // Cuando rotamos 45°, necesitamos ajustar la posición
-    const offsetX = -textWidth / 2;
-    const offsetY = textHeight / 4; // Ajuste vertical
+    // Dibujar el texto usando el método estándar con rotación
+    // La clave es que align: 'center' centra el texto en las coordenadas dadas
+    doc.text(text, centerX, centerY, {
+      align: 'center',
+      angle: 45,
+      baseline: 'middle'
+    });
 
-    // Aplicar transformación: trasladar al centro, rotar, trasladar de vuelta
-    const angle = 45 * Math.PI / 180; // Convertir a radianes
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-
-    // Matriz de transformación
-    doc.internal.write('q'); // Guardar estado
-    doc.internal.write(`${cos.toFixed(5)} ${sin.toFixed(5)} ${(-sin).toFixed(5)} ${cos.toFixed(5)} ${centerX} ${centerY} cm`);
-
-    // Dibujar texto en posición ajustada
-    doc.text(text, offsetX, offsetY);
-
-    doc.internal.write('Q'); // Restaurar estado
+    console.log('✅ Watermark drawn at center:', centerX, centerY);
 
     doc.restoreGraphicsState();
   }
