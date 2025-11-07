@@ -91,8 +91,18 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
   };
 
   const handlePreviewPDF = async () => {
-    if (!presupuesto) return;
-    await HDMPDFGeneratorV2.previewPresupuestoPDF(presupuesto, presupuesto.vendedor);
+    if (!presupuesto) {
+      console.error('❌ No presupuesto data available');
+      return;
+    }
+
+    console.log('📄 handlePreviewPDF called for presupuesto:', presupuesto.codigo);
+    try {
+      await HDMPDFGeneratorV2.previewPresupuestoPDF(presupuesto, presupuesto.vendedor);
+      console.log('✅ PDF preview completed');
+    } catch (error) {
+      console.error('❌ Error in handlePreviewPDF:', error);
+    }
   };
 
   const getStatusBadge = (estado: Presupuesto['estado']) => {

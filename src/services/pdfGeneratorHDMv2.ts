@@ -268,10 +268,34 @@ export class HDMPDFGeneratorV2 {
   }
 
   static async previewPresupuestoPDF(presupuesto: Presupuesto, vendedor?: User): Promise<void> {
-    const doc = await this.generatePresupuestoPDF(presupuesto, vendedor);
-    const pdfBlob = doc.output('blob');
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    window.open(pdfUrl, '_blank');
+    try {
+      console.log('🔍 Starting PDF preview generation...');
+      const doc = await this.generatePresupuestoPDF(presupuesto, vendedor);
+      console.log('✅ PDF document generated successfully');
+
+      const pdfBlob = doc.output('blob');
+      console.log('✅ PDF blob created, size:', pdfBlob.size, 'bytes');
+
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      console.log('✅ PDF URL created:', pdfUrl);
+
+      const newWindow = window.open(pdfUrl, '_blank');
+      if (!newWindow) {
+        console.error('❌ Popup blocked! Trying alternative method...');
+        // Alternative: download if popup is blocked
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.download = `presupuesto_${presupuesto.codigo}.pdf`;
+        link.click();
+        alert('El navegador bloqueó la ventana emergente. El PDF se descargará automáticamente.');
+      } else {
+        console.log('✅ PDF opened in new window');
+      }
+    } catch (error) {
+      console.error('❌ Error generating PDF preview:', error);
+      alert('Error al generar la vista previa del PDF: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      throw error;
+    }
   }
 
   private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
