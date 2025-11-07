@@ -44,14 +44,18 @@ export function UserProfile() {
         })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Update error details:', error);
+        throw error;
+      }
 
       setMessage({ type: 'success', text: 'Perfil actualizado correctamente' });
 
       setTimeout(() => setMessage(null), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating profile:', err);
-      setMessage({ type: 'error', text: 'Error al actualizar el perfil' });
+      const errorMessage = err.message || 'Error al actualizar el perfil';
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setLoading(false);
     }
