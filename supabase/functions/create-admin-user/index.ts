@@ -26,7 +26,46 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    // Crear usuario admin
+    // Verificar si el usuario ya existe
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const existingUser = existingUsers?.users.find(u => u.email === 'admin@hdm.com');
+
+    if (existingUser) {
+      // Si existe, actualizar su contraseña
+      const { data: updatedUser, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        existingUser.id,
+        {
+          password: 'Admin123456!',
+          email_confirm: true,
+        }
+      );
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Asegurar que tenga rol admin
+      await supabaseAdmin
+        .from('users')
+        .update({ role: 'admin', active: true })
+        .eq('id', existingUser.id);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Admin user password reset successfully',
+          user: updatedUser.user
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    }
+
+    // Si no existe, crearlo
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: 'admin@hdm.com',
       password: 'Admin123456!',
@@ -49,7 +88,11 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, user: authData.user }),
+      JSON.stringify({
+        success: true,
+        message: 'Admin user created successfully',
+        user: authData.user
+      }),
       {
         headers: {
           ...corsHeaders,
