@@ -10,7 +10,7 @@ import { SeguimientoManager } from '../components/seguimiento/SeguimientoManager
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { BudgetCalculator } from '../services/budgetCalculator';
-import { HDMPDFGenerator } from '../services/pdfGeneratorHDM';
+import { HDMPDFGeneratorV2 } from '../services/pdfGeneratorHDMv2';
 import { supabase } from '../lib/supabase';
 import {
   FileText,
@@ -87,12 +87,12 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
 
   const handleDownloadPDF = async () => {
     if (!presupuesto) return;
-    await HDMPDFGenerator.downloadPresupuestoPDF(presupuesto, imagenes);
+    await HDMPDFGeneratorV2.downloadPresupuestoPDF(presupuesto, presupuesto.vendedor);
   };
 
   const handlePreviewPDF = async () => {
     if (!presupuesto) return;
-    await HDMPDFGenerator.previewPresupuestoPDF(presupuesto, imagenes);
+    await HDMPDFGeneratorV2.previewPresupuestoPDF(presupuesto, presupuesto.vendedor);
   };
 
   const getStatusBadge = (estado: Presupuesto['estado']) => {

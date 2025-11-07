@@ -16,7 +16,7 @@ import { Input } from './components/ui/Input';
 import { LogOut, FileText, Users, List, BarChart3, UserCog, LayoutDashboard, Package, Eye, EyeOff, UserCircle } from 'lucide-react';
 
 function AuthenticatedApp() {
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, isAdministrativo } = useAuth();
   const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form' | 'reports' | 'users' | 'catalogo' | 'profile'>('dashboard');
   const [selectedPresupuestoId, setSelectedPresupuestoId] = useState<string>('');
 
@@ -49,7 +49,7 @@ function AuthenticatedApp() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <img
-                src="/hdm logo copy.png"
+                src="/hdm-logo.png"
                 alt="HDM Ingeniería"
                 className="h-12 w-auto object-contain"
               />
@@ -69,7 +69,7 @@ function AuthenticatedApp() {
                   {user?.full_name}
                 </p>
                 <p className="text-xs text-gray-600">
-                  {isAdmin ? 'Administrador' : 'Vendedor'}
+                  {isAdmin ? 'Administrador' : isAdministrativo ? 'Administrativo' : 'Vendedor'}
                 </p>
               </div>
 
@@ -147,6 +147,45 @@ function AuthenticatedApp() {
                   Usuarios
                 </button>
               </>
+            ) : isAdministrativo ? (
+              <>
+                <button
+                  onClick={() => setCurrentView('dashboard')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
+                    currentView === 'dashboard'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
+                  }`}
+                >
+                  <LayoutDashboard className="w-5 h-5" />
+                  Mi Dashboard
+                </button>
+                <button
+                  onClick={() => {
+                    setCurrentView('list');
+                    setSelectedPresupuestoId('');
+                  }}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
+                    currentView === 'list'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
+                  }`}
+                >
+                  <List className="w-5 h-5" />
+                  Presupuestos
+                </button>
+                <button
+                  onClick={() => setCurrentView('catalogo')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
+                    currentView === 'catalogo'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
+                  }`}
+                >
+                  <Package className="w-5 h-5" />
+                  Catálogo
+                </button>
+              </>
             ) : (
               <>
                 <button
@@ -200,6 +239,8 @@ function AuthenticatedApp() {
                 setCurrentView('presupuesto');
               }}
             />
+          ) : isAdministrativo ? (
+            <VendedorDashboard />
           ) : (
             <VendedorDashboard />
           )
