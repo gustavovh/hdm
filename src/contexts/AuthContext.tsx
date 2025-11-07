@@ -10,10 +10,11 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string, role?: 'admin' | 'vendedor') => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, role?: 'admin' | 'vendedor' | 'administrativo') => Promise<void>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
   isVendedor: boolean;
+  isAdministrativo: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -153,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isAdmin = user?.role === 'admin';
   const isVendedor = user?.role === 'vendedor';
+  const isAdministrativo = user?.role === 'administrativo';
 
   return (
     <AuthContext.Provider
@@ -165,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         isAdmin,
         isVendedor,
+        isAdministrativo,
       }}
     >
       {children}

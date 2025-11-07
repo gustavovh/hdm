@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'vendedor';
+export type UserRole = 'admin' | 'vendedor' | 'administrativo';
 
 export type CurrencyType = 'PYG' | 'USD';
 
@@ -193,6 +193,20 @@ export interface SalesTarget {
   created_at: string;
   updated_at: string;
   created_by?: string;
+}
+
+export interface PresupuestoSeguimiento {
+  id: string;
+  presupuesto_id: string;
+  user_id: string;
+  user?: User;
+  fecha: string;
+  accion: string;
+  status_comentario?: string;
+  proxima_accion?: string;
+  fecha_proxima_accion?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Database {

@@ -6,6 +6,7 @@ import { DiscountRequestForm } from '../components/discount/DiscountRequestForm'
 import { DiscountRequestList } from '../components/discount/DiscountRequestList';
 import { AuditTimeline } from '../components/audit/AuditTimeline';
 import { PresupuestoStatusManager } from '../components/presupuestos/PresupuestoStatusManager';
+import { SeguimientoManager } from '../components/seguimiento/SeguimientoManager';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { BudgetCalculator } from '../services/budgetCalculator';
@@ -32,7 +33,7 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
   const [imagenes, setImagenes] = useState<PresupuestoImagen[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRequestForm, setShowRequestForm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'detalles' | 'solicitudes' | 'historial'>(
+  const [activeTab, setActiveTab] = useState<'detalles' | 'solicitudes' | 'seguimiento' | 'historial'>(
     'detalles'
   );
 
@@ -273,6 +274,16 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
                   </span>
                 )}
             </button>
+            <button
+              onClick={() => setActiveTab('seguimiento')}
+              className={`pb-2 border-b-2 font-medium transition-colors ${
+                activeTab === 'seguimiento'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Gestión de Seguimiento
+            </button>
             {isAdmin && (
               <button
                 onClick={() => setActiveTab('historial')}
@@ -419,6 +430,10 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
                 onView={() => {}}
                 isAdmin={isAdmin}
               />
+            )}
+
+            {activeTab === 'seguimiento' && (
+              <SeguimientoManager presupuestoId={presupuesto.id} />
             )}
 
             {activeTab === 'historial' && isAdmin && (
