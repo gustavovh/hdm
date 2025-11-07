@@ -16,10 +16,8 @@ interface UpdateUserDTO {
 
 export class UserService {
   static async list(): Promise<User[]> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // Use the SECURITY DEFINER function to bypass RLS recursion issues
+    const { data, error } = await supabase.rpc('get_all_users');
 
     if (error) throw error;
     return data || [];
@@ -151,14 +149,13 @@ export class UserService {
   }
 
   static async getVendedores(): Promise<User[]> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('role', 'vendedor')
-      .order('full_name', { ascending: true });
+    // Use the SECURITY DEFINER function and filter locally
+    const { data, error } = await supabase.rpc('get_all_users');
 
     if (error) throw error;
-    return data || [];
+    return (data || [])
+      .filter((user: User) => user.role === 'vendedor')
+      .sort((a: User, b: User) => (a.full_name || '').localeCompare(b.full_name || ''));
   }
 }
 
