@@ -4,6 +4,8 @@ import { Presupuesto, User } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
 export class HDMPDFGeneratorV2 {
+  private static readonly VERSION = 'v2.1.0';
+
   private static formatNumber(value: number): string {
     return new Intl.NumberFormat('es-PY', {
       minimumFractionDigits: 0,
@@ -56,6 +58,8 @@ export class HDMPDFGeneratorV2 {
     presupuesto: Presupuesto,
     vendedor?: User
   ): Promise<jsPDF> {
+    console.log(`📄 HDMPDFGeneratorV2 ${this.VERSION} - Generating PDF...`);
+
     const doc = new jsPDF({
       unit: 'mm',
       format: 'a4',
@@ -241,6 +245,7 @@ export class HDMPDFGeneratorV2 {
 
     // Firma del administrador - centrada en la página
     const adminUser = await this.getAdminUser();
+    console.log('👤 Admin user for signature:', adminUser?.full_name, 'Has signature:', !!adminUser?.signature_url);
     if (adminUser) {
       const centerX = pageWidth / 2;
 
@@ -320,6 +325,7 @@ export class HDMPDFGeneratorV2 {
   }
 
   private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
+    console.log('💧 Adding watermark with size 80pt');
     doc.saveGraphicsState();
     doc.setGState(new doc.GState({ opacity: 0.05 }));
     doc.setTextColor(180, 180, 180);
