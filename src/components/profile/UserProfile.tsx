@@ -118,7 +118,11 @@ export function UserProfile() {
               </label>
               <Input
                 type="text"
-                value={user.role === 'ADMIN' ? 'Administrador' : 'Vendedor'}
+                value={
+                  user.role === 'admin' ? 'Administrador' :
+                  user.role === 'administrativo' ? 'Administrativo' :
+                  'Vendedor'
+                }
                 disabled
                 className="bg-gray-100 cursor-not-allowed"
               />

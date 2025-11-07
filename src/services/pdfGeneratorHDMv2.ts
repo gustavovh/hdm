@@ -32,6 +32,26 @@ export class HDMPDFGeneratorV2 {
     });
   }
 
+  private static async getAdminUser(): Promise<User | null> {
+    try {
+      const { supabase } = await import('../lib/supabase');
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching admin user:', error);
+        return null;
+      }
+      return data;
+    } catch (error) {
+      console.error('Error in getAdminUser:', error);
+      return null;
+    }
+  }
+
   static async generatePresupuestoPDF(
     presupuesto: Presupuesto,
     vendedor?: User
@@ -148,7 +168,7 @@ export class HDMPDFGeneratorV2 {
 
     autoTable(doc, {
       startY: yPosition,
-      head: [['#', 'Item|Grp', 'Descripción', 'Cantidad', 'Unidad', 'P.Unitario', 'Sub Total']],
+      head: [['#', 'Descripción', 'Cantidad', 'Unidad', 'P.Unitario', 'Sub Total']],
       body: tableData,
       theme: 'plain',
       styles: {
@@ -166,12 +186,11 @@ export class HDMPDFGeneratorV2 {
       },
       columnStyles: {
         0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 15, halign: 'left' },
-        2: { cellWidth: 65, halign: 'left' },
-        3: { cellWidth: 20, halign: 'right' },
-        4: { cellWidth: 18, halign: 'center' },
-        5: { cellWidth: 22, halign: 'right' },
-        6: { cellWidth: 25, halign: 'right' },
+        1: { cellWidth: 80, halign: 'left' },
+        2: { cellWidth: 20, halign: 'right' },
+        3: { cellWidth: 18, halign: 'center' },
+        4: { cellWidth: 25, halign: 'right' },
+        5: { cellWidth: 25, halign: 'right' },
       },
       margin: { left: leftMargin, right: rightMargin },
       didDrawPage: (data) => {
@@ -219,14 +238,15 @@ export class HDMPDFGeneratorV2 {
     doc.setFontSize(9);
     doc.text('Estamos a su disposición ante cualquier consulta.', leftMargin, yPosition);
 
-    // Firma (para admin y administrativo)
-    if (vendedor && (vendedor.role === 'admin' || vendedor.role === 'administrativo')) {
+    // Firma del administrador
+    const adminUser = await this.getAdminUser();
+    if (adminUser) {
       yPosition = pageHeight - 40;
 
       // Si hay firma, agregarla
-      if (vendedor.signature_url) {
+      if (adminUser.signature_url) {
         try {
-          const signatureBase64 = await this.loadImageAsBase64(vendedor.signature_url);
+          const signatureBase64 = await this.loadImageAsBase64(adminUser.signature_url);
           doc.addImage(signatureBase64, 'PNG', pageWidth - rightMargin - 60, yPosition, 50, 20);
         } catch (error) {
           console.error('Error loading signature:', error);
@@ -243,19 +263,6 @@ export class HDMPDFGeneratorV2 {
       yPosition += 4;
       doc.setFont('helvetica', 'normal');
       doc.text('Cat. A - 7822', pageWidth - rightMargin - 30, yPosition, { align: 'center' });
-    } else if (vendedor?.signature_url) {
-      // Para vendedores, mostrar su propia firma
-      yPosition = pageHeight - 35;
-      try {
-        const signatureBase64 = await this.loadImageAsBase64(vendedor.signature_url);
-        doc.addImage(signatureBase64, 'PNG', pageWidth - rightMargin - 60, yPosition, 50, 20);
-      } catch (error) {
-        console.error('Error loading signature:', error);
-      }
-      yPosition += 25;
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.text(vendedor.full_name, pageWidth - rightMargin - 30, yPosition, { align: 'center' });
     }
 
     // Footer
@@ -307,9 +314,13 @@ export class HDMPDFGeneratorV2 {
 
   private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
     doc.saveGraphicsState();
-    doc.setGState(new doc.GState({ opacity: 0.08 }));
-    doc.setTextColor(180, 180, 180);
-    doc.setFontSize(100);
+    doc.setGState(new doc.GState({ opacity: 0.06 }));
+    doc.setTextColor(200, 200, 200);
+
+    // Calcular tamaño de fuente para abarcar toda la diagonal
+    const diagonal = Math.sqrt(pageWidth * pageWidth + pageHeight * pageHeight);
+    const fontSize = diagonal / 4;
+    doc.setFontSize(fontSize);
     doc.setFont('helvetica', 'bold');
 
     // Rotar y centrar el texto "PRESUPUESTO"
