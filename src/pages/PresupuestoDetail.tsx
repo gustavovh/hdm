@@ -89,6 +89,7 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
 
   const handleDownloadPDF = async () => {
     if (!presupuesto) return;
+    console.log('⬇️ Download PDF - Presupuesto vendedor:', presupuesto.vendedor?.full_name || 'NO VENDEDOR');
     await HDMPDFGeneratorV2.downloadPresupuestoPDF(presupuesto, presupuesto.vendedor);
   };
 
@@ -99,6 +100,8 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
     }
 
     console.log('📄 handlePreviewPDF called for presupuesto:', presupuesto.codigo);
+    console.log('👤 Preview PDF - Presupuesto vendedor:', presupuesto.vendedor?.full_name || 'NO VENDEDOR DATA');
+    console.log('📦 Full presupuesto object keys:', Object.keys(presupuesto));
     try {
       await HDMPDFGeneratorV2.previewPresupuestoPDF(presupuesto, presupuesto.vendedor);
       console.log('✅ PDF preview completed');

@@ -59,6 +59,9 @@ export class HDMPDFGeneratorV2 {
     vendedor?: User
   ): Promise<jsPDF> {
     console.log(`📄 HDMPDFGeneratorV2 ${this.VERSION} - Generating PDF...`);
+    console.log('👤 Vendedor parameter received:', vendedor?.full_name || 'UNDEFINED');
+    console.log('📋 Presupuesto vendedor_id:', presupuesto.vendedor_id);
+    console.log('🔍 Presupuesto.vendedor:', presupuesto.vendedor?.full_name || 'NOT LOADED');
 
     const doc = new jsPDF({
       unit: 'mm',
@@ -244,8 +247,10 @@ export class HDMPDFGeneratorV2 {
     yPosition += 15; // 3 líneas de espacio
 
     // Firma del vendedor que creó el presupuesto - centrada en la página
-    const signingUser = vendedor || await this.getAdminUser();
+    // SIEMPRE usa el vendedor que creó el presupuesto, nunca el admin cuando ve el PDF
+    const signingUser = vendedor;
     console.log('👤 Signing user:', signingUser?.full_name, 'Role:', signingUser?.role, 'Has signature:', !!signingUser?.signature_url);
+    console.log('📝 Vendedor object passed:', vendedor ? 'YES' : 'NO');
     if (signingUser) {
       const centerX = pageWidth / 2;
 
@@ -327,27 +332,32 @@ export class HDMPDFGeneratorV2 {
   }
 
   private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
-    console.log('💧 Adding watermark v2.2 TESTING - HUGE SIZE 150pt');
+    console.log('💧 Adding watermark v2.3 - Size 120pt CENTERED');
     doc.saveGraphicsState();
 
-    // Configurar opacidad y color - MUY VISIBLE PARA TEST
-    const gstate = new doc.GState({ opacity: 0.15 });
+    // Configurar opacidad y color
+    const gstate = new doc.GState({ opacity: 0.1 });
     doc.setGState(gstate);
-    doc.setTextColor(100, 100, 100);
+    doc.setTextColor(120, 120, 120);
 
-    // Tamaño EXTREMADAMENTE GRANDE para test
-    doc.setFontSize(150);
+    // Tamaño grande para abarcar bien la diagonal
+    doc.setFontSize(120);
     doc.setFont('helvetica', 'bold');
 
-    // Rotar 45 grados y centrar en la página
-    const text = 'PRESUPUESTO';
+    // Centro exacto de la página
     const centerX = pageWidth / 2;
     const centerY = pageHeight / 2;
 
+    const text = 'PRESUPUESTO';
+
+    // Medir el ancho del texto
+    const textWidth = doc.getTextWidth(text);
+    console.log('📏 Text width:', textWidth, 'Page center:', centerX, centerY);
+
+    // Dibujar el texto rotado y centrado
     doc.text(text, centerX, centerY, {
       align: 'center',
-      angle: 45,
-      baseline: 'middle'
+      angle: 45
     });
 
     doc.restoreGraphicsState();
