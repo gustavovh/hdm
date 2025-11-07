@@ -31,18 +31,31 @@ export function SignatureUpload({ currentSignatureUrl, userId, onSignatureUpdate
     setUploading(true);
 
     try {
+      // Primero eliminar la firma anterior si existe
+      if (currentSignatureUrl) {
+        try {
+          const oldFilePath = currentSignatureUrl.split('/').slice(-2).join('/');
+          await supabase.storage.from('images').remove([oldFilePath]);
+        } catch (err) {
+          console.log('No se pudo eliminar la firma anterior:', err);
+        }
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `signature_${userId}_${Date.now()}.${fileExt}`;
-      const filePath = `signatures/${fileName}`;
+      const filePath = `${userId}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('images')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true,
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(uploadError.message || 'Error al subir el archivo');
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('images')
@@ -53,12 +66,16 @@ export function SignatureUpload({ currentSignatureUrl, userId, onSignatureUpdate
         .update({ signature_url: publicUrl })
         .eq('id', userId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Update error:', updateError);
+        throw new Error(updateError.message || 'Error al actualizar el perfil');
+      }
 
       onSignatureUpdate(publicUrl);
-    } catch (err) {
+      setError('');
+    } catch (err: any) {
       console.error('Error uploading signature:', err);
-      setError('Error al subir la firma. Por favor intenta de nuevo.');
+      setError(err.message || 'Error al subir la firma. Por favor intenta de nuevo.');
     } finally {
       setUploading(false);
     }
@@ -67,8 +84,11 @@ export function SignatureUpload({ currentSignatureUrl, userId, onSignatureUpdate
   const handleDelete = async () => {
     if (!currentSignatureUrl) return;
 
+    if (!confirm('¿Estás seguro de eliminar tu firma?')) return;
+
     try {
       setUploading(true);
+      setError('');
 
       const filePath = currentSignatureUrl.split('/').slice(-2).join('/');
 
@@ -79,12 +99,15 @@ export function SignatureUpload({ currentSignatureUrl, userId, onSignatureUpdate
         .update({ signature_url: null })
         .eq('id', userId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Update error:', updateError);
+        throw new Error(updateError.message || 'Error al actualizar el perfil');
+      }
 
       onSignatureUpdate(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting signature:', err);
-      setError('Error al eliminar la firma. Por favor intenta de nuevo.');
+      setError(err.message || 'Error al eliminar la firma. Por favor intenta de nuevo.');
     } finally {
       setUploading(false);
     }
