@@ -19,6 +19,27 @@ interface PDFConfig {
 }
 
 export class CorporatePDFGenerator {
+  private static async loadImageAsBase64(url: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } else {
+          reject(new Error('Failed to get canvas context'));
+        }
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = url;
+    });
+  }
+
   private static async getConfig(): Promise<PDFConfig> {
     try {
       const { data, error } = await supabase
@@ -316,6 +337,41 @@ export class CorporatePDFGenerator {
     doc.setFontSize(8);
     const monedaTexto = presupuesto.moneda === 'USD' ? 'Dólares Americanos' : 'Guaraníes';
     doc.text(`Moneda: ${monedaTexto}`, summaryX, summaryStartY + 30);
+
+    // Agregar firma del vendedor
+    let signatureY = summaryStartY + 40;
+    const vendedorName = presupuesto.vendedor?.full_name || 'Vendedor';
+    const signatureUrl = presupuesto.vendedor?.signature_url;
+
+    if (signatureUrl) {
+      try {
+        const signatureBase64 = await this.loadImageAsBase64(signatureUrl);
+        const signatureWidth = 40;
+        const signatureHeight = 20;
+        const xPos = summaryX;
+
+        doc.addImage(signatureBase64, 'PNG', xPos, signatureY, signatureWidth, signatureHeight);
+        signatureY += signatureHeight + 2;
+      } catch (error) {
+        console.error('Error loading signature:', error);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text('_______________________', summaryX, signatureY);
+        signatureY += 4;
+      }
+    } else {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text('_______________________', summaryX, signatureY);
+      signatureY += 4;
+    }
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text(vendedorName, summaryX, signatureY);
 
     const footerY = pageHeight - 25;
     doc.setDrawColor(...secondaryColor);

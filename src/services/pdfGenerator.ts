@@ -4,10 +4,31 @@ import { Presupuesto, SolicitudDescuento } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
 export class PDFGenerator {
-  static generatePresupuestoPDF(
+  static async loadImageAsBase64(url: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } else {
+          reject(new Error('Failed to get canvas context'));
+        }
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = url;
+    });
+  }
+
+  static async generatePresupuestoPDF(
     presupuesto: Presupuesto,
     solicitudAprobada?: SolicitudDescuento
-  ): jsPDF {
+  ): Promise<jsPDF> {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let yPosition = 20;
@@ -233,6 +254,41 @@ export class PDFGenerator {
       { align: 'right' }
     );
 
+    // Agregar firma del vendedor
+    let signatureY = summaryStartY + 35;
+    const vendedorName = presupuesto.vendedor?.full_name || 'Vendedor';
+    const signatureUrl = presupuesto.vendedor?.signature_url;
+
+    if (signatureUrl) {
+      try {
+        const signatureBase64 = await this.loadImageAsBase64(signatureUrl);
+        const signatureWidth = 40;
+        const signatureHeight = 20;
+        const xPos = summaryX;
+
+        doc.addImage(signatureBase64, 'PNG', xPos, signatureY, signatureWidth, signatureHeight);
+        signatureY += signatureHeight + 2;
+      } catch (error) {
+        console.error('Error loading signature:', error);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text('_______________________', summaryX, signatureY);
+        signatureY += 4;
+      }
+    } else {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text('_______________________', summaryX, signatureY);
+      signatureY += 4;
+    }
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text(vendedorName, summaryX, signatureY);
+
     const footerY = doc.internal.pageSize.getHeight() - 20;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
@@ -256,21 +312,29 @@ export class PDFGenerator {
     return doc;
   }
 
-  static downloadPresupuestoPDF(
+  static async downloadPresupuestoPDF(
     presupuesto: Presupuesto,
     solicitudAprobada?: SolicitudDescuento
-  ): void {
-    const doc = this.generatePresupuestoPDF(presupuesto, solicitudAprobada);
+  ): Promise<void> {
+    const doc = await this.generatePresupuestoPDF(presupuesto, solicitudAprobada);
     doc.save(`presupuesto-${presupuesto.codigo}.pdf`);
   }
 
-  static previewPresupuestoPDF(
+  static async previewPresupuestoPDF(
     presupuesto: Presupuesto,
     solicitudAprobada?: SolicitudDescuento
-  ): void {
-    const doc = this.generatePresupuestoPDF(presupuesto, solicitudAprobada);
+  ): Promise<void> {
+    const doc = await this.generatePresupuestoPDF(presupuesto, solicitudAprobada);
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
+  }
+
+  static async getPDFBlob(
+    presupuesto: Presupuesto,
+    solicitudAprobada?: SolicitudDescuento
+  ): Promise<Blob> {
+    const doc = await this.generatePresupuestoPDF(presupuesto, solicitudAprobada);
+    return doc.output('blob');
   }
 }

@@ -55,6 +55,8 @@ export interface User {
   full_name: string;
   role: UserRole;
   avatar_url?: string;
+  signature_url?: string;
+  phone?: string;
   active: boolean;
   created_at: string;
   updated_at: string;

@@ -295,21 +295,42 @@ export class HDMPDFGenerator {
     doc.restoreGraphicsState();
 
     // Verificar si hay espacio para la firma
-    if (yPosition > pageHeight - 40) {
+    if (yPosition > pageHeight - 60) {
       doc.addPage();
       yPosition = topMargin;
     } else {
       yPosition += 20;
     }
+
+    // Agregar firma del vendedor si existe
+    const vendedorName = presupuesto.vendedor?.full_name || 'Vendedor';
+    const signatureUrl = presupuesto.vendedor?.signature_url;
+
+    if (signatureUrl) {
+      try {
+        const signatureBase64 = await this.loadImageAsBase64(signatureUrl);
+        const signatureWidth = 40;
+        const signatureHeight = 20;
+        const xPos = pageWidth - rightMargin - 45;
+
+        doc.addImage(signatureBase64, 'PNG', xPos, yPosition, signatureWidth, signatureHeight);
+        yPosition += signatureHeight + 2;
+      } catch (error) {
+        console.error('Error loading signature:', error);
+        yPosition += 2;
+      }
+    } else {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text('_______________________', pageWidth - rightMargin - 45, yPosition);
+      yPosition += 4;
+    }
+
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    doc.text('_______________________', pageWidth - rightMargin - 45, yPosition);
-    yPosition += 4;
     doc.setFont('helvetica', 'bold');
-    doc.text('Ing. Hernan Miño', pageWidth - rightMargin - 42, yPosition);
-    yPosition += 4;
-    doc.text('Cat. A - 7822', pageWidth - rightMargin - 42, yPosition);
+    doc.setTextColor(0, 0, 0);
+    doc.text(vendedorName, pageWidth - rightMargin - 42, yPosition, { align: 'left' });
 
     return doc;
   }

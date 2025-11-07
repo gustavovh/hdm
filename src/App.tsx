@@ -10,13 +10,14 @@ import { NotificationCenter } from './components/notifications/NotificationCente
 import { UserList } from './components/users/UserList';
 import { ReportsDashboard } from './components/reports/ReportsDashboard';
 import { CatalogoPage } from './components/catalogo/CatalogoPage';
+import { UserProfile } from './components/profile/UserProfile';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
-import { LogOut, FileText, Users, List, BarChart3, UserCog, LayoutDashboard, Package, Eye, EyeOff } from 'lucide-react';
+import { LogOut, FileText, Users, List, BarChart3, UserCog, LayoutDashboard, Package, Eye, EyeOff, UserCircle } from 'lucide-react';
 
 function AuthenticatedApp() {
   const { user, signOut, isAdmin } = useAuth();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form' | 'reports' | 'users' | 'catalogo'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form' | 'reports' | 'users' | 'catalogo' | 'profile'>('dashboard');
   const [selectedPresupuestoId, setSelectedPresupuestoId] = useState<string>('');
 
   if (!user) {
@@ -73,6 +74,17 @@ function AuthenticatedApp() {
               </div>
 
               <NotificationCenter />
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentView('profile')}
+                className="z-50 relative"
+              >
+                <UserCircle className="w-4 h-4 mr-2" />
+                Mi Perfil
+              </Button>
 
               <Button
                 type="button"
@@ -195,6 +207,7 @@ function AuthenticatedApp() {
         {currentView === 'reports' && <ReportsDashboard />}
         {currentView === 'users' && <UserList />}
         {currentView === 'catalogo' && <CatalogoPage />}
+        {currentView === 'profile' && <UserProfile />}
         {currentView === 'list' && (
           <PresupuestoList
             onSelectPresupuesto={(id) => {
