@@ -4,7 +4,7 @@ import { Presupuesto, User } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
 export class HDMPDFGeneratorV2 {
-  private static readonly VERSION = 'v2.1.0';
+  private static readonly VERSION = 'v2.2.0-TESTING';
 
   private static formatNumber(value: number): string {
     return new Intl.NumberFormat('es-PY', {
@@ -327,16 +327,16 @@ export class HDMPDFGeneratorV2 {
   }
 
   private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
-    console.log('💧 Adding watermark v2.1 with size 100pt');
+    console.log('💧 Adding watermark v2.2 TESTING - HUGE SIZE 150pt');
     doc.saveGraphicsState();
 
-    // Configurar opacidad y color
-    const gstate = new doc.GState({ opacity: 0.08 });
+    // Configurar opacidad y color - MUY VISIBLE PARA TEST
+    const gstate = new doc.GState({ opacity: 0.15 });
     doc.setGState(gstate);
-    doc.setTextColor(150, 150, 150);
+    doc.setTextColor(100, 100, 100);
 
-    // Tamaño grande para abarcar toda la página en diagonal
-    doc.setFontSize(100);
+    // Tamaño EXTREMADAMENTE GRANDE para test
+    doc.setFontSize(150);
     doc.setFont('helvetica', 'bold');
 
     // Rotar 45 grados y centrar en la página
