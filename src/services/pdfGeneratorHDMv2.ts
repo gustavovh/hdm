@@ -243,16 +243,16 @@ export class HDMPDFGeneratorV2 {
     doc.text('Estamos a su disposición ante cualquier consulta.', leftMargin, yPosition);
     yPosition += 15; // 3 líneas de espacio
 
-    // Firma del administrador - centrada en la página
-    const adminUser = await this.getAdminUser();
-    console.log('👤 Admin user for signature:', adminUser?.full_name, 'Has signature:', !!adminUser?.signature_url);
-    if (adminUser) {
+    // Firma del vendedor que creó el presupuesto - centrada en la página
+    const signingUser = vendedor || await this.getAdminUser();
+    console.log('👤 Signing user:', signingUser?.full_name, 'Role:', signingUser?.role, 'Has signature:', !!signingUser?.signature_url);
+    if (signingUser) {
       const centerX = pageWidth / 2;
 
       // Si hay firma, agregarla
-      if (adminUser.signature_url) {
+      if (signingUser.signature_url) {
         try {
-          const signatureBase64 = await this.loadImageAsBase64(adminUser.signature_url);
+          const signatureBase64 = await this.loadImageAsBase64(signingUser.signature_url);
           const signatureWidth = 40;
           const signatureHeight = 25;
           doc.addImage(signatureBase64, 'PNG', centerX - (signatureWidth / 2), yPosition, signatureWidth, signatureHeight);
@@ -270,10 +270,12 @@ export class HDMPDFGeneratorV2 {
       doc.text('...........................', centerX, yPosition, { align: 'center' });
       yPosition += 4;
       doc.setFont('helvetica', 'bold');
-      doc.text('Ing. Hernan Miño', centerX, yPosition, { align: 'center' });
+      doc.text(signingUser.full_name || 'N/A', centerX, yPosition, { align: 'center' });
       yPosition += 4;
       doc.setFont('helvetica', 'normal');
-      doc.text('Cat. A - 7822', centerX, yPosition, { align: 'center' });
+      if (signingUser.phone) {
+        doc.text(signingUser.phone, centerX, yPosition, { align: 'center' });
+      }
     }
 
     // Footer
@@ -325,20 +327,27 @@ export class HDMPDFGeneratorV2 {
   }
 
   private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
-    console.log('💧 Adding watermark with size 80pt');
+    console.log('💧 Adding watermark v2.1 with size 100pt');
     doc.saveGraphicsState();
-    doc.setGState(new doc.GState({ opacity: 0.05 }));
-    doc.setTextColor(180, 180, 180);
 
-    // Tamaño más grande para que abarque la diagonal
-    doc.setFontSize(80);
+    // Configurar opacidad y color
+    const gstate = new doc.GState({ opacity: 0.08 });
+    doc.setGState(gstate);
+    doc.setTextColor(150, 150, 150);
+
+    // Tamaño grande para abarcar toda la página en diagonal
+    doc.setFontSize(100);
     doc.setFont('helvetica', 'bold');
 
-    // Rotar y centrar el texto "PRESUPUESTO"
+    // Rotar 45 grados y centrar en la página
     const text = 'PRESUPUESTO';
-    doc.text(text, pageWidth / 2, pageHeight / 2, {
+    const centerX = pageWidth / 2;
+    const centerY = pageHeight / 2;
+
+    doc.text(text, centerX, centerY, {
       align: 'center',
       angle: 45,
+      baseline: 'middle'
     });
 
     doc.restoreGraphicsState();
