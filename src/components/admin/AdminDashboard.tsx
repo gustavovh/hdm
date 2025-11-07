@@ -13,7 +13,7 @@ import { Badge } from '../ui/Badge';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { exportService } from '../../services/exportService';
-import { Filter, RefreshCw, FileText, Trash2, Search, Target, TrendingUp, DollarSign, Users, Download, Calendar } from 'lucide-react';
+import { Filter, RefreshCw, FileText, Trash2, Search, Target, TrendingUp, DollarSign, Users, Download, Calendar, Eye } from 'lucide-react';
 
 interface GeneralStats {
   totalPresupuestos: number;
@@ -24,7 +24,11 @@ interface GeneralStats {
   montoFacturado: number;
 }
 
-export function AdminDashboard() {
+interface AdminDashboardProps {
+  onSelectPresupuesto?: (id: string) => void;
+}
+
+export function AdminDashboard({ onSelectPresupuesto }: AdminDashboardProps) {
   const { user } = useAuth();
   const [requests, setRequests] = useState<SolicitudDescuento[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<SolicitudDescuento | null>(null);
@@ -716,7 +720,8 @@ export function AdminDashboard() {
                 {filteredPresupuestos.map((presupuesto) => (
                   <div
                     key={presupuesto.id}
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => onSelectPresupuesto && onSelectPresupuesto(presupuesto.id)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -747,15 +752,32 @@ export function AdminDashboard() {
                           </p>
                           <p className="text-xs text-gray-500 mt-1">Neto: {formatCurrency(presupuesto.total_neto)}</p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeletePresupuesto(presupuesto.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Eliminar
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectPresupuesto && onSelectPresupuesto(presupuesto.id);
+                            }}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            Ver Detalle
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeletePresupuesto(presupuesto.id);
+                            }}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Eliminar
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>

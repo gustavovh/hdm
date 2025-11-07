@@ -181,7 +181,16 @@ function AuthenticatedApp() {
 
       <main className="py-8">
         {currentView === 'dashboard' && (
-          isAdmin ? <AdminDashboard /> : <VendedorDashboard />
+          isAdmin ? (
+            <AdminDashboard
+              onSelectPresupuesto={(id) => {
+                setSelectedPresupuestoId(id);
+                setCurrentView('presupuesto');
+              }}
+            />
+          ) : (
+            <VendedorDashboard />
+          )
         )}
         {currentView === 'reports' && <ReportsDashboard />}
         {currentView === 'users' && <UserList />}
