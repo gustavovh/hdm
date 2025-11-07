@@ -237,32 +237,38 @@ export class HDMPDFGeneratorV2 {
     // Texto de cierre
     doc.setFontSize(9);
     doc.text('Estamos a su disposición ante cualquier consulta.', leftMargin, yPosition);
+    yPosition += 15; // 3 líneas de espacio
 
-    // Firma del administrador
+    // Firma del administrador - centrada en la página
     const adminUser = await this.getAdminUser();
     if (adminUser) {
-      yPosition = pageHeight - 40;
+      const centerX = pageWidth / 2;
 
       // Si hay firma, agregarla
       if (adminUser.signature_url) {
         try {
           const signatureBase64 = await this.loadImageAsBase64(adminUser.signature_url);
-          doc.addImage(signatureBase64, 'PNG', pageWidth - rightMargin - 60, yPosition, 50, 20);
+          const signatureWidth = 40;
+          const signatureHeight = 25;
+          doc.addImage(signatureBase64, 'PNG', centerX - (signatureWidth / 2), yPosition, signatureWidth, signatureHeight);
+          yPosition += signatureHeight + 2;
         } catch (error) {
           console.error('Error loading signature:', error);
+          yPosition += 8; // Espacio si no hay firma
         }
+      } else {
+        yPosition += 8; // Espacio si no hay firma
       }
 
-      yPosition += 25;
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text('...........................', pageWidth - rightMargin - 30, yPosition, { align: 'center' });
+      doc.text('...........................', centerX, yPosition, { align: 'center' });
       yPosition += 4;
       doc.setFont('helvetica', 'bold');
-      doc.text('Ing. Hernan Miño', pageWidth - rightMargin - 30, yPosition, { align: 'center' });
+      doc.text('Ing. Hernan Miño', centerX, yPosition, { align: 'center' });
       yPosition += 4;
       doc.setFont('helvetica', 'normal');
-      doc.text('Cat. A - 7822', pageWidth - rightMargin - 30, yPosition, { align: 'center' });
+      doc.text('Cat. A - 7822', centerX, yPosition, { align: 'center' });
     }
 
     // Footer
@@ -294,14 +300,15 @@ export class HDMPDFGeneratorV2 {
       console.log('✅ PDF URL created:', pdfUrl);
 
       const newWindow = window.open(pdfUrl, '_blank');
-      if (!newWindow) {
-        console.error('❌ Popup blocked! Trying alternative method...');
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        console.warn('⚠️ Popup blocked! Downloading PDF instead...');
         // Alternative: download if popup is blocked
         const link = document.createElement('a');
         link.href = pdfUrl;
         link.download = `presupuesto_${presupuesto.codigo}.pdf`;
+        document.body.appendChild(link);
         link.click();
-        alert('El navegador bloqueó la ventana emergente. El PDF se descargará automáticamente.');
+        document.body.removeChild(link);
       } else {
         console.log('✅ PDF opened in new window');
       }
@@ -314,13 +321,11 @@ export class HDMPDFGeneratorV2 {
 
   private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
     doc.saveGraphicsState();
-    doc.setGState(new doc.GState({ opacity: 0.06 }));
-    doc.setTextColor(200, 200, 200);
+    doc.setGState(new doc.GState({ opacity: 0.05 }));
+    doc.setTextColor(180, 180, 180);
 
-    // Calcular tamaño de fuente para abarcar toda la diagonal
-    const diagonal = Math.sqrt(pageWidth * pageWidth + pageHeight * pageHeight);
-    const fontSize = diagonal / 4;
-    doc.setFontSize(fontSize);
+    // Tamaño más grande para que abarque la diagonal
+    doc.setFontSize(80);
     doc.setFont('helvetica', 'bold');
 
     // Rotar y centrar el texto "PRESUPUESTO"
