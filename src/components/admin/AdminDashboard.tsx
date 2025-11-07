@@ -716,72 +716,94 @@ export function AdminDashboard({ onSelectPresupuesto }: AdminDashboardProps) {
                 <p className="text-gray-600">Intenta cambiar los filtros de búsqueda</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {filteredPresupuestos.map((presupuesto) => (
-                  <div
-                    key={presupuesto.id}
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => onSelectPresupuesto && onSelectPresupuesto(presupuesto.id)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">{presupuesto.codigo}</h3>
-                          <Badge color={getStatusColor(presupuesto.estado)}>{getStatusLabel(presupuesto.estado)}</Badge>
-                        </div>
-                        <p className="text-base font-medium text-gray-800 mb-1">Cliente: {presupuesto.cliente_nombre}</p>
-                        {presupuesto.concepto && (
-                          <p className="text-sm text-gray-700 mb-1">Concepto: {presupuesto.concepto}</p>
-                        )}
-                        {presupuesto.cliente_documento && (
-                          <p className="text-sm text-gray-600 mb-1">Documento: {presupuesto.cliente_documento}</p>
-                        )}
-                        <p className="text-xs text-gray-500 mt-2">
-                          Creado: {new Date(presupuesto.created_at).toLocaleDateString('es-PY')}
-                        </p>
-                        {presupuesto.vendedor && (
-                          <p className="text-xs text-gray-600 mt-1">
-                            Vendedor: {presupuesto.vendedor.full_name} ({presupuesto.vendedor.email})
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-3">
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-gray-900">
-                            {formatCurrency(presupuesto.total_neto + presupuesto.total_impuestos + presupuesto.total_comisiones)}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">Neto: {formatCurrency(presupuesto.total_neto)}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onSelectPresupuesto && onSelectPresupuesto(presupuesto.id);
-                            }}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            Ver Detalle
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeletePresupuesto(presupuesto.id);
-                            }}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Eliminar
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Número
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Cliente
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Referencia
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Vendedor
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Fecha
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Monto
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Estado
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Acciones
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredPresupuestos.map((presupuesto) => (
+                      <tr
+                        key={presupuesto.id}
+                        className="hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => onSelectPresupuesto && onSelectPresupuesto(presupuesto.id)}
+                      >
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {presupuesto.codigo}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {presupuesto.cliente_nombre}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700">
+                          {presupuesto.concepto || '-'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                          {presupuesto.vendedor?.full_name || '-'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                          {new Date(presupuesto.created_at).toLocaleDateString('es-PY')}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">
+                          {formatCurrency(presupuesto.total_neto + presupuesto.total_impuestos + presupuesto.total_comisiones)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-center">
+                          <Badge color={getStatusColor(presupuesto.estado)}>
+                            {getStatusLabel(presupuesto.estado)}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-center">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSelectPresupuesto && onSelectPresupuesto(presupuesto.id);
+                              }}
+                              className="text-blue-600 hover:text-blue-800 transition-colors"
+                              title="Ver detalle"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeletePresupuesto(presupuesto.id);
+                              }}
+                              className="text-red-600 hover:text-red-800 transition-colors"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </>
