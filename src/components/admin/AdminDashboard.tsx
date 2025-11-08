@@ -193,9 +193,17 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
     if (!confirm('¿Estás seguro de que deseas eliminar este presupuesto?')) return;
 
     try {
-      const { error } = await supabase.from('presupuestos').delete().eq('id', id);
+      const { error } = await supabase
+        .from('presupuestos')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id);
+
       if (error) throw error;
-      await loadPresupuestos();
+
+      setPresupuestos(prev => prev.filter(p => p.id !== id));
+
+      calculateGeneralStats(presupuestos.filter(p => p.id !== id));
+
       alert('Presupuesto eliminado exitosamente');
     } catch (error) {
       console.error('Error deleting presupuesto:', error);
