@@ -247,8 +247,16 @@ export class HDMPDFGeneratorV2 {
     yPosition += 15; // 3 líneas de espacio
 
     // Firma del vendedor que creó el presupuesto - centrada en la página
-    // SIEMPRE usa el vendedor que creó el presupuesto, nunca el admin cuando ve el PDF
-    const signingUser = vendedor;
+    // Si el vendedor es administrativo, usa la firma del admin en su lugar
+    let signingUser = vendedor;
+    if (vendedor?.role === 'administrativo') {
+      console.log('👤 Usuario es administrativo, obteniendo firma del admin...');
+      const adminUser = await this.getAdminUser();
+      if (adminUser) {
+        signingUser = adminUser;
+        console.log('✅ Usando firma del admin:', adminUser.full_name);
+      }
+    }
     console.log('👤 Signing user:', signingUser?.full_name, 'Role:', signingUser?.role, 'Has signature:', !!signingUser?.signature_url);
     console.log('📝 Vendedor object passed:', vendedor ? 'YES' : 'NO');
     if (signingUser) {

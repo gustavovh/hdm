@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
-import { Calendar, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { Calendar, Plus, Trash2, AlertCircle, Pencil } from 'lucide-react';
 
 interface SeguimientoManagerProps {
   presupuestoId: string;
@@ -16,6 +16,7 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
   const [seguimientos, setSeguimientos] = useState<PresupuestoSeguimiento[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     accion: '',
     status_comentario: '',
@@ -56,18 +57,44 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
 
     try {
       setError('');
-      const { error: insertError } = await supabase
-        .from('presupuesto_seguimiento')
-        .insert({
-          presupuesto_id: presupuestoId,
-          user_id: user.id,
-          accion: formData.accion,
-          status_comentario: formData.status_comentario || null,
-          proxima_accion: formData.proxima_accion || null,
-          fecha_proxima_accion: formData.fecha_proxima_accion || null,
-        });
 
-      if (insertError) throw insertError;
+      if (formData.fecha_proxima_accion) {
+        const fechaProxima = new Date(formData.fecha_proxima_accion);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        if (fechaProxima < hoy) {
+          setError('La fecha de próxima acción no puede ser anterior a hoy');
+          return;
+        }
+      }
+
+      if (editingId) {
+        const { error: updateError } = await supabase
+          .from('presupuesto_seguimiento')
+          .update({
+            accion: formData.accion,
+            status_comentario: formData.status_comentario || null,
+            proxima_accion: formData.proxima_accion || null,
+            fecha_proxima_accion: formData.fecha_proxima_accion || null,
+          })
+          .eq('id', editingId);
+
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('presupuesto_seguimiento')
+          .insert({
+            presupuesto_id: presupuestoId,
+            user_id: user.id,
+            accion: formData.accion,
+            status_comentario: formData.status_comentario || null,
+            proxima_accion: formData.proxima_accion || null,
+            fecha_proxima_accion: formData.fecha_proxima_accion || null,
+          });
+
+        if (insertError) throw insertError;
+      }
 
       setFormData({
         accion: '',
@@ -75,12 +102,25 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
         proxima_accion: '',
         fecha_proxima_accion: '',
       });
+      setEditingId(null);
       setShowForm(false);
       loadSeguimientos();
     } catch (err: any) {
-      console.error('Error creating seguimiento:', err);
-      setError(err.message || 'Error al crear el seguimiento');
+      console.error('Error saving seguimiento:', err);
+      setError(err.message || 'Error al guardar el seguimiento');
     }
+  };
+
+  const handleEdit = (seguimiento: PresupuestoSeguimiento) => {
+    setFormData({
+      accion: seguimiento.accion,
+      status_comentario: seguimiento.status_comentario || '',
+      proxima_accion: seguimiento.proxima_accion || '',
+      fecha_proxima_accion: seguimiento.fecha_proxima_accion || '',
+    });
+    setEditingId(seguimiento.id);
+    setShowForm(true);
+    setError('');
   };
 
   const handleDelete = async (id: string) => {
@@ -100,6 +140,18 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
     }
   };
 
+  const handleCancelEdit = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setFormData({
+      accion: '',
+      status_comentario: '',
+      proxima_accion: '',
+      fecha_proxima_accion: '',
+    });
+    setError('');
+  };
+
   if (loading) {
     return <div className="text-center py-4">Cargando seguimiento...</div>;
   }
@@ -108,14 +160,16 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">Gestión de Seguimiento</h3>
-        <Button
-          type="button"
-          onClick={() => setShowForm(!showForm)}
-          size="sm"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nueva Acción
-        </Button>
+        {!showForm && (
+          <Button
+            type="button"
+            onClick={() => setShowForm(true)}
+            size="sm"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nueva Acción
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -127,9 +181,14 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
 
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-semibold text-gray-900">
+              {editingId ? 'Editar Seguimiento' : 'Nuevo Seguimiento'}
+            </h4>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Acción <span className="text-red-500">*</span>
+              Acción Realizada <span className="text-red-500">*</span>
             </label>
             <Input
               type="text"
@@ -182,19 +241,13 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                setShowForm(false);
-                setFormData({
-                  accion: '',
-                  status_comentario: '',
-                  proxima_accion: '',
-                  fecha_proxima_accion: '',
-                });
-              }}
+              onClick={handleCancelEdit}
             >
               Cancelar
             </Button>
-            <Button type="submit">Guardar Seguimiento</Button>
+            <Button type="submit">
+              {editingId ? 'Actualizar' : 'Guardar'} Seguimiento
+            </Button>
           </div>
         </form>
       )}
@@ -227,15 +280,26 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
                   </p>
                 </div>
                 {seg.user_id === user?.id && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(seg.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(seg)}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(seg.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 )}
               </div>
 
