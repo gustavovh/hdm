@@ -4,7 +4,7 @@ import { Presupuesto, User } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
 export class HDMPDFGeneratorV2 {
-  private static readonly VERSION = 'v2.6.0-TRUE-CENTER';
+  private static readonly VERSION = 'v2.7.0-DOWN-50';
 
   private static formatNumber(value: number): string {
     return new Intl.NumberFormat('es-PY', {
@@ -332,7 +332,7 @@ export class HDMPDFGeneratorV2 {
   }
 
   private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
-    console.log('💧 Adding watermark v2.6 - ADJUSTED FOR TRUE CENTER');
+    console.log('💧 Adding watermark v2.7 - MOVED DOWN (0.5x)');
 
     // Configurar opacidad y color
     doc.saveGraphicsState();
@@ -359,10 +359,10 @@ export class HDMPDFGeneratorV2 {
     console.log('📍 Base center:', baseCenterX, baseCenterY);
 
     // Ajustar posición para que el texto quede visualmente centrado
-    // cuando está rotado 45°. El ajuste vertical compensa el baseline.
-    const adjustedY = baseCenterY + (textHeightMM * 0.2);
+    // cuando está rotado 45°. Aumentamos el multiplicador para moverlo más abajo.
+    const adjustedY = baseCenterY + (textHeightMM * 0.5);
 
-    console.log('🎯 Drawing at - X:', baseCenterX, 'Y:', adjustedY);
+    console.log('🎯 Drawing at - X:', baseCenterX, 'Y:', adjustedY, '(offset:', textHeightMM * 0.5, 'mm)');
 
     // Dibujar el texto rotado (sin baseline para evitar problemas)
     doc.text(text, baseCenterX, adjustedY, {
