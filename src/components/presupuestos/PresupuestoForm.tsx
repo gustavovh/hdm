@@ -196,23 +196,11 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No autenticado');
 
-      const generateCodigo = async (): Promise<string> => {
-        const { data: lastPresupuesto } = await supabase
-          .from('presupuestos')
-          .select('codigo')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const lastNumber = lastPresupuesto?.codigo
-          ? parseInt(lastPresupuesto.codigo.split('-')[1])
-          : 0;
-        return `PRE-${String(lastNumber + 1).padStart(6, '0')}`;
-      };
-
       let codigo = '';
       if (!presupuestoId) {
-        codigo = await generateCodigo();
+        const { data, error } = await supabase.rpc('generate_presupuesto_codigo');
+        if (error) throw error;
+        codigo = data;
       }
 
       const presupuestoData: any = {
@@ -265,42 +253,13 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
           await saveItemToCatalogo(item);
         }
       } else {
-        let newPresupuesto = null;
-        let attempts = 0;
-        const maxAttempts = 5;
+        const { data: newPresupuesto, error } = await supabase
+          .from('presupuestos')
+          .insert(presupuestoData)
+          .select()
+          .single();
 
-        while (attempts < maxAttempts && !newPresupuesto) {
-          try {
-            const { data, error } = await supabase
-              .from('presupuestos')
-              .insert(presupuestoData)
-              .select()
-              .single();
-
-            if (error) {
-              if (error.code === '23505' && error.message.includes('presupuestos_codigo_key')) {
-                attempts++;
-                if (attempts >= maxAttempts) {
-                  throw new Error('No se pudo generar un código único después de varios intentos. Por favor, intente nuevamente.');
-                }
-                codigo = await generateCodigo();
-                presupuestoData.codigo = codigo;
-                await new Promise(resolve => setTimeout(resolve, 100 * attempts));
-                continue;
-              }
-              throw error;
-            }
-
-            newPresupuesto = data;
-          } catch (err) {
-            if (attempts >= maxAttempts - 1) throw err;
-            attempts++;
-          }
-        }
-
-        if (!newPresupuesto) {
-          throw new Error('No se pudo crear el presupuesto');
-        }
+        if (error) throw error;
 
         for (const item of items) {
           const subtotal = item.cantidad * item.precio_unitario;
