@@ -288,9 +288,10 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       }
 
       onSave();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving presupuesto:', error);
-      alert('Error al guardar el presupuesto');
+      const errorMessage = error?.message || error?.error_description || 'Error al guardar el presupuesto';
+      alert(errorMessage);
     } finally {
       setSaving(false);
     }
