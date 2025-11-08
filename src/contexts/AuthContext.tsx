@@ -147,14 +147,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('❌ Sign out error:', error);
-        throw error;
+        // Aún así limpiamos el estado local aunque haya error
       }
       console.log('✅ Successfully signed out');
-      setUser(null);
-      setAuthUser(null);
     } catch (error) {
       console.error('❌ Sign out failed:', error);
-      throw error;
+      // Continuamos con la limpieza del estado local
+    } finally {
+      // SIEMPRE limpiamos el estado local, sin importar si hubo error
+      setUser(null);
+      setAuthUser(null);
     }
   };
 
