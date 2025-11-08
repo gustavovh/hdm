@@ -4,7 +4,7 @@ import { Presupuesto, User } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
 export class HDMPDFGeneratorV2 {
-  private static readonly VERSION = 'v2.9.0-Y1.3-X+10';
+  private static readonly VERSION = 'v2.9.1-Y1.3-X+20';
 
   private static formatNumber(value: number): string {
     return new Intl.NumberFormat('es-PY', {
@@ -362,9 +362,9 @@ export class HDMPDFGeneratorV2 {
     const adjustedY = baseCenterY + (textHeightMM * 1.3);
 
     // Ajustar posición horizontal: mover hacia la derecha para dar más margen izquierdo
-    const adjustedX = baseCenterX + 10; // +10mm hacia la derecha
+    const adjustedX = baseCenterX + 20; // +20mm hacia la derecha
 
-    console.log('🎯 Drawing at - X:', adjustedX, 'Y:', adjustedY, '(Y offset:', textHeightMM * 1.3, 'mm, X shift: +10mm)');
+    console.log('🎯 Drawing at - X:', adjustedX, 'Y:', adjustedY, '(Y offset:', textHeightMM * 1.3, 'mm, X shift: +20mm)');
 
     // Dibujar el texto rotado
     doc.text(text, adjustedX, adjustedY, {
@@ -372,7 +372,7 @@ export class HDMPDFGeneratorV2 {
       angle: 45
     });
 
-    console.log('✅ Watermark rendered (80pt font, Y:1.3, X:+10mm)');
+    console.log('✅ Watermark rendered (80pt font, Y:1.3, X:+20mm)');
 
     doc.restoreGraphicsState();
   }
