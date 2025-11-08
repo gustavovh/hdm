@@ -386,9 +386,9 @@ export class HDMPDFGeneratorV2 {
     const adjustedY = baseCenterY + (textHeightMM * 1.3);
 
     // Ajustar posición horizontal: mover hacia la derecha para dar más margen izquierdo
-    const adjustedX = baseCenterX + 20; // +20mm hacia la derecha
+    const adjustedX = baseCenterX + 35; // +35mm hacia la derecha
 
-    console.log('🎯 Drawing at - X:', adjustedX, 'Y:', adjustedY, '(Y offset:', textHeightMM * 1.3, 'mm, X shift: +20mm)');
+    console.log('🎯 Drawing at - X:', adjustedX, 'Y:', adjustedY, '(Y offset:', textHeightMM * 1.3, 'mm, X shift: +35mm)');
 
     // Dibujar el texto rotado
     doc.text(text, adjustedX, adjustedY, {

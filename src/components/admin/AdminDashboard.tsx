@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { SolicitudDescuento, Presupuesto, User } from '../../types/database.types';
+import { SolicitudDescuento, Presupuesto, User, SalesTarget } from '../../types/database.types';
 import { DiscountRequestService, PresupuestoService } from '../../services/api';
 import { userService } from '../../services/userService';
+import { salesTargetsService } from '../../services/salesTargetsService';
 import { FilterOptions, PaginationOptions } from '../../types/api.types';
 import { DiscountRequestList } from '../discount/DiscountRequestList';
 import { ApprovalModal } from './ApprovalModal';
@@ -61,10 +62,14 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
     totalFacturados: 0,
     montoFacturado: 0,
   });
+  const [currentTarget, setCurrentTarget] = useState<SalesTarget | null>(null);
 
   useEffect(() => {
     loadVendedores();
-  }, []);
+    if (isAdministrativo && user) {
+      loadCurrentTarget();
+    }
+  }, [isAdministrativo, user]);
 
   useEffect(() => {
     loadRequests();
@@ -84,6 +89,16 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
       setVendedores(data.filter(v => v.active));
     } catch (error) {
       console.error('Error loading vendedores:', error);
+    }
+  };
+
+  const loadCurrentTarget = async () => {
+    if (!user) return;
+    try {
+      const target = await salesTargetsService.getCurrentTargetForUser(user.id);
+      setCurrentTarget(target);
+    } catch (error) {
+      console.error('Error cargando objetivo:', error);
     }
   };
 
@@ -331,13 +346,13 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
     return '¡Buenas noches';
   };
 
-  const getRoleMessage = () => {
-    if (isAdmin) {
-      return 'Tu objetivo: Supervisar las operaciones y aprobar solicitudes de descuento';
-    } else if (isAdministrativo) {
-      return 'Tu objetivo: Gestionar presupuestos y apoyar el proceso de ventas';
-    }
-    return '';
+  const formatCurrencySimple = (amount: number) => {
+    return new Intl.NumberFormat('es-PY', {
+      style: 'currency',
+      currency: 'PYG',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
   };
 
   return (
@@ -348,9 +363,22 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
             <h1 className="text-3xl font-bold text-gray-900">
               {getGreeting()}, {user?.full_name}!
             </h1>
-            <p className="text-gray-600 mt-2">
-              {getRoleMessage()}
-            </p>
+            {isAdmin ? (
+              <p className="text-gray-600 mt-2">
+                Tu objetivo: Supervisar las operaciones y aprobar solicitudes de descuento
+              </p>
+            ) : isAdministrativo && currentTarget ? (
+              <div className="mt-3 flex items-center gap-2">
+                <Target className="w-5 h-5 text-blue-600" />
+                <p className="text-lg text-gray-700">
+                  Tu objetivo este mes: <span className="font-semibold text-blue-600">{formatCurrencySimple(currentTarget.objetivo)} PYG</span>
+                </p>
+              </div>
+            ) : isAdministrativo ? (
+              <p className="text-gray-600 mt-2">
+                Vista general de tu actividad y rendimiento
+              </p>
+            ) : null}
           </div>
           {isAdministrativo && onCreatePresupuesto && (
             <Button onClick={onCreatePresupuesto}>
