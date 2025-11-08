@@ -230,6 +230,10 @@ function AuthenticatedApp() {
                 setSelectedPresupuestoId(id);
                 setCurrentView('presupuesto');
               }}
+              onCreatePresupuesto={() => {
+                setSelectedPresupuestoId('');
+                setCurrentView('form');
+              }}
             />
           ) : (
             <VendedorDashboard />

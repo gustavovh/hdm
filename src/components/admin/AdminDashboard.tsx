@@ -26,9 +26,10 @@ interface GeneralStats {
 
 interface AdminDashboardProps {
   onSelectPresupuesto?: (id: string) => void;
+  onCreatePresupuesto?: () => void;
 }
 
-export function AdminDashboard({ onSelectPresupuesto }: AdminDashboardProps) {
+export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: AdminDashboardProps) {
   const { user, isAdmin, isAdministrativo } = useAuth();
   const [requests, setRequests] = useState<SolicitudDescuento[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<SolicitudDescuento | null>(null);
@@ -326,7 +327,14 @@ export function AdminDashboard({ onSelectPresupuesto }: AdminDashboardProps) {
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Panel de Administración</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
+          {isAdministrativo && onCreatePresupuesto && (
+            <Button onClick={onCreatePresupuesto}>
+              Nuevo Presupuesto
+            </Button>
+          )}
+        </div>
 
         <div className="border-b border-gray-200 mb-6">
           <nav className="-mb-px flex space-x-8">

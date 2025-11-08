@@ -284,8 +284,15 @@ export class HDMPDFGeneratorV2 {
       doc.text('...........................', centerX, yPosition, { align: 'center' });
       yPosition += 4;
 
-      // Si es administrativo, NO mostrar nombre
-      if (!isAdministrativoCreator) {
+      // Si es administrativo, mostrar firma especial
+      if (isAdministrativoCreator) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('ING. HERNAN MIÑO', centerX, yPosition, { align: 'center' });
+        yPosition += 4;
+        doc.setFont('helvetica', 'normal');
+        doc.text('CAT A - 7822', centerX, yPosition, { align: 'center' });
+      } else {
+        // Vendedor o admin normal
         doc.setFont('helvetica', 'bold');
         doc.text(signingUser.full_name || 'N/A', centerX, yPosition, { align: 'center' });
         yPosition += 4;
