@@ -4,7 +4,7 @@ import { Presupuesto, User } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
 export class HDMPDFGeneratorV2 {
-  private static readonly VERSION = 'v2.7.0-DOWN-50';
+  private static readonly VERSION = 'v2.8.0-FONT80-OFFSET1';
 
   private static formatNumber(value: number): string {
     return new Intl.NumberFormat('es-PY', {
@@ -332,7 +332,7 @@ export class HDMPDFGeneratorV2 {
   }
 
   private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
-    console.log('💧 Adding watermark v2.7 - MOVED DOWN (0.5x)');
+    console.log('💧 Adding watermark v2.8 - SMALLER FONT + OFFSET 1.0');
 
     // Configurar opacidad y color
     doc.saveGraphicsState();
@@ -340,8 +340,9 @@ export class HDMPDFGeneratorV2 {
     doc.setGState(gstate);
     doc.setTextColor(120, 120, 120);
 
-    // Tamaño grande
-    doc.setFontSize(100);
+    // Tamaño reducido para mejor centrado
+    const fontSize = 80;
+    doc.setFontSize(fontSize);
     doc.setFont('helvetica', 'bold');
 
     const text = 'PRESUPUESTO';
@@ -352,25 +353,23 @@ export class HDMPDFGeneratorV2 {
 
     // Medir dimensiones del texto
     const textWidth = doc.getTextWidth(text);
-    const fontSize = 100;
     const textHeightMM = fontSize * 0.352778; // Convertir puntos a mm
 
     console.log('📏 Text - Width:', textWidth, 'mm, Height:', textHeightMM, 'mm');
     console.log('📍 Base center:', baseCenterX, baseCenterY);
 
-    // Ajustar posición para que el texto quede visualmente centrado
-    // cuando está rotado 45°. Aumentamos el multiplicador para moverlo más abajo.
-    const adjustedY = baseCenterY + (textHeightMM * 0.5);
+    // Ajustar posición con offset completo (1.0) para centrado perfecto
+    const adjustedY = baseCenterY + (textHeightMM * 1.0);
 
-    console.log('🎯 Drawing at - X:', baseCenterX, 'Y:', adjustedY, '(offset:', textHeightMM * 0.5, 'mm)');
+    console.log('🎯 Drawing at - X:', baseCenterX, 'Y:', adjustedY, '(offset:', textHeightMM, 'mm)');
 
-    // Dibujar el texto rotado (sin baseline para evitar problemas)
+    // Dibujar el texto rotado
     doc.text(text, baseCenterX, adjustedY, {
       align: 'center',
       angle: 45
     });
 
-    console.log('✅ Watermark rendered');
+    console.log('✅ Watermark rendered (80pt font, 1.0 offset)');
 
     doc.restoreGraphicsState();
   }
