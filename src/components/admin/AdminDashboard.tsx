@@ -799,9 +799,6 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                         Referencia
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Vendedor
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Fecha
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -830,9 +827,6 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-700">
                           {presupuesto.concepto || '-'}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                          {presupuesto.vendedor?.full_name || '-'}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                           {new Date(presupuesto.created_at).toLocaleDateString('es-PY')}
