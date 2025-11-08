@@ -324,11 +324,34 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
     });
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return '¡Buenos días';
+    if (hour < 19) return '¡Buenas tardes';
+    return '¡Buenas noches';
+  };
+
+  const getRoleMessage = () => {
+    if (isAdmin) {
+      return 'Tu objetivo: Supervisar las operaciones y aprobar solicitudes de descuento';
+    } else if (isAdministrativo) {
+      return 'Tu objetivo: Gestionar presupuestos y apoyar el proceso de ventas';
+    }
+    return '';
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {getGreeting()}, {user?.full_name}!
+            </h1>
+            <p className="text-gray-600 mt-2">
+              {getRoleMessage()}
+            </p>
+          </div>
           {isAdministrativo && onCreatePresupuesto && (
             <Button onClick={onCreatePresupuesto}>
               Nuevo Presupuesto
