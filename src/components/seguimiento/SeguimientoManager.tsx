@@ -320,11 +320,13 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
                     {seg.fecha_proxima_accion && (
                       <span className="flex items-center gap-1 text-blue-600">
                         <Calendar className="w-4 h-4" />
-                        {new Date(seg.fecha_proxima_accion).toLocaleDateString('es-PY', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                        })}
+                        {(() => {
+                          const date = new Date(seg.fecha_proxima_accion + 'T00:00:00');
+                          const day = String(date.getDate()).padStart(2, '0');
+                          const month = String(date.getMonth() + 1).padStart(2, '0');
+                          const year = date.getFullYear();
+                          return `${day}/${month}/${year}`;
+                        })()}
                       </span>
                     )}
                   </div>
