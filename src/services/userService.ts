@@ -150,11 +150,12 @@ export class UserService {
 
   static async getVendedores(): Promise<User[]> {
     // Use the SECURITY DEFINER function and filter locally
+    // Incluye vendedores Y administrativos
     const { data, error } = await supabase.rpc('get_all_users');
 
     if (error) throw error;
     return (data || [])
-      .filter((user: User) => user.role === 'vendedor')
+      .filter((user: User) => user.role === 'vendedor' || user.role === 'administrativo')
       .sort((a: User, b: User) => (a.full_name || '').localeCompare(b.full_name || ''));
   }
 }

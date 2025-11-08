@@ -249,7 +249,8 @@ export class HDMPDFGeneratorV2 {
     // Firma del vendedor que creó el presupuesto - centrada en la página
     // Si el vendedor es administrativo, usa la firma del admin en su lugar
     let signingUser = vendedor;
-    if (vendedor?.role === 'administrativo') {
+    const isAdministrativoCreator = vendedor?.role === 'administrativo';
+    if (isAdministrativoCreator) {
       console.log('👤 Usuario es administrativo, obteniendo firma del admin...');
       const adminUser = await this.getAdminUser();
       if (adminUser) {
@@ -282,12 +283,20 @@ export class HDMPDFGeneratorV2 {
       doc.setFont('helvetica', 'normal');
       doc.text('...........................', centerX, yPosition, { align: 'center' });
       yPosition += 4;
-      doc.setFont('helvetica', 'bold');
-      doc.text(signingUser.full_name || 'N/A', centerX, yPosition, { align: 'center' });
-      yPosition += 4;
-      doc.setFont('helvetica', 'normal');
-      if (signingUser.phone) {
-        doc.text(signingUser.phone, centerX, yPosition, { align: 'center' });
+
+      // Si es administrativo, NO mostrar nombre
+      if (!isAdministrativoCreator) {
+        doc.setFont('helvetica', 'bold');
+        doc.text(signingUser.full_name || 'N/A', centerX, yPosition, { align: 'center' });
+        yPosition += 4;
+        doc.setFont('helvetica', 'normal');
+        if (signingUser.phone) {
+          doc.text(signingUser.phone, centerX, yPosition, { align: 'center' });
+          yPosition += 4;
+        }
+        // Agregar nombre de la empresa
+        doc.setFont('helvetica', 'bold');
+        doc.text('HDM INGENIERIA S.A.', centerX, yPosition, { align: 'center' });
       }
     }
 
