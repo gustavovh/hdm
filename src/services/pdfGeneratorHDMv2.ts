@@ -4,7 +4,7 @@ import { Presupuesto, User } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
 export class HDMPDFGeneratorV2 {
-  private static readonly VERSION = 'v2.8.0-FONT80-OFFSET1';
+  private static readonly VERSION = 'v2.9.0-Y1.3-X+10';
 
   private static formatNumber(value: number): string {
     return new Intl.NumberFormat('es-PY', {
@@ -332,7 +332,7 @@ export class HDMPDFGeneratorV2 {
   }
 
   private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
-    console.log('💧 Adding watermark v2.8 - SMALLER FONT + OFFSET 1.0');
+    console.log('💧 Adding watermark v2.9 - OFFSET 1.3 + RIGHT SHIFT');
 
     // Configurar opacidad y color
     doc.saveGraphicsState();
@@ -358,18 +358,21 @@ export class HDMPDFGeneratorV2 {
     console.log('📏 Text - Width:', textWidth, 'mm, Height:', textHeightMM, 'mm');
     console.log('📍 Base center:', baseCenterX, baseCenterY);
 
-    // Ajustar posición con offset completo (1.0) para centrado perfecto
-    const adjustedY = baseCenterY + (textHeightMM * 1.0);
+    // Ajustar posición vertical con offset 1.3
+    const adjustedY = baseCenterY + (textHeightMM * 1.3);
 
-    console.log('🎯 Drawing at - X:', baseCenterX, 'Y:', adjustedY, '(offset:', textHeightMM, 'mm)');
+    // Ajustar posición horizontal: mover hacia la derecha para dar más margen izquierdo
+    const adjustedX = baseCenterX + 10; // +10mm hacia la derecha
+
+    console.log('🎯 Drawing at - X:', adjustedX, 'Y:', adjustedY, '(Y offset:', textHeightMM * 1.3, 'mm, X shift: +10mm)');
 
     // Dibujar el texto rotado
-    doc.text(text, baseCenterX, adjustedY, {
+    doc.text(text, adjustedX, adjustedY, {
       align: 'center',
       angle: 45
     });
 
-    console.log('✅ Watermark rendered (80pt font, 1.0 offset)');
+    console.log('✅ Watermark rendered (80pt font, Y:1.3, X:+10mm)');
 
     doc.restoreGraphicsState();
   }
