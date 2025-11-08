@@ -4,7 +4,7 @@ import { Presupuesto, User } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
 export class HDMPDFGeneratorV2 {
-  private static readonly VERSION = 'v2.5.0-CENTERED';
+  private static readonly VERSION = 'v2.6.0-TRUE-CENTER';
 
   private static formatNumber(value: number): string {
     return new Intl.NumberFormat('es-PY', {
@@ -332,7 +332,7 @@ export class HDMPDFGeneratorV2 {
   }
 
   private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
-    console.log('💧 Adding watermark v2.5 - SIMPLIFIED CENTERED');
+    console.log('💧 Adding watermark v2.6 - ADJUSTED FOR TRUE CENTER');
 
     // Configurar opacidad y color
     doc.saveGraphicsState();
@@ -347,24 +347,30 @@ export class HDMPDFGeneratorV2 {
     const text = 'PRESUPUESTO';
 
     // Centro de la página
-    const centerX = pageWidth / 2;
-    const centerY = pageHeight / 2;
+    const baseCenterX = pageWidth / 2;
+    const baseCenterY = pageHeight / 2;
 
-    // Medir ancho del texto
+    // Medir dimensiones del texto
     const textWidth = doc.getTextWidth(text);
+    const fontSize = 100;
+    const textHeightMM = fontSize * 0.352778; // Convertir puntos a mm
 
-    console.log('📏 Watermark - Text width:', textWidth, 'mm');
-    console.log('📍 Page center:', centerX, centerY);
+    console.log('📏 Text - Width:', textWidth, 'mm, Height:', textHeightMM, 'mm');
+    console.log('📍 Base center:', baseCenterX, baseCenterY);
 
-    // Dibujar el texto usando el método estándar con rotación
-    // La clave es que align: 'center' centra el texto en las coordenadas dadas
-    doc.text(text, centerX, centerY, {
+    // Ajustar posición para que el texto quede visualmente centrado
+    // cuando está rotado 45°. El ajuste vertical compensa el baseline.
+    const adjustedY = baseCenterY + (textHeightMM * 0.2);
+
+    console.log('🎯 Drawing at - X:', baseCenterX, 'Y:', adjustedY);
+
+    // Dibujar el texto rotado (sin baseline para evitar problemas)
+    doc.text(text, baseCenterX, adjustedY, {
       align: 'center',
-      angle: 45,
-      baseline: 'middle'
+      angle: 45
     });
 
-    console.log('✅ Watermark drawn at center:', centerX, centerY);
+    console.log('✅ Watermark rendered');
 
     doc.restoreGraphicsState();
   }
