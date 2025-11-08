@@ -22,7 +22,7 @@ export function UserFormModal({
   const [formData, setFormData] = useState({
     email: '',
     full_name: '',
-    role: 'vendedor' as 'admin' | 'vendedor',
+    role: 'vendedor' as 'admin' | 'vendedor' | 'administrativo',
     password: '',
   });
   const [loading, setLoading] = useState(false);
@@ -129,12 +129,13 @@ export function UserFormModal({
           onChange={(e) =>
             setFormData({
               ...formData,
-              role: e.target.value as 'admin' | 'vendedor',
+              role: e.target.value as 'admin' | 'vendedor' | 'administrativo',
             })
           }
           required
         >
           <option value="vendedor">Vendedor</option>
+          <option value="administrativo">Administrativo</option>
           <option value="admin">Administrador</option>
         </Select>
 

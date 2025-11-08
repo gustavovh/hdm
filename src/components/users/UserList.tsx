@@ -153,9 +153,19 @@ export function UserList() {
                     </td>
                     <td className="px-6 py-4">
                       <Badge
-                        variant={user.role === 'admin' ? 'info' : 'neutral'}
+                        variant={
+                          user.role === 'admin'
+                            ? 'info'
+                            : user.role === 'administrativo'
+                            ? 'warning'
+                            : 'neutral'
+                        }
                       >
-                        {user.role === 'admin' ? 'Administrador' : 'Vendedor'}
+                        {user.role === 'admin'
+                          ? 'Administrador'
+                          : user.role === 'administrativo'
+                          ? 'Administrativo'
+                          : 'Vendedor'}
                       </Badge>
                     </td>
                     <td className="px-6 py-4">
