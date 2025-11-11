@@ -227,7 +227,7 @@ function addTrabajosTitle(doc: jsPDF, margin: number, yPosition: number): number
 async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): Promise<number> {
   const tableData = presupuesto.items?.map((item, index) => [
     (index + 1).toString(),
-    (index + 1).toString(),
+    item.item_grupo || (index + 1).toString(),
     item.descripcion.toUpperCase(),
     formatNumber(item.cantidad),
     item.unidad || 'UNID',
@@ -269,12 +269,12 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     },
     columnStyles: {
       0: { halign: 'center', cellWidth: 8 },
-      1: { halign: 'center', cellWidth: 16 },
-      2: { halign: 'left', cellWidth: 60 },
-      3: { halign: 'center', cellWidth: 15 },
+      1: { halign: 'center', cellWidth: 15 },
+      2: { halign: 'left', cellWidth: 58 },
+      3: { halign: 'center', cellWidth: 14 },
       4: { halign: 'center', cellWidth: 15 },
-      5: { halign: 'right', cellWidth: 28 },
-      6: { halign: 'right', cellWidth: 28 },
+      5: { halign: 'right', cellWidth: 30 },
+      6: { halign: 'right', cellWidth: 30 },
     },
     margin: { left: margin, right: margin },
   });
@@ -302,13 +302,13 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
       cellPadding: 3,
     },
     columnStyles: {
-      0: { cellWidth: 10 },
-      1: { cellWidth: 18 },
-      2: { cellWidth: 65 },
-      3: { cellWidth: 18 },
-      4: { halign: 'right', cellWidth: 43 },
-      5: { cellWidth: 0 },
-      6: { halign: 'right', cellWidth: 26 },
+      0: { cellWidth: 8 },
+      1: { cellWidth: 15 },
+      2: { cellWidth: 58 },
+      3: { cellWidth: 14 },
+      4: { halign: 'right', cellWidth: 15 },
+      5: { cellWidth: 30 },
+      6: { halign: 'right', cellWidth: 30 },
     },
     margin: { left: margin, right: margin },
   });
