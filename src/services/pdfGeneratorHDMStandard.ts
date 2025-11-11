@@ -405,20 +405,17 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
 
   if (signatureUrl) {
     try {
-      const signatureWidth = 40;
-      const signatureHeight = 20;
+      // Mantener proporción de la imagen, más ancha que alta
+      const signatureWidth = 60;
+      const signatureHeight = 30;
       const signatureX = (pageWidth - signatureWidth) / 2;
 
-      doc.addImage(signatureUrl, 'PNG', signatureX, signatureY, signatureWidth, signatureHeight);
+      // Agregar imagen sin deformar
+      doc.addImage(signatureUrl, 'PNG', signatureX, signatureY, signatureWidth, signatureHeight, undefined, 'NONE');
 
-      // Solo agregar línea y texto si hay firma
+      // Solo línea debajo de la firma, sin textos
       doc.setLineWidth(0.5);
-      doc.line(signatureX, signatureY + 22, signatureX + signatureWidth, signatureY + 22);
-
-      doc.setFont('times', 'normal');
-      doc.setFontSize(10);
-      doc.text('DEPARTAMENTO COMERCIAL', pageWidth / 2, signatureY + 28, { align: 'center' });
-      doc.text('HDM INGENIERIA S.A.', pageWidth / 2, signatureY + 33, { align: 'center' });
+      doc.line(signatureX, signatureY + signatureHeight + 2, signatureX + signatureWidth, signatureY + signatureHeight + 2);
     } catch (error) {
       console.warn('Error añadiendo firma:', error);
     }
