@@ -60,18 +60,19 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
 function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
   doc.saveGraphicsState();
-  doc.setGState(new doc.GState({ opacity: 0.15 }));
+  doc.setGState(new doc.GState({ opacity: 0.1 }));
   doc.setFont('times', 'bold');
-  doc.setFontSize(70);
-  doc.setTextColor(120, 120, 120);
+  doc.setFontSize(80);
+  doc.setTextColor(200, 200, 200);
 
   const text = 'PRESUPUESTO';
 
-  const startX = 15;
-  const startY = 100;
+  const centerX = pageWidth / 2;
+  const centerY = pageHeight / 2 + 20;
 
-  doc.text(text, startX, startY, {
+  doc.text(text, centerX, centerY, {
     angle: 45,
+    align: 'center'
   });
 
   doc.restoreGraphicsState();
