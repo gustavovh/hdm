@@ -71,8 +71,7 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
   const startY = pageHeight / 2 + 60;
 
   doc.text(text, startX, startY, {
-    angle: 45,
-    maxWidth: pageWidth - 40
+    angle: 45
   });
 
   doc.restoreGraphicsState();
