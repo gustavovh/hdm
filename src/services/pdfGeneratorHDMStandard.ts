@@ -60,10 +60,10 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
 function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
   doc.saveGraphicsState();
-  doc.setGState(new doc.GState({ opacity: 0.15 }));
+  doc.setGState(new doc.GState({ opacity: 0.20 }));
   doc.setFont('times', 'bold');
   doc.setFontSize(80);
-  doc.setTextColor(150, 150, 150);
+  doc.setTextColor(80, 80, 80);
 
   const text = 'PRESUPUESTO';
 
@@ -159,12 +159,10 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
 }
 
 function formatPresupuestoCode(codigo: string): string {
-  const parts = codigo.split('-');
-  if (parts.length === 3) {
-    const part1 = parts[0].padStart(3, '0');
-    const part2 = parts[1].padStart(3, '0');
-    const part3 = parts[2].padStart(8, '0');
-    return `${part1}-${part2}-${part3}`;
+  const match = codigo.match(/PRE-(\d+)/);
+  if (match) {
+    const numero = parseInt(match[1]);
+    return `001-001-${numero.toString().padStart(8, '0')}`;
   }
   return codigo;
 }
