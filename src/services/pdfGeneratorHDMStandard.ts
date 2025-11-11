@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Presupuesto } from '../types/database.types';
+import { supabase } from '../lib/supabase';
 
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
   const doc = new jsPDF({
@@ -13,11 +14,13 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
 
+  const vendedorSignature = await loadVendedorSignature(presupuesto.vendedor_id);
+
   addWatermark(doc, pageWidth, pageHeight);
 
   let yPosition = margin;
 
-  yPosition = addHeader(doc, margin, yPosition, pageWidth);
+  yPosition = await addHeader(doc, margin, yPosition, pageWidth);
 
   yPosition += 3;
 
@@ -45,43 +48,78 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   yPosition += 6;
 
-  addObservaciones(doc, margin, yPosition, pageWidth, presupuesto);
+  yPosition = addObservaciones(doc, margin, yPosition, pageWidth, presupuesto);
+
+  addSignature(doc, margin, pageHeight, pageWidth, vendedorSignature, presupuesto);
 
   return doc.output('blob');
+}
+
+async function loadVendedorSignature(vendedorId: string): Promise<string | null> {
+  try {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('signature_url')
+      .eq('id', vendedorId)
+      .single();
+
+    if (userData?.signature_url) {
+      const { data } = await supabase.storage
+        .from('signatures')
+        .createSignedUrl(userData.signature_url, 60);
+
+      return data?.signedUrl || null;
+    }
+    return null;
+  } catch (error) {
+    console.warn('Error cargando firma del vendedor:', error);
+    return null;
+  }
 }
 
 function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
   doc.saveGraphicsState();
   doc.setGState(new doc.GState({ opacity: 0.08 }));
   doc.setTextColor(180, 180, 180);
-  doc.setFontSize(80);
+  doc.setFontSize(100);
   doc.setFont('times', 'bold');
 
   const text = 'PRESUPUESTO';
+  const textWidth = doc.getTextWidth(text);
   const centerX = pageWidth / 2;
-  const centerY = pageHeight / 2;
 
-  doc.text(text, centerX, centerY, {
-    align: 'center',
+  const targetY = 85;
+
+  doc.text(text, centerX - (textWidth * 0.35), targetY, {
     angle: 45,
   });
 
   doc.restoreGraphicsState();
 }
 
-function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): number {
+async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
   const logoWidth = 80;
   const logoHeight = 45;
 
   try {
-    const logoPath = '/hdm-logo.png';
-    doc.addImage(logoPath, 'PNG', margin, yPosition, logoWidth, logoHeight);
+    const response = await fetch('/hdm-logo.png');
+    const blob = await response.blob();
+    const reader = new FileReader();
+
+    await new Promise((resolve, reject) => {
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+    const logoData = reader.result as string;
+    doc.addImage(logoData, 'PNG', margin, yPosition, logoWidth, logoHeight);
   } catch (error) {
-    console.warn('Logo no disponible');
+    console.warn('Logo no disponible', error);
   }
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(9);
   const servicesLines = [
     'Sistemas eléctricos de potencia - Obras civiles - Metalúrgica',
     'Domótica - Electrónica de Potencia - Media Tensión 23kV',
@@ -91,37 +129,49 @@ function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: num
   let serviceY = yPosition + logoHeight + 2;
   servicesLines.forEach(line => {
     doc.text(line, margin, serviceY);
-    serviceY += 3.5;
+    serviceY += 4;
   });
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(11);
 
   const rightMargin = pageWidth - margin;
-  let contactY = yPosition;
+  let contactY = yPosition + 5;
 
   doc.text('Dirección: Profesor Almada C/21 de', rightMargin, contactY, { align: 'right' });
-  contactY += 4;
+  contactY += 5;
   doc.text('              setiembre', rightMargin, contactY, { align: 'right' });
-  contactY += 4;
+  contactY += 5;
   doc.text('              Luque - Paraguay', rightMargin, contactY, { align: 'right' });
-  contactY += 6;
+  contactY += 7;
 
   doc.text('Email: hmino@hdm.com.py', rightMargin, contactY, { align: 'right' });
-  contactY += 4;
+  contactY += 5;
   doc.text('Cel: +595981795669', rightMargin, contactY, { align: 'right' });
-  contactY += 4;
+  contactY += 5;
   doc.text('Ruc: 80122639-2', rightMargin, contactY, { align: 'right' });
 
   return Math.max(serviceY, contactY) + 5;
 }
 
+function formatPresupuestoCode(codigo: string): string {
+  const parts = codigo.split('-');
+  if (parts.length === 3) {
+    const part1 = parts[0].padStart(3, '0');
+    const part2 = parts[1].padStart(3, '0');
+    const part3 = parts[2].padStart(8, '0');
+    return `${part1}-${part2}-${part3}`;
+  }
+  return codigo;
+}
+
 function addPresupuestoNumber(doc: jsPDF, pageWidth: number, margin: number, yPosition: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(12);
 
   const rightMargin = pageWidth - margin;
-  const text = `Presupuesto #: ${presupuesto.codigo}`;
+  const formattedCode = formatPresupuestoCode(presupuesto.codigo);
+  const text = `Presupuesto #: ${formattedCode}`;
 
   doc.text(text, rightMargin, yPosition, { align: 'right' });
 
@@ -130,7 +180,7 @@ function addPresupuestoNumber(doc: jsPDF, pageWidth: number, margin: number, yPo
 
 function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(12);
 
   const labelWidth = 60;
 
@@ -143,7 +193,7 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuest
   });
   doc.text(fecha, margin + labelWidth, yPosition);
 
-  yPosition += 6;
+  yPosition += 7;
 
   doc.setFont('times', 'bold');
   doc.text('Señores:', margin, yPosition);
@@ -152,12 +202,12 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuest
   const clienteLines = clienteNombre.split('\n');
 
   clienteLines.forEach((line, index) => {
-    doc.text(line, margin + labelWidth, yPosition + (index * 5));
+    doc.text(line, margin + labelWidth, yPosition + (index * 6));
   });
 
-  yPosition += (clienteLines.length * 5);
+  yPosition += (clienteLines.length * 6);
 
-  yPosition += 1;
+  yPosition += 2;
 
   doc.setFont('times', 'bold');
   const refLabel = 'Referencia de presupuesto:';
@@ -168,26 +218,26 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuest
   const conceptoLines = concepto.split('\n');
 
   conceptoLines.forEach((line, index) => {
-    doc.text(line, margin + labelWidth, yPosition + (index * 5));
+    doc.text(line, margin + labelWidth, yPosition + (index * 6));
   });
 
-  yPosition += (conceptoLines.length * 5);
+  yPosition += (conceptoLines.length * 6);
 
   return yPosition;
 }
 
 function addIntroText(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): number {
   doc.setFont('times', 'normal');
-  doc.setFontSize(11);
+  doc.setFontSize(12);
   const introText = 'Tengo el agrado de dirigirme a Ud. a fin de presentar la oferta económica por el trabajo de referencia a ser realizado.';
   const lines = doc.splitTextToSize(introText, pageWidth - (margin * 2));
   doc.text(lines, margin, yPosition);
-  return yPosition + (lines.length * 5);
+  return yPosition + (lines.length * 6);
 }
 
 function addTrabajosTitle(doc: jsPDF, margin: number, yPosition: number): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(12);
   doc.text('Trabajos a ser Realizados:', margin, yPosition);
   return yPosition;
 }
@@ -209,16 +259,16 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
       '#',
       'Item/Grp',
       'Descripción',
-      'Cantidad',
+      'Cant.',
       'Unidad',
-      'P.Unitario',
+      'P.Unit.',
       'Sub Total'
     ]],
     body: tableData,
     theme: 'grid',
     styles: {
       font: 'times',
-      fontSize: 11,
+      fontSize: 10,
       cellPadding: 2,
       lineWidth: 0.1,
       lineColor: [0, 0, 0],
@@ -229,6 +279,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
       fontStyle: 'bold',
       halign: 'center',
       valign: 'middle',
+      minCellHeight: 8,
     },
     bodyStyles: {
       textColor: [0, 0, 0],
@@ -237,10 +288,10 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
       0: { halign: 'center', cellWidth: 10 },
       1: { halign: 'center', cellWidth: 18 },
       2: { halign: 'left', cellWidth: 65 },
-      3: { halign: 'center', cellWidth: 20 },
+      3: { halign: 'center', cellWidth: 18 },
       4: { halign: 'center', cellWidth: 18 },
       5: { halign: 'right', cellWidth: 25 },
-      6: { halign: 'right', cellWidth: 24 },
+      6: { halign: 'right', cellWidth: 26 },
     },
     margin: { left: margin, right: margin },
   });
@@ -263,7 +314,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     theme: 'plain',
     styles: {
       font: 'times',
-      fontSize: 11,
+      fontSize: 12,
       fontStyle: 'bold',
       cellPadding: 2,
     },
@@ -271,10 +322,10 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
       0: { cellWidth: 10 },
       1: { cellWidth: 18 },
       2: { cellWidth: 65 },
-      3: { cellWidth: 20 },
+      3: { cellWidth: 18 },
       4: { cellWidth: 18 },
       5: { halign: 'right', cellWidth: 25 },
-      6: { halign: 'right', cellWidth: 24 },
+      6: { halign: 'right', cellWidth: 26 },
     },
     margin: { left: margin, right: margin },
   });
@@ -284,38 +335,68 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
 
 function addFormaPago(doc: jsPDF, margin: number, yPosition: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(12);
 
   const labelText = 'Forma de pago:';
   doc.text(labelText, margin, yPosition);
 
   const formaPago = presupuesto.observaciones?.match(/forma de pago:?\s*([^\n]+)/i)?.[1] || '30 DIAS';
-  doc.text(formaPago.toUpperCase(), margin + 35, yPosition);
+  doc.text(formaPago.toUpperCase(), margin + 40, yPosition);
 
   return yPosition;
 }
 
-function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto) {
+function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(12);
   doc.text('Observación(es):', margin, yPosition);
-  yPosition += 5;
+  yPosition += 6;
 
   doc.setFont('times', 'normal');
   doc.setFontSize(11);
 
   const observaciones = presupuesto.observaciones ||
-    'EL ALCANCE DEL TRABAJO INCLUYE LA CONEXION DE TODOS LOS COMPONENTES, MEDICION Y MONITOREO DEL FUNCIONAMIENTO UNA VEZ REALIZADA LA INSTALACION.';
+    'PRUEBAS DE DESCRIPCION';
 
   const obsLines = doc.splitTextToSize(observaciones.toUpperCase(), pageWidth - (margin * 2));
   doc.text(obsLines, margin, yPosition);
-  yPosition += (obsLines.length * 5) + 3;
+  yPosition += (obsLines.length * 5) + 4;
 
   doc.setFont('times', 'normal');
   doc.text('* Los precios incluyen IVA.', margin, yPosition);
   yPosition += 5;
 
   doc.text('Estamos a su disposición ante cualquier consulta.', margin, yPosition);
+
+  return yPosition + 5;
+}
+
+function addSignature(doc: jsPDF, margin: number, pageHeight: number, pageWidth: number, signatureUrl: string | null, presupuesto: Presupuesto) {
+  const footerY = pageHeight - 40;
+
+  if (signatureUrl) {
+    try {
+      const signatureWidth = 40;
+      const signatureHeight = 20;
+      const signatureX = (pageWidth - signatureWidth) / 2;
+
+      doc.addImage(signatureUrl, 'PNG', signatureX, footerY - 5, signatureWidth, signatureHeight);
+    } catch (error) {
+      console.warn('Error añadiendo firma:', error);
+    }
+  }
+
+  doc.setLineWidth(0.5);
+  doc.line(margin + 30, footerY + 20, pageWidth - margin - 30, footerY + 20);
+
+  doc.setFont('times', 'bold');
+  doc.setFontSize(11);
+  const vendedorName = presupuesto.vendedor?.full_name || 'HDM Ingeniería S.A.';
+  doc.text(vendedorName, pageWidth / 2, footerY + 25, { align: 'center' });
+
+  doc.setFont('times', 'normal');
+  doc.setFontSize(10);
+  doc.text('HDM Ingeniería S.A.', pageWidth / 2, footerY + 30, { align: 'center' });
 }
 
 function formatCurrency(amount: number): string {
