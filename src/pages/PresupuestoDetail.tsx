@@ -10,7 +10,7 @@ import { SeguimientoManager } from '../components/seguimiento/SeguimientoManager
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { BudgetCalculator } from '../services/budgetCalculator';
-import { HDMPDFGeneratorV2 } from '../services/pdfGeneratorHDMv2';
+import { generateHDMStandardPDF } from '../services/pdfGeneratorHDMStandard';
 import { supabase } from '../lib/supabase';
 import {
   FileText,
@@ -89,24 +89,36 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
 
   const handleDownloadPDF = async () => {
     if (!presupuesto) return;
-    console.log('⬇️ Download PDF - Presupuesto vendedor:', presupuesto.vendedor?.full_name || 'NO VENDEDOR');
-    await HDMPDFGeneratorV2.downloadPresupuestoPDF(presupuesto, presupuesto.vendedor);
+    try {
+      const blob = await generateHDMStandardPDF(presupuesto);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Presupuesto_${presupuesto.codigo}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      alert('Error al generar el PDF');
+    }
   };
 
   const handlePreviewPDF = async () => {
     if (!presupuesto) {
-      console.error('❌ No presupuesto data available');
+      console.error('No hay datos de presupuesto');
       return;
     }
 
-    console.log('📄 handlePreviewPDF called for presupuesto:', presupuesto.codigo);
-    console.log('👤 Preview PDF - Presupuesto vendedor:', presupuesto.vendedor?.full_name || 'NO VENDEDOR DATA');
-    console.log('📦 Full presupuesto object keys:', Object.keys(presupuesto));
     try {
-      await HDMPDFGeneratorV2.previewPresupuestoPDF(presupuesto, presupuesto.vendedor);
-      console.log('✅ PDF preview completed');
+      const blob = await generateHDMStandardPDF(presupuesto);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 100);
     } catch (error) {
-      console.error('❌ Error in handlePreviewPDF:', error);
+      console.error('Error generando vista previa:', error);
+      alert('Error al generar la vista previa del PDF');
     }
   };
 
