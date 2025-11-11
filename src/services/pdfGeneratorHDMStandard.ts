@@ -389,28 +389,19 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
       const signatureX = (pageWidth - signatureWidth) / 2;
 
       doc.addImage(signatureUrl, 'PNG', signatureX, signatureY, signatureWidth, signatureHeight);
+
+      // Solo agregar línea y texto si hay firma
+      doc.setLineWidth(0.5);
+      doc.line(signatureX, signatureY + 22, signatureX + signatureWidth, signatureY + 22);
+
+      doc.setFont('times', 'normal');
+      doc.setFontSize(10);
+      doc.text('DEPARTAMENTO COMERCIAL', pageWidth / 2, signatureY + 28, { align: 'center' });
+      doc.text('HDM INGENIERIA S.A.', pageWidth / 2, signatureY + 33, { align: 'center' });
     } catch (error) {
       console.warn('Error añadiendo firma:', error);
     }
   }
-
-  const vendedorName = presupuesto.vendedor?.full_name || 'HDM Ingeniería S.A.';
-
-  doc.setFont('times', 'bold');
-  doc.setFontSize(12);
-  const nameWidth = doc.getTextWidth(vendedorName);
-  const lineStartX = (pageWidth - nameWidth) / 2;
-  const lineEndX = (pageWidth + nameWidth) / 2;
-
-  doc.setLineWidth(0.5);
-  doc.line(lineStartX, signatureY + 25, lineEndX, signatureY + 25);
-
-  doc.text(vendedorName, pageWidth / 2, signatureY + 30, { align: 'center' });
-
-  doc.setFont('times', 'normal');
-  doc.setFontSize(10);
-  doc.text('DEPARTAMENTO COMERCIAL', pageWidth / 2, signatureY + 36, { align: 'center' });
-  doc.text('HDM INGENIERIA S.A.', pageWidth / 2, signatureY + 41, { align: 'center' });
 }
 
 function formatCurrency(amount: number): string {
