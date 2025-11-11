@@ -405,8 +405,8 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
 
   if (signatureUrl) {
     try {
-      const maxWidth = 50;
-      const maxHeight = 25;
+      const maxWidth = 70;
+      const maxHeight = 35;
 
       // Obtener propiedades de la imagen desde jsPDF
       const imgProps = doc.getImageProperties(signatureUrl);
