@@ -16,41 +16,41 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   const vendedorSignature = await loadVendedorSignature(presupuesto.vendedor_id);
 
-  addWatermark(doc, pageWidth, pageHeight);
-
   let yPosition = margin;
 
   yPosition = await addHeader(doc, margin, yPosition, pageWidth);
 
-  yPosition += 3;
+  yPosition += 5;
 
   yPosition = addPresupuestoNumber(doc, pageWidth, margin, yPosition, presupuesto);
 
-  yPosition += 8;
+  yPosition += 10;
 
   yPosition = addClientInfo(doc, margin, yPosition, presupuesto);
 
-  yPosition += 5;
+  yPosition += 8;
 
   yPosition = addIntroText(doc, margin, yPosition, pageWidth);
 
-  yPosition += 5;
+  yPosition += 8;
 
   yPosition = addTrabajosTitle(doc, margin, yPosition);
 
-  yPosition += 3;
+  yPosition += 5;
 
   yPosition = await addItemsTable(doc, margin, yPosition, pageWidth, presupuesto);
 
-  yPosition += 8;
+  yPosition += 10;
 
   yPosition = addFormaPago(doc, margin, yPosition, presupuesto);
 
-  yPosition += 6;
+  yPosition += 8;
 
   yPosition = addObservaciones(doc, margin, yPosition, pageWidth, presupuesto);
 
-  addSignature(doc, margin, pageHeight, pageWidth, vendedorSignature, presupuesto);
+  yPosition += 15;
+
+  addSignature(doc, yPosition, pageWidth, vendedorSignature, presupuesto);
 
   return doc.output('blob');
 }
@@ -77,29 +77,9 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
   }
 }
 
-function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
-  doc.saveGraphicsState();
-  doc.setGState(new doc.GState({ opacity: 0.08 }));
-  doc.setTextColor(180, 180, 180);
-  doc.setFontSize(100);
-  doc.setFont('times', 'bold');
-
-  const text = 'PRESUPUESTO';
-  const textWidth = doc.getTextWidth(text);
-  const centerX = pageWidth / 2;
-
-  const targetY = 85;
-
-  doc.text(text, centerX - (textWidth * 0.35), targetY, {
-    angle: 45,
-  });
-
-  doc.restoreGraphicsState();
-}
-
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
-  const logoWidth = 80;
-  const logoHeight = 45;
+  const logoHeight = 35;
+  const logoWidth = 60;
 
   try {
     const response = await fetch('/hdm-logo.png');
@@ -113,42 +93,42 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     });
 
     const logoData = reader.result as string;
-    doc.addImage(logoData, 'PNG', margin, yPosition, logoWidth, logoHeight);
+    doc.addImage(logoData, 'PNG', margin, yPosition, logoWidth, logoHeight, undefined, 'FAST');
   } catch (error) {
     console.warn('Logo no disponible', error);
   }
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   const servicesLines = [
     'Sistemas eléctricos de potencia - Obras civiles - Metalúrgica',
     'Domótica - Electrónica de Potencia - Media Tensión 23kV',
     'Mediciones Eléctricas - Gestoría ANDE - Asesoría Energética'
   ];
 
-  let serviceY = yPosition + logoHeight + 2;
+  let serviceY = yPosition + logoHeight + 3;
   servicesLines.forEach(line => {
     doc.text(line, margin, serviceY);
-    serviceY += 4;
+    serviceY += 5;
   });
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(11);
+  doc.setFontSize(12);
 
   const rightMargin = pageWidth - margin;
   let contactY = yPosition + 5;
 
   doc.text('Dirección: Profesor Almada C/21 de', rightMargin, contactY, { align: 'right' });
-  contactY += 5;
+  contactY += 6;
   doc.text('              setiembre', rightMargin, contactY, { align: 'right' });
-  contactY += 5;
+  contactY += 6;
   doc.text('              Luque - Paraguay', rightMargin, contactY, { align: 'right' });
-  contactY += 7;
+  contactY += 8;
 
   doc.text('Email: hmino@hdm.com.py', rightMargin, contactY, { align: 'right' });
-  contactY += 5;
+  contactY += 6;
   doc.text('Cel: +595981795669', rightMargin, contactY, { align: 'right' });
-  contactY += 5;
+  contactY += 6;
   doc.text('Ruc: 80122639-2', rightMargin, contactY, { align: 'right' });
 
   return Math.max(serviceY, contactY) + 5;
@@ -167,7 +147,7 @@ function formatPresupuestoCode(codigo: string): string {
 
 function addPresupuestoNumber(doc: jsPDF, pageWidth: number, margin: number, yPosition: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(14);
 
   const rightMargin = pageWidth - margin;
   const formattedCode = formatPresupuestoCode(presupuesto.codigo);
@@ -180,7 +160,7 @@ function addPresupuestoNumber(doc: jsPDF, pageWidth: number, margin: number, yPo
 
 function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(13);
 
   const labelWidth = 60;
 
@@ -193,7 +173,7 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuest
   });
   doc.text(fecha, margin + labelWidth, yPosition);
 
-  yPosition += 7;
+  yPosition += 8;
 
   doc.setFont('times', 'bold');
   doc.text('Señores:', margin, yPosition);
@@ -202,10 +182,10 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuest
   const clienteLines = clienteNombre.split('\n');
 
   clienteLines.forEach((line, index) => {
-    doc.text(line, margin + labelWidth, yPosition + (index * 6));
+    doc.text(line, margin + labelWidth, yPosition + (index * 7));
   });
 
-  yPosition += (clienteLines.length * 6);
+  yPosition += (clienteLines.length * 7);
 
   yPosition += 2;
 
@@ -218,26 +198,26 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuest
   const conceptoLines = concepto.split('\n');
 
   conceptoLines.forEach((line, index) => {
-    doc.text(line, margin + labelWidth, yPosition + (index * 6));
+    doc.text(line, margin + labelWidth, yPosition + (index * 7));
   });
 
-  yPosition += (conceptoLines.length * 6);
+  yPosition += (conceptoLines.length * 7);
 
   return yPosition;
 }
 
 function addIntroText(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): number {
   doc.setFont('times', 'normal');
-  doc.setFontSize(12);
+  doc.setFontSize(13);
   const introText = 'Tengo el agrado de dirigirme a Ud. a fin de presentar la oferta económica por el trabajo de referencia a ser realizado.';
   const lines = doc.splitTextToSize(introText, pageWidth - (margin * 2));
   doc.text(lines, margin, yPosition);
-  return yPosition + (lines.length * 6);
+  return yPosition + (lines.length * 7);
 }
 
 function addTrabajosTitle(doc: jsPDF, margin: number, yPosition: number): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(13);
   doc.text('Trabajos a ser Realizados:', margin, yPosition);
   return yPosition;
 }
@@ -268,8 +248,8 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     theme: 'grid',
     styles: {
       font: 'times',
-      fontSize: 10,
-      cellPadding: 2,
+      fontSize: 11,
+      cellPadding: 3,
       lineWidth: 0.1,
       lineColor: [0, 0, 0],
     },
@@ -279,10 +259,11 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
       fontStyle: 'bold',
       halign: 'center',
       valign: 'middle',
-      minCellHeight: 8,
+      minCellHeight: 10,
     },
     bodyStyles: {
       textColor: [0, 0, 0],
+      minCellHeight: 8,
     },
     columnStyles: {
       0: { halign: 'center', cellWidth: 10 },
@@ -307,24 +288,24 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
       '',
       '',
       '',
-      '',
       'TOTAL Gs.:',
+      '',
       formatCurrency(totalBruto)
     ]],
     theme: 'plain',
     styles: {
       font: 'times',
-      fontSize: 12,
+      fontSize: 13,
       fontStyle: 'bold',
-      cellPadding: 2,
+      cellPadding: 3,
     },
     columnStyles: {
       0: { cellWidth: 10 },
       1: { cellWidth: 18 },
       2: { cellWidth: 65 },
       3: { cellWidth: 18 },
-      4: { cellWidth: 18 },
-      5: { halign: 'right', cellWidth: 25 },
+      4: { halign: 'right', cellWidth: 43 },
+      5: { cellWidth: 0 },
       6: { halign: 'right', cellWidth: 26 },
     },
     margin: { left: margin, right: margin },
@@ -335,44 +316,46 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
 
 function addFormaPago(doc: jsPDF, margin: number, yPosition: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(13);
 
   const labelText = 'Forma de pago:';
   doc.text(labelText, margin, yPosition);
 
   const formaPago = presupuesto.observaciones?.match(/forma de pago:?\s*([^\n]+)/i)?.[1] || '30 DIAS';
-  doc.text(formaPago.toUpperCase(), margin + 40, yPosition);
+  doc.setFont('times', 'normal');
+  doc.text(formaPago.toUpperCase(), margin + 45, yPosition);
 
   return yPosition;
 }
 
 function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(13);
   doc.text('Observación(es):', margin, yPosition);
-  yPosition += 6;
+  yPosition += 7;
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(11);
+  doc.setFontSize(12);
 
   const observaciones = presupuesto.observaciones ||
     'PRUEBAS DE DESCRIPCION';
 
   const obsLines = doc.splitTextToSize(observaciones.toUpperCase(), pageWidth - (margin * 2));
   doc.text(obsLines, margin, yPosition);
-  yPosition += (obsLines.length * 5) + 4;
+  yPosition += (obsLines.length * 6) + 5;
 
   doc.setFont('times', 'normal');
   doc.text('* Los precios incluyen IVA.', margin, yPosition);
-  yPosition += 5;
+  yPosition += 6;
 
   doc.text('Estamos a su disposición ante cualquier consulta.', margin, yPosition);
 
-  return yPosition + 5;
+  return yPosition;
 }
 
-function addSignature(doc: jsPDF, margin: number, pageHeight: number, pageWidth: number, signatureUrl: string | null, presupuesto: Presupuesto) {
-  const footerY = pageHeight - 40;
+function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatureUrl: string | null, presupuesto: Presupuesto) {
+  const margin = 20;
+  const signatureY = yPosition;
 
   if (signatureUrl) {
     try {
@@ -380,23 +363,23 @@ function addSignature(doc: jsPDF, margin: number, pageHeight: number, pageWidth:
       const signatureHeight = 20;
       const signatureX = (pageWidth - signatureWidth) / 2;
 
-      doc.addImage(signatureUrl, 'PNG', signatureX, footerY - 5, signatureWidth, signatureHeight);
+      doc.addImage(signatureUrl, 'PNG', signatureX, signatureY, signatureWidth, signatureHeight);
     } catch (error) {
       console.warn('Error añadiendo firma:', error);
     }
   }
 
   doc.setLineWidth(0.5);
-  doc.line(margin + 30, footerY + 20, pageWidth - margin - 30, footerY + 20);
+  doc.line(margin + 30, signatureY + 25, pageWidth - margin - 30, signatureY + 25);
 
   doc.setFont('times', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(12);
   const vendedorName = presupuesto.vendedor?.full_name || 'HDM Ingeniería S.A.';
-  doc.text(vendedorName, pageWidth / 2, footerY + 25, { align: 'center' });
+  doc.text(vendedorName, pageWidth / 2, signatureY + 30, { align: 'center' });
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(10);
-  doc.text('HDM Ingeniería S.A.', pageWidth / 2, footerY + 30, { align: 'center' });
+  doc.setFontSize(11);
+  doc.text('HDM Ingeniería S.A.', pageWidth / 2, signatureY + 36, { align: 'center' });
 }
 
 function formatCurrency(amount: number): string {
