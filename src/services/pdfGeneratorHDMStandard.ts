@@ -14,6 +14,8 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
 
+  addWatermark(doc, pageWidth, pageHeight);
+
   const vendedorSignature = await loadVendedorSignature(presupuesto.vendedor_id);
 
   let yPosition = margin;
@@ -54,6 +56,26 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   addSignature(doc, yPosition, pageWidth, vendedorSignature, presupuesto);
 
   return doc.output('blob');
+}
+
+function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
+  doc.saveGraphicsState();
+  doc.setGState(new doc.GState({ opacity: 0.1 }));
+  doc.setFont('times', 'bold');
+  doc.setFontSize(80);
+  doc.setTextColor(200, 200, 200);
+
+  const text = 'PRESUPUESTO';
+  const textWidth = doc.getTextWidth(text);
+  const x = (pageWidth - textWidth) / 2;
+  const y = pageHeight / 2;
+
+  doc.text(text, x, y, {
+    angle: 45,
+    align: 'center',
+  });
+
+  doc.restoreGraphicsState();
 }
 
 async function loadVendedorSignature(vendedorId: string): Promise<string | null> {
@@ -239,7 +261,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     startY: yPosition,
     head: [[
       '#',
-      'Item/Grp',
+      'Item',
       'Descripción',
       'Cant.',
       'Unidad',
