@@ -4,9 +4,13 @@ export type CurrencyType = 'PYG' | 'USD';
 
 export type BudgetStatus =
   | 'BORRADOR'
+  | 'ABIERTO'
   | 'PRESENTADO'
   | 'ACEPTADO'
+  | 'EN_EJECUCION'
   | 'FACTURADO'
+  | 'RECHAZADO'
+  | 'CANCELADO'
   | 'ANULADO';
 
 export type DiscountType = 'PORCENTAJE' | 'MONTO';
@@ -90,6 +94,9 @@ export interface Presupuesto {
   medio_pago?: string;
   enlace_comprobante?: string;
   observaciones?: string;
+  ultima_actualizacion_estado?: string;
+  dias_notificacion_enviada?: boolean;
+  semanas_notificacion_enviada?: boolean;
   created_at: string;
   updated_at: string;
   deleted_at?: string;
@@ -207,6 +214,16 @@ export interface PresupuestoSeguimiento {
   fecha_proxima_accion?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface RegistroGestion {
+  id: string;
+  presupuesto_id: string;
+  vendedor_id: string;
+  comentario: string;
+  estado_momento: string;
+  tipo_notificacion: string;
+  created_at: string;
 }
 
 export interface Database {

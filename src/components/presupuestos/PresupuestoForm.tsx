@@ -225,6 +225,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       if (!presupuestoId) {
         presupuestoData.codigo = codigo;
         presupuestoData.vendedor_id = user.id;
+        presupuestoData.ultima_actualizacion_estado = new Date().toISOString();
         if (estado === 'PRESENTADO') {
           presupuestoData.fecha_presentacion = new Date().toISOString().split('T')[0];
         }
@@ -582,16 +583,11 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
               Cancelar
             </Button>
             <Button
-              variant="outline"
-              onClick={() => handleSubmit('BORRADOR')}
+              onClick={() => handleSubmit('ABIERTO')}
               loading={saving}
             >
               <Save className="w-4 h-4 mr-2" />
-              Guardar Borrador
-            </Button>
-            <Button onClick={() => handleSubmit('PRESENTADO')} loading={saving}>
-              <Save className="w-4 h-4 mr-2" />
-              Presentar Presupuesto
+              Guardar Presupuesto
             </Button>
           </div>
         </div>
