@@ -82,7 +82,7 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 
 function addWatermark(doc: jsPDF, pageWidth: number, presupuestoNumberY: number) {
   doc.saveGraphicsState();
-  doc.setGState(new doc.GState({ opacity: 0.08 }));
+  doc.setGState({ opacity: 0.08 });
   doc.setTextColor(180, 180, 180);
   doc.setFontSize(100);
   doc.setFont('times', 'bold');
