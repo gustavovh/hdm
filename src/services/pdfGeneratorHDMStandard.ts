@@ -14,8 +14,6 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
 
-  addWatermark(doc, pageWidth, pageHeight);
-
   const vendedorSignature = await loadVendedorSignature(presupuesto.vendedor_id);
 
   let yPosition = margin;
@@ -54,6 +52,8 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   yPosition += 15;
 
   addSignature(doc, yPosition, pageWidth, vendedorSignature, presupuesto);
+
+  addWatermark(doc, pageWidth, pageHeight);
 
   return doc.output('blob');
 }
