@@ -405,13 +405,27 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
 
   if (signatureUrl) {
     try {
-      // Mantener proporción de la imagen, más ancha que alta
-      const signatureWidth = 60;
-      const signatureHeight = 30;
+      const maxWidth = 50;
+      const maxHeight = 25;
+
+      // Obtener propiedades de la imagen desde jsPDF
+      const imgProps = doc.getImageProperties(signatureUrl);
+      const imgRatio = imgProps.width / imgProps.height;
+
+      // Calcular dimensiones manteniendo aspect ratio
+      let signatureWidth = maxWidth;
+      let signatureHeight = maxWidth / imgRatio;
+
+      // Si la altura calculada excede el máximo, ajustar por altura
+      if (signatureHeight > maxHeight) {
+        signatureHeight = maxHeight;
+        signatureWidth = maxHeight * imgRatio;
+      }
+
       const signatureX = (pageWidth - signatureWidth) / 2;
 
-      // Agregar imagen sin deformar
-      doc.addImage(signatureUrl, 'PNG', signatureX, signatureY, signatureWidth, signatureHeight, undefined, 'NONE');
+      // Agregar imagen con proporciones correctas
+      doc.addImage(signatureUrl, 'PNG', signatureX, signatureY, signatureWidth, signatureHeight);
 
       // Solo línea debajo de la firma, sin textos
       doc.setLineWidth(0.5);
