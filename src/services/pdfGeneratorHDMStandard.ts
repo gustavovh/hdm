@@ -86,11 +86,32 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
       .single();
 
     if (userData?.signature_url) {
+      // Si ya es una URL pública completa, usarla directamente
+      if (userData.signature_url.startsWith('http')) {
+        // Convertir la imagen a base64 para incluirla en el PDF
+        const response = await fetch(userData.signature_url);
+        const blob = await response.blob();
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      // Si es una ruta, buscar en el bucket 'images'
       const { data } = await supabase.storage
-        .from('signatures')
+        .from('images')
         .createSignedUrl(userData.signature_url, 60);
 
-      return data?.signedUrl || null;
+      if (data?.signedUrl) {
+        const response = await fetch(data.signedUrl);
+        const blob = await response.blob();
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      }
     }
     return null;
   } catch (error) {
