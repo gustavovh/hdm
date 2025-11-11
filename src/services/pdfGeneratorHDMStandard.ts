@@ -69,8 +69,8 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
 }
 
 function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): number {
-  const logoWidth = 80;
-  const logoHeight = 45;
+  const logoWidth = 200;
+  const logoHeight = 112.5;
 
   try {
     const logoPath = '/hdm-logo.png';
@@ -78,13 +78,6 @@ function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: num
   } catch (error) {
     console.warn('Logo no disponible');
   }
-
-  doc.setFont('times', 'bold');
-  doc.setFontSize(16);
-  doc.text('HDM', margin + logoWidth + 5, yPosition + 8);
-
-  doc.setFontSize(14);
-  doc.text('Ingeniería S.A.', margin + logoWidth + 5, yPosition + 15);
 
   doc.setFont('times', 'normal');
   doc.setFontSize(8);
@@ -94,14 +87,14 @@ function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: num
     'Mediciones Eléctricas - Gestoría ANDE - Asesoría Energética'
   ];
 
-  let serviceY = yPosition + 22;
+  let serviceY = yPosition + logoHeight + 2;
   servicesLines.forEach(line => {
     doc.text(line, margin, serviceY);
     serviceY += 3.5;
   });
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(11);
   const contactLines = [
     'Dirección: Profesor Almada C/21 de',
     '              setiembre',
@@ -112,13 +105,13 @@ function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: num
     'Ruc: 80122639-2'
   ];
 
-  let contactY = yPosition;
+  let contactY = yPosition + 5;
   contactLines.forEach(line => {
     doc.text(line, pageWidth - margin, contactY, { align: 'right' });
-    contactY += 4;
+    contactY += 5;
   });
 
-  return yPosition + logoHeight + 5;
+  return serviceY + 5;
 }
 
 function addPresupuestoNumber(doc: jsPDF, pageWidth: number, yPosition: number, presupuesto: Presupuesto): number {
@@ -208,7 +201,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     theme: 'grid',
     styles: {
       font: 'times',
-      fontSize: 10,
+      fontSize: 11,
       cellPadding: 2,
     },
     headStyles: {
@@ -254,7 +247,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     theme: 'plain',
     styles: {
       font: 'times',
-      fontSize: 10,
+      fontSize: 11,
       fontStyle: 'bold',
       cellPadding: 2,
     },
