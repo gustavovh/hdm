@@ -250,31 +250,35 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     theme: 'grid',
     styles: {
       font: 'times',
-      fontSize: 11,
-      cellPadding: 3,
+      fontSize: 9,
+      cellPadding: 2,
       lineWidth: 0.1,
       lineColor: [0, 0, 0],
+      overflow: 'linebreak',
+      cellWidth: 'wrap',
     },
     headStyles: {
       fillColor: [255, 255, 255],
       textColor: [0, 0, 0],
       fontStyle: 'bold',
+      fontSize: 9,
       halign: 'center',
       valign: 'middle',
-      minCellHeight: 10,
+      minCellHeight: 8,
     },
     bodyStyles: {
       textColor: [0, 0, 0],
       minCellHeight: 8,
+      fontSize: 9,
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 8 },
+      0: { halign: 'center', cellWidth: 10 },
       1: { halign: 'center', cellWidth: 15 },
-      2: { halign: 'left', cellWidth: 58 },
-      3: { halign: 'center', cellWidth: 14 },
-      4: { halign: 'center', cellWidth: 15 },
-      5: { halign: 'right', cellWidth: 30 },
-      6: { halign: 'right', cellWidth: 30 },
+      2: { halign: 'left', cellWidth: 70 },
+      3: { halign: 'center', cellWidth: 15 },
+      4: { halign: 'center', cellWidth: 18 },
+      5: { halign: 'right', cellWidth: 25 },
+      6: { halign: 'right', cellWidth: 27 },
     },
     margin: { left: margin, right: margin },
   });
@@ -290,25 +294,25 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
       '',
       '',
       '',
-      'TOTAL Gs.:',
       '',
+      'TOTAL Gs.:',
       formatCurrency(totalBruto)
     ]],
     theme: 'plain',
     styles: {
       font: 'times',
-      fontSize: 13,
+      fontSize: 11,
       fontStyle: 'bold',
-      cellPadding: 3,
+      cellPadding: 2,
     },
     columnStyles: {
-      0: { cellWidth: 8 },
+      0: { cellWidth: 10 },
       1: { cellWidth: 15 },
-      2: { cellWidth: 58 },
-      3: { cellWidth: 14 },
-      4: { halign: 'right', cellWidth: 15 },
-      5: { cellWidth: 30 },
-      6: { halign: 'right', cellWidth: 30 },
+      2: { cellWidth: 70 },
+      3: { cellWidth: 15 },
+      4: { cellWidth: 18 },
+      5: { halign: 'right', cellWidth: 25 },
+      6: { halign: 'right', cellWidth: 27 },
     },
     margin: { left: margin, right: margin },
   });
@@ -371,17 +375,23 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
     }
   }
 
-  doc.setLineWidth(0.5);
-  doc.line(margin + 30, signatureY + 25, pageWidth - margin - 30, signatureY + 25);
+  const vendedorName = presupuesto.vendedor?.full_name || 'HDM Ingeniería S.A.';
 
   doc.setFont('times', 'bold');
   doc.setFontSize(12);
-  const vendedorName = presupuesto.vendedor?.full_name || 'HDM Ingeniería S.A.';
+  const nameWidth = doc.getTextWidth(vendedorName);
+  const lineStartX = (pageWidth - nameWidth) / 2;
+  const lineEndX = (pageWidth + nameWidth) / 2;
+
+  doc.setLineWidth(0.5);
+  doc.line(lineStartX, signatureY + 25, lineEndX, signatureY + 25);
+
   doc.text(vendedorName, pageWidth / 2, signatureY + 30, { align: 'center' });
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(11);
-  doc.text('HDM Ingeniería S.A.', pageWidth / 2, signatureY + 36, { align: 'center' });
+  doc.setFontSize(10);
+  doc.text('DEPARTAMENTO COMERCIAL', pageWidth / 2, signatureY + 36, { align: 'center' });
+  doc.text('HDM INGENIERIA S.A.', pageWidth / 2, signatureY + 41, { align: 'center' });
 }
 
 function formatCurrency(amount: number): string {
