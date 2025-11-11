@@ -11,12 +11,16 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Calendar,
 } from 'lucide-react';
 
 export function ReportsDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [useCustomDate, setUseCustomDate] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -71,11 +75,11 @@ export function ReportsDashboard() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <button
-            onClick={() => setPeriod('7d')}
+            onClick={() => { setPeriod('7d'); setUseCustomDate(false); }}
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-              period === '7d'
+              period === '7d' && !useCustomDate
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
             }`}
@@ -83,9 +87,9 @@ export function ReportsDashboard() {
             7 días
           </button>
           <button
-            onClick={() => setPeriod('30d')}
+            onClick={() => { setPeriod('30d'); setUseCustomDate(false); }}
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-              period === '30d'
+              period === '30d' && !useCustomDate
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
             }`}
@@ -93,15 +97,34 @@ export function ReportsDashboard() {
             30 días
           </button>
           <button
-            onClick={() => setPeriod('90d')}
+            onClick={() => { setPeriod('90d'); setUseCustomDate(false); }}
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-              period === '90d'
+              period === '90d' && !useCustomDate
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
             }`}
           >
             90 días
           </button>
+          <div className="h-8 w-px bg-gray-300 mx-2"></div>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-gray-600" />
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setUseCustomDate(true); }}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Desde"
+            />
+            <span className="text-gray-600">-</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); setUseCustomDate(true); }}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Hasta"
+            />
+          </div>
         </div>
       </div>
 
@@ -300,46 +323,56 @@ export function ReportsDashboard() {
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Estado de Solicitudes de Descuento
+          Estado de Presupuestos
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="p-4 rounded-lg bg-yellow-50 border border-yellow-200">
             <div className="flex items-center gap-2 mb-2">
               <Clock className="w-5 h-5 text-yellow-600" />
-              <span className="font-semibold text-yellow-900">Pendientes</span>
+              <span className="font-semibold text-yellow-900">Borrador</span>
             </div>
             <p className="text-2xl font-bold text-yellow-900">
-              {stats.solicitudes_descuento.pendientes}
+              {stats.presupuestos_por_estado?.borrador || 0}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              <span className="font-semibold text-blue-900">Presentado</span>
+            </div>
+            <p className="text-2xl font-bold text-blue-900">
+              {stats.presupuestos_por_estado?.presentado || 0}
             </p>
           </div>
 
           <div className="p-4 rounded-lg bg-green-50 border border-green-200">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="font-semibold text-green-900">Aprobadas</span>
+              <span className="font-semibold text-green-900">Aceptado</span>
             </div>
             <p className="text-2xl font-bold text-green-900">
-              {stats.solicitudes_descuento.aprobadas}
+              {stats.presupuestos_por_estado?.aceptado || 0}
             </p>
           </div>
 
-          <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+          <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200">
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle className="w-5 h-5 text-blue-600" />
-              <span className="font-semibold text-blue-900">Modificadas</span>
+              <DollarSign className="w-5 h-5 text-emerald-600" />
+              <span className="font-semibold text-emerald-900">Facturado</span>
             </div>
-            <p className="text-2xl font-bold text-blue-900">
-              {stats.solicitudes_descuento.modificadas}
+            <p className="text-2xl font-bold text-emerald-900">
+              {stats.presupuestos_por_estado?.facturado || 0}
             </p>
           </div>
 
           <div className="p-4 rounded-lg bg-red-50 border border-red-200">
             <div className="flex items-center gap-2 mb-2">
               <XCircle className="w-5 h-5 text-red-600" />
-              <span className="font-semibold text-red-900">Rechazadas</span>
+              <span className="font-semibold text-red-900">Anulado</span>
             </div>
             <p className="text-2xl font-bold text-red-900">
-              {stats.solicitudes_descuento.rechazadas}
+              {stats.presupuestos_por_estado?.anulado || 0}
             </p>
           </div>
         </div>

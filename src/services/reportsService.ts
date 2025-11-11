@@ -16,6 +16,13 @@ export interface DashboardStats {
     modificadas: number;
     rechazadas: number;
   };
+  presupuestos_por_estado: {
+    borrador: number;
+    presentado: number;
+    aceptado: number;
+    facturado: number;
+    anulado: number;
+  };
   vendedores_activos: number;
   tasas_conversion: {
     presentado_aceptado: number;
@@ -148,6 +155,12 @@ export class ReportsService {
     const topVendedoresArray = Array.from(vendedoresMap.values())
       .sort((a, b) => b.monto_total - a.monto_total);
 
+    const borradorCount = presupuestos?.filter(p => p.estado === 'BORRADOR').length || 0;
+    const presentadoCount = presupuestos?.filter(p => p.estado === 'PRESENTADO').length || 0;
+    const aceptadoCount = presupuestos?.filter(p => p.estado === 'ACEPTADO').length || 0;
+    const facturadoCount = presupuestos?.filter(p => p.estado === 'FACTURADO').length || 0;
+    const anuladoCount = presupuestos?.filter(p => p.estado === 'ANULADO').length || 0;
+
     return {
       presupuestos: {
         total: presupuestosTotal,
@@ -163,6 +176,13 @@ export class ReportsService {
         aprobadas: solicitudesAprobadas,
         modificadas: solicitudesModificadas,
         rechazadas: solicitudesRechazadas,
+      },
+      presupuestos_por_estado: {
+        borrador: borradorCount,
+        presentado: presentadoCount,
+        aceptado: aceptadoCount,
+        facturado: facturadoCount,
+        anulado: anuladoCount,
       },
       vendedores_activos: vendedoresActivos,
       tasas_conversion: {
