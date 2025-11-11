@@ -7,6 +7,7 @@ import { DiscountRequestList } from '../components/discount/DiscountRequestList'
 import { AuditTimeline } from '../components/audit/AuditTimeline';
 import { PresupuestoStatusManager } from '../components/presupuestos/PresupuestoStatusManager';
 import { SeguimientoManager } from '../components/seguimiento/SeguimientoManager';
+import { CambiarEstadoModal } from '../components/presupuestos/CambiarEstadoModal';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { BudgetCalculator } from '../services/budgetCalculator';
@@ -21,6 +22,7 @@ import {
   User,
   Clock,
   DollarSign,
+  RefreshCw,
 } from 'lucide-react';
 
 interface PresupuestoDetailProps {
@@ -35,6 +37,7 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
   const [imagenes, setImagenes] = useState<PresupuestoImagen[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRequestForm, setShowRequestForm] = useState(false);
+  const [showCambiarEstado, setShowCambiarEstado] = useState(false);
   const [activeTab, setActiveTab] = useState<'detalles' | 'solicitudes' | 'seguimiento' | 'historial'>(
     'detalles'
   );
@@ -192,10 +195,16 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
               Descargar PDF
             </Button>
             {isVendedor && presupuesto.estado !== 'ANULADO' && (
-              <Button onClick={() => setShowRequestForm(true)}>
-                <Tag className="w-4 h-4 mr-2" />
-                Solicitar Descuento
-              </Button>
+              <>
+                <Button onClick={() => setShowRequestForm(true)}>
+                  <Tag className="w-4 h-4 mr-2" />
+                  Solicitar Descuento
+                </Button>
+                <Button variant="primary" onClick={() => setShowCambiarEstado(true)}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Pasar de Estado
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -217,6 +226,26 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
               Vendedor
             </div>
             <p className="font-medium">{presupuesto.vendedor?.full_name}</p>
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+              <Tag className="w-4 h-4" />
+              Estado
+            </div>
+            <Badge
+              color={
+                presupuesto.estado === 'ABIERTO' ? 'gray' :
+                presupuesto.estado === 'PRESENTADO' ? 'blue' :
+                presupuesto.estado === 'EN_EJECUCION' ? 'yellow' :
+                presupuesto.estado === 'FACTURADO' ? 'green' :
+                presupuesto.estado === 'RECHAZADO' ? 'red' :
+                presupuesto.estado === 'CANCELADO' ? 'orange' :
+                presupuesto.estado === 'ANULADO' ? 'red' : 'gray'
+              }
+            >
+              {presupuesto.estado === 'EN_EJECUCION' ? 'En Ejecución' : presupuesto.estado}
+            </Badge>
           </div>
 
           <div>
@@ -489,6 +518,17 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
           onSubmit={handleCreateRequest}
           presupuestoId={presupuesto.id}
           items={presupuesto.items}
+        />
+      )}
+
+      {showCambiarEstado && presupuesto && (
+        <CambiarEstadoModal
+          isOpen={showCambiarEstado}
+          onClose={() => setShowCambiarEstado(false)}
+          presupuestoId={presupuesto.id}
+          presupuestoCodigo={presupuesto.codigo}
+          estadoActual={presupuesto.estado}
+          onEstadoCambiado={loadPresupuesto}
         />
       )}
     </div>

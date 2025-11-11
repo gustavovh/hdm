@@ -56,22 +56,30 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
   };
 
   const getStatusColor = (status: Presupuesto['estado']) => {
-    const colors = {
+    const colors: Record<string, string> = {
       BORRADOR: 'gray',
+      ABIERTO: 'gray',
       PRESENTADO: 'blue',
       ACEPTADO: 'green',
+      EN_EJECUCION: 'yellow',
       FACTURADO: 'purple',
+      RECHAZADO: 'red',
+      CANCELADO: 'orange',
       ANULADO: 'red',
     };
     return colors[status] || 'gray';
   };
 
   const getStatusLabel = (status: Presupuesto['estado']) => {
-    const labels = {
+    const labels: Record<string, string> = {
       BORRADOR: 'Borrador',
+      ABIERTO: 'Abierto',
       PRESENTADO: 'Presentado',
       ACEPTADO: 'Aceptado',
+      EN_EJECUCION: 'En Ejecución',
       FACTURADO: 'Facturado',
+      RECHAZADO: 'Rechazado',
+      CANCELADO: 'Cancelado',
       ANULADO: 'Anulado',
     };
     return labels[status] || status;
@@ -141,9 +149,14 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
             >
               <option value="all">Todos los estados</option>
               <option value="BORRADOR">Borrador</option>
+              <option value="ABIERTO">Abierto</option>
               <option value="PRESENTADO">Presentado</option>
               <option value="ACEPTADO">Aceptado</option>
+              <option value="EN_EJECUCION">En Ejecución</option>
               <option value="FACTURADO">Facturado</option>
+              <option value="RECHAZADO">Rechazado</option>
+              <option value="CANCELADO">Cancelado</option>
+              <option value="ANULADO">Anulado</option>
             </Select>
           </div>
         </div>

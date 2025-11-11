@@ -14,7 +14,8 @@ import { Badge } from '../ui/Badge';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { exportService } from '../../services/exportService';
-import { Filter, RefreshCw, FileText, Trash2, Search, Target, TrendingUp, DollarSign, Users, Download, Calendar, Eye } from 'lucide-react';
+import { Filter, RefreshCw, FileText, Trash2, Search, Target, TrendingUp, DollarSign, Users, Download, Calendar, Eye, RotateCw } from 'lucide-react';
+import { CambiarEstadoModal } from '../presupuestos/CambiarEstadoModal';
 
 interface GeneralStats {
   totalPresupuestos: number;
@@ -63,6 +64,8 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
     montoFacturado: 0,
   });
   const [currentTarget, setCurrentTarget] = useState<SalesTarget | null>(null);
+  const [showCambiarEstado, setShowCambiarEstado] = useState(false);
+  const [selectedPresupuestoForEstado, setSelectedPresupuestoForEstado] = useState<Presupuesto | null>(null);
 
   useEffect(() => {
     loadVendedores();
@@ -854,6 +857,17 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                setSelectedPresupuestoForEstado(presupuesto);
+                                setShowCambiarEstado(true);
+                              }}
+                              className="text-green-600 hover:text-green-800 transition-colors"
+                              title="Cambiar estado"
+                            >
+                              <RotateCw className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 handleDeletePresupuesto(presupuesto.id);
                               }}
                               className="text-red-600 hover:text-red-800 transition-colors"
@@ -883,6 +897,20 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
         onApproveWithModification={handleApproveWithModification}
         onReject={handleReject}
       />
+
+      {showCambiarEstado && selectedPresupuestoForEstado && (
+        <CambiarEstadoModal
+          isOpen={showCambiarEstado}
+          onClose={() => {
+            setShowCambiarEstado(false);
+            setSelectedPresupuestoForEstado(null);
+          }}
+          presupuestoId={selectedPresupuestoForEstado.id}
+          presupuestoCodigo={selectedPresupuestoForEstado.codigo}
+          estadoActual={selectedPresupuestoForEstado.estado}
+          onEstadoCambiado={loadPresupuestos}
+        />
+      )}
     </div>
   );
 }
