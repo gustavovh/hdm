@@ -62,28 +62,16 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
   doc.saveGraphicsState();
   doc.setGState(new doc.GState({ opacity: 0.15 }));
   doc.setFont('times', 'bold');
-  doc.setFontSize(70);
+  doc.setFontSize(100);
   doc.setTextColor(120, 120, 120);
 
   const text = 'PRESUPUESTO';
-  const angle = 45;
-  const angleRad = (angle * Math.PI) / 180;
 
-  const diagonal = Math.sqrt(pageWidth * pageWidth + pageHeight * pageHeight);
-
-  const centerX = pageWidth / 2;
-  const centerY = pageHeight / 2;
-
-  const offsetX = (diagonal / 2) * Math.cos(angleRad);
-  const offsetY = (diagonal / 2) * Math.sin(angleRad);
-
-  const startX = centerX - offsetX * 0.3;
-  const startY = centerY + offsetY * 0.3;
+  const startX = 15;
+  const startY = pageHeight - 30;
 
   doc.text(text, startX, startY, {
-    angle: angle,
-    align: 'center',
-    baseline: 'middle',
+    angle: 45,
   });
 
   doc.restoreGraphicsState();
