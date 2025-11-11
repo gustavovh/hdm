@@ -25,8 +25,6 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   const presupuestoNumberY = yPosition;
   yPosition = addPresupuestoNumber(doc, pageWidth, margin, yPosition, presupuesto);
 
-  addWatermark(doc, pageWidth, presupuestoNumberY);
-
   yPosition += 10;
 
   yPosition = addClientInfo(doc, margin, yPosition, presupuesto);
@@ -80,26 +78,6 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
   }
 }
 
-function addWatermark(doc: jsPDF, pageWidth: number, presupuestoNumberY: number) {
-  doc.saveGraphicsState();
-  const gstate = new (doc as any).GState({ opacity: 0.08 });
-  doc.setGState(gstate);
-  doc.setTextColor(180, 180, 180);
-  doc.setFontSize(100);
-  doc.setFont('times', 'bold');
-
-  const text = 'PRESUPUESTO';
-  const textWidth = doc.getTextWidth(text);
-
-  const startX = pageWidth / 2 - textWidth / 2;
-  const startY = presupuestoNumberY + 60;
-
-  doc.text(text, startX, startY, {
-    angle: 45,
-  });
-
-  doc.restoreGraphicsState();
-}
 
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
   const logoHeight = 35;
