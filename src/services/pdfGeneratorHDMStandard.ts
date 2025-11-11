@@ -66,13 +66,13 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
   doc.setTextColor(200, 200, 200);
 
   const text = 'PRESUPUESTO';
-  const textWidth = doc.getTextWidth(text);
-  const x = (pageWidth - textWidth) / 2;
-  const y = pageHeight / 2;
+  const centerX = pageWidth / 2;
+  const centerY = pageHeight / 2;
 
-  doc.text(text, x, y, {
+  doc.text(text, centerX, centerY, {
     angle: 45,
     align: 'center',
+    baseline: 'middle',
   });
 
   doc.restoreGraphicsState();
