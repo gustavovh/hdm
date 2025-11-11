@@ -67,8 +67,8 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
 
   const text = 'PRESUPUESTO';
 
-  const startX = 25;
-  const startY = pageHeight / 2 + 30;
+  const startX = 15;
+  const startY = 100;
 
   doc.text(text, startX, startY, {
     angle: 45,
