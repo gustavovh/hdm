@@ -73,12 +73,11 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   // Agregar páginas de ANEXO con imágenes si existen
   await addAnexoPages(doc, presupuesto.id, pageWidth, pageHeight, margin);
 
-  // Agregar marca de agua y footer en TODAS las páginas al final
+  // Agregar marca de agua en TODAS las páginas al final
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     addWatermark(doc, pageWidth, pageHeight);
-    addFooter(doc, pageWidth, pageHeight);
   }
 
   return doc.output('blob');
@@ -92,7 +91,7 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
 
   const fontSize = 80;
   doc.setFontSize(fontSize);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('times', 'bold');
 
   const text = 'PRESUPUESTO';
   const centerX = pageWidth / 2;
@@ -106,26 +105,6 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
   doc.restoreGraphicsState();
 }
 
-function addFooter(doc: jsPDF, pageWidth: number, pageHeight: number) {
-  const margin = 20;
-  const footerY = pageHeight - 15;
-
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.5);
-  doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
-
-  doc.setFont('times', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(0, 0, 0);
-
-  const leftText = 'HDM - Obras y Servicios';
-  const centerText = 'Email: hmino@hdm.com.py | Cel: +595981795669';
-  const rightText = 'RUC: 80122639-2';
-
-  doc.text(leftText, margin, footerY);
-  doc.text(centerText, pageWidth / 2, footerY, { align: 'center' });
-  doc.text(rightText, pageWidth - margin, footerY, { align: 'right' });
-}
 
 async function loadVendedorData(vendedorId: string): Promise<{ signatureUrl: string | null; vendedorName: string }> {
   try {
@@ -240,8 +219,8 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 
 
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
-  const logoHeight = 35;
-  const logoWidth = 60;
+  const logoWidth = 70;
+  const logoHeight = 22;
 
   try {
     const response = await fetch('/hdm-logo.png');
