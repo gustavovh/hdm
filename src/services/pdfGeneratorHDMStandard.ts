@@ -70,13 +70,15 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   // Agregar firma en la posición actual
   addSignature(doc, yPosition, pageWidth, signatureUrl, vendedorName, presupuesto);
 
-  // Agregar pie de página (marca de agua) solo en la última página
-  const totalPages = doc.getNumberOfPages();
-  doc.setPage(totalPages);
-  addFooter(doc, pageWidth, pageHeight);
-
   // Agregar páginas de ANEXO con imágenes si existen
   await addAnexoPages(doc, presupuesto.id, pageWidth, pageHeight, margin);
+
+  // Agregar pie de página (marca de agua) en TODAS las páginas al final
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    addFooter(doc, pageWidth, pageHeight);
+  }
 
   return doc.output('blob');
 }
@@ -423,9 +425,6 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
         const headerEndY = await addHeader(doc, margin, margin, pageWidth);
         addPresupuestoNumber(doc, pageWidth, margin, headerEndY + 5, presupuesto);
       }
-
-      // Agregar pie de página (marca de agua) en todas las páginas
-      addFooter(doc, pageWidth, pageHeight);
     },
   });
 
