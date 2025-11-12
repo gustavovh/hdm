@@ -51,9 +51,24 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   yPosition += 15;
 
+  // Verificar si hay espacio suficiente para la firma (necesitamos ~50mm)
+  const spaceNeeded = 50;
+  const spaceAvailable = pageHeight - 25 - yPosition; // 25mm para el pie de página
+
+  if (spaceAvailable < spaceNeeded) {
+    // No hay espacio suficiente, crear nueva página
+    doc.addPage();
+    yPosition = margin;
+    await addHeader(doc, margin, yPosition, pageWidth);
+    yPosition += 20;
+    addPresupuestoNumber(doc, pageWidth, margin, yPosition, presupuesto);
+    yPosition += 30;
+  }
+
   addSignature(doc, yPosition, pageWidth, vendedorSignature, presupuesto);
 
   addWatermark(doc, pageWidth, pageHeight);
+  addFooter(doc, pageWidth, pageHeight);
 
   // Agregar páginas de ANEXO con imágenes si existen
   await addAnexoPages(doc, presupuesto.id, pageWidth, pageHeight, margin);
@@ -78,6 +93,27 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
   });
 
   doc.restoreGraphicsState();
+}
+
+function addFooter(doc: jsPDF, pageWidth: number, pageHeight: number) {
+  const margin = 20;
+  const footerY = pageHeight - 15;
+
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.5);
+  doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+
+  doc.setFont('times', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+
+  const leftText = 'HDM - Obras y Servicios';
+  const centerText = 'Email: hmino@hdm.com.py | Cel: +595981795669';
+  const rightText = 'RUC: 80122639-2';
+
+  doc.text(leftText, margin, footerY);
+  doc.text(centerText, pageWidth / 2, footerY, { align: 'center' });
+  doc.text(rightText, pageWidth - margin, footerY, { align: 'right' });
 }
 
 async function loadVendedorSignature(vendedorId: string): Promise<string | null> {
@@ -325,13 +361,17 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     },
     margin: { left: margin, right: margin },
     didDrawPage: async (data) => {
+      const currentPage = data.pageNumber;
+      doc.setPage(currentPage);
+
       // Si no es la primera página, agregar encabezado
-      if (data.pageNumber > 1) {
-        const currentPage = data.pageNumber;
-        doc.setPage(currentPage);
+      if (currentPage > 1) {
         await addHeader(doc, margin, margin, pageWidth);
         addPresupuestoNumber(doc, pageWidth, margin, margin + 15, presupuesto);
       }
+
+      // Agregar pie de página en todas las páginas
+      addFooter(doc, pageWidth, pageHeight);
     },
   });
 
@@ -528,9 +568,9 @@ async function addAnexoPages(doc: jsPDF, presupuestoId: string, pageWidth: numbe
       const imgProps = doc.getImageProperties(images[i]);
       const imgRatio = imgProps.width / imgProps.height;
 
-      // Área disponible para la imagen
+      // Área disponible para la imagen (reservar espacio para pie de página)
       const maxWidth = pageWidth - (margin * 2);
-      const maxHeight = pageHeight - yPosition - margin;
+      const maxHeight = pageHeight - yPosition - margin - 20; // 20mm para el pie de página
 
       let imgWidth = maxWidth;
       let imgHeight = maxWidth / imgRatio;
@@ -551,5 +591,8 @@ async function addAnexoPages(doc: jsPDF, presupuestoId: string, pageWidth: numbe
       doc.setFontSize(10);
       doc.text('Error al cargar la imagen', pageWidth / 2, yPosition, { align: 'center' });
     }
+
+    // Agregar pie de página en cada página de anexo
+    addFooter(doc, pageWidth, pageHeight);
   }
 }
