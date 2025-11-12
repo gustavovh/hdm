@@ -20,16 +20,16 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   yPosition = await addHeader(doc, margin, yPosition, pageWidth);
 
-  yPosition += 3;
+  yPosition += 5;
 
   const presupuestoNumberY = yPosition;
   yPosition = addPresupuestoNumber(doc, pageWidth, margin, yPosition, presupuesto);
 
-  yPosition += 8;
+  yPosition += 10;
 
   yPosition = addClientInfo(doc, margin, yPosition, presupuesto);
 
-  yPosition += 6;
+  yPosition += 8;
 
   yPosition = addIntroText(doc, margin, yPosition, pageWidth);
 
@@ -37,11 +37,11 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   yPosition = addTrabajosTitle(doc, margin, yPosition);
 
-  yPosition += 4;
+  yPosition += 5;
 
   yPosition = await addItemsTable(doc, margin, yPosition, pageWidth, presupuesto);
 
-  yPosition += 8;
+  yPosition += 10;
 
   yPosition = addFormaPago(doc, margin, yPosition, presupuesto);
 
@@ -85,7 +85,7 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
 function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
   doc.saveGraphicsState();
-  const gstate = new (doc as any).GState({ opacity: 0.11 });
+  const gstate = new (doc as any).GState({ opacity: 0.1 });
   doc.setGState(gstate);
   doc.setTextColor(150, 150, 150);
 
@@ -99,7 +99,7 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
 
   doc.text(text, centerX, centerY, {
     align: 'center',
-    angle: 30
+    angle: 45
   });
 
   doc.restoreGraphicsState();
@@ -219,12 +219,8 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 
 
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
-  const baseLogoWidth = 70;
-  const baseLogoHeight = 22;
-  const logoWidth = baseLogoWidth * 1.5;
-  const logoHeight = baseLogoHeight * 1.5;
-
-  let leftMaxY = yPosition;
+  const logoWidth = 70;
+  const logoHeight = 22;
 
   try {
     const response = await fetch('/hdm-logo.png');
@@ -238,79 +234,45 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     });
 
     const logoData = reader.result as string;
-    const imgProps = doc.getImageProperties(logoData);
-    const imgRatio = imgProps.width / imgProps.height;
-    const adjustedHeight = logoWidth / imgRatio;
-
-    doc.addImage(logoData, 'PNG', margin, yPosition, logoWidth, adjustedHeight, undefined, 'FAST');
-
-    let leftY = yPosition + adjustedHeight + 4;
-
-    doc.setFont('times', 'bold');
-    doc.setFontSize(11);
-    doc.text('HDM Ingeniería S.A.', margin, leftY);
-    leftY += 6;
-
-    doc.setFont('times', 'normal');
-    doc.setFontSize(10);
-    const servicesLines = [
-      'Sistemas eléctricos de potencia - Obras civiles - Metalúrgica',
-      'Domótica - Electrónica de Potencia - Media Tensión 23kV',
-      'Mediciones Eléctricas - Gestoría ANDE - Asesoría Energética'
-    ];
-
-    servicesLines.forEach(line => {
-      doc.text(line, margin, leftY);
-      leftY += 5;
-    });
-
-    leftMaxY = leftY;
+    doc.addImage(logoData, 'PNG', margin, yPosition, logoWidth, logoHeight, undefined, 'FAST');
   } catch (error) {
     console.warn('Logo no disponible', error);
-
-    let leftY = yPosition + logoHeight + 4;
-
-    doc.setFont('times', 'bold');
-    doc.setFontSize(11);
-    doc.text('HDM Ingeniería S.A.', margin, leftY);
-    leftY += 6;
-
-    doc.setFont('times', 'normal');
-    doc.setFontSize(10);
-    const servicesLines = [
-      'Sistemas eléctricos de potencia - Obras civiles - Metalúrgica',
-      'Domótica - Electrónica de Potencia - Media Tensión 23kV',
-      'Mediciones Eléctricas - Gestoría ANDE - Asesoría Energética'
-    ];
-
-    servicesLines.forEach(line => {
-      doc.text(line, margin, leftY);
-      leftY += 5;
-    });
-
-    leftMaxY = leftY;
   }
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(11);
+  doc.setFontSize(10);
+  const servicesLines = [
+    'Sistemas eléctricos de potencia - Obras civiles - Metalúrgica',
+    'Domótica - Electrónica de Potencia - Media Tensión 23kV',
+    'Mediciones Eléctricas - Gestoría ANDE - Asesoría Energética'
+  ];
+
+  let serviceY = yPosition + logoHeight + 3;
+  servicesLines.forEach(line => {
+    doc.text(line, margin, serviceY);
+    serviceY += 5;
+  });
+
+  doc.setFont('times', 'normal');
+  doc.setFontSize(12);
 
   const rightMargin = pageWidth - margin;
   let contactY = yPosition + 5;
 
   doc.text('Dirección: Profesor Almada C/21 de', rightMargin, contactY, { align: 'right' });
-  contactY += 5;
+  contactY += 6;
   doc.text('              setiembre', rightMargin, contactY, { align: 'right' });
-  contactY += 5;
+  contactY += 6;
   doc.text('              Luque - Paraguay', rightMargin, contactY, { align: 'right' });
   contactY += 8;
 
   doc.text('Email: hmino@hdm.com.py', rightMargin, contactY, { align: 'right' });
-  contactY += 5;
+  contactY += 6;
   doc.text('Cel: +595981795669', rightMargin, contactY, { align: 'right' });
-  contactY += 5;
+  contactY += 6;
   doc.text('Ruc: 80122639-2', rightMargin, contactY, { align: 'right' });
 
-  return Math.max(leftMaxY, contactY) + 5;
+  return Math.max(serviceY, contactY) + 5;
 }
 
 function formatPresupuestoCode(codigo: string): string {
@@ -337,67 +299,64 @@ function addPresupuestoNumber(doc: jsPDF, pageWidth: number, margin: number, yPo
 
 function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(13);
 
-  const colWidth = (170 / 12);
-  const labelX = margin + (colWidth * 3);
-  const valueX = margin + (colWidth * 3.5);
+  const labelWidth = 60;
 
-  doc.text('Fecha:', labelX, yPosition, { align: 'right' });
+  doc.text('Fecha:', margin, yPosition);
   doc.setFont('times', 'normal');
   const fecha = new Date(presupuesto.created_at).toLocaleDateString('es-PY', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
   });
-  doc.text(fecha, valueX, yPosition);
+  doc.text(fecha, margin + labelWidth, yPosition);
 
   yPosition += 8;
 
   doc.setFont('times', 'bold');
-  doc.text('Señores:', labelX, yPosition, { align: 'right' });
+  doc.text('Señores:', margin, yPosition);
   doc.setFont('times', 'normal');
   const clienteNombre = presupuesto.cliente_nombre.toUpperCase();
   const clienteLines = clienteNombre.split('\n');
 
   clienteLines.forEach((line, index) => {
-    doc.text(line, valueX, yPosition + (index * 5));
+    doc.text(line, margin + labelWidth, yPosition + (index * 7));
   });
 
-  yPosition += (clienteLines.length * 5);
+  yPosition += (clienteLines.length * 7);
 
-  yPosition += 3;
+  yPosition += 2;
 
   doc.setFont('times', 'bold');
-  doc.text('Referencia de presupuesto:', labelX, yPosition, { align: 'right' });
+  const refLabel = 'Referencia de presupuesto:';
+  doc.text(refLabel, margin, yPosition);
 
   doc.setFont('times', 'normal');
   const concepto = (presupuesto.concepto || 'PRESUPUESTO DE SERVICIOS').toUpperCase();
   const conceptoLines = concepto.split('\n');
 
   conceptoLines.forEach((line, index) => {
-    doc.text(line, valueX, yPosition + (index * 5));
+    doc.text(line, margin + labelWidth, yPosition + (index * 7));
   });
 
-  yPosition += (conceptoLines.length * 5);
+  yPosition += (conceptoLines.length * 7);
 
   return yPosition;
 }
 
 function addIntroText(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): number {
   doc.setFont('times', 'normal');
-  doc.setFontSize(11);
+  doc.setFontSize(13);
   const introText = 'Tengo el agrado de dirigirme a Ud. a fin de presentar la oferta económica por el trabajo de referencia a ser realizado.';
-  const colWidth = (170 / 12);
-  const textWidth = colWidth * 9;
-  const lines = doc.splitTextToSize(introText, textWidth);
+  const lines = doc.splitTextToSize(introText, pageWidth - (margin * 2));
   doc.text(lines, margin, yPosition);
-  return yPosition + (lines.length * 5.5);
+  return yPosition + (lines.length * 7);
 }
 
 function addTrabajosTitle(doc: jsPDF, margin: number, yPosition: number): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(13);
   doc.text('Trabajos a ser Realizados:', margin, yPosition);
   return yPosition;
 }
@@ -429,7 +388,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     styles: {
       font: 'times',
       fontSize: 9,
-      cellPadding: 2.5,
+      cellPadding: 2,
       lineWidth: 0.1,
       lineColor: [0, 0, 0],
       overflow: 'linebreak',
@@ -446,17 +405,17 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     },
     bodyStyles: {
       textColor: [0, 0, 0],
-      minCellHeight: 7,
+      minCellHeight: 8,
       fontSize: 9,
     },
     columnStyles: {
       0: { halign: 'center', cellWidth: 10 },
       1: { halign: 'center', cellWidth: 15 },
-      2: { halign: 'left', cellWidth: 68, cellPadding: { left: 2.5, right: 2.5, top: 2.5, bottom: 2.5 } },
-      3: { halign: 'right', cellWidth: 16 },
+      2: { halign: 'left', cellWidth: 70 },
+      3: { halign: 'center', cellWidth: 15 },
       4: { halign: 'center', cellWidth: 18 },
       5: { halign: 'right', cellWidth: 25 },
-      6: { halign: 'right', cellWidth: 28 },
+      6: { halign: 'right', cellWidth: 27 },
     },
     margin: { left: margin, right: margin },
     didDrawPage: async (data) => {
@@ -511,42 +470,37 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
 
 function addFormaPago(doc: jsPDF, margin: number, yPosition: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(13);
 
-  const colWidth = (170 / 12);
-  const labelX = margin + (colWidth * 3);
-  const valueX = margin + (colWidth * 3.5);
-
-  doc.text('Forma de pago:', labelX, yPosition, { align: 'right' });
+  const labelText = 'Forma de pago:';
+  doc.text(labelText, margin, yPosition);
 
   const formaPago = presupuesto.observaciones?.match(/forma de pago:?\s*([^\n]+)/i)?.[1] || '30 DIAS';
   doc.setFont('times', 'normal');
-  doc.text(formaPago.toUpperCase(), valueX, yPosition);
+  doc.text(formaPago.toUpperCase(), margin + 45, yPosition);
 
   return yPosition;
 }
 
 function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(13);
   doc.text('Observación(es):', margin, yPosition);
-  yPosition += 5;
+  yPosition += 7;
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(12);
 
   const observaciones = presupuesto.observaciones ||
     'PRUEBAS DE DESCRIPCION';
 
-  const colWidth = (170 / 12);
-  const textWidth = colWidth * 10;
-  const obsLines = doc.splitTextToSize(observaciones.toUpperCase(), textWidth);
+  const obsLines = doc.splitTextToSize(observaciones.toUpperCase(), pageWidth - (margin * 2));
   doc.text(obsLines, margin, yPosition);
-  yPosition += (obsLines.length * 5) + 3;
+  yPosition += (obsLines.length * 6) + 5;
 
   doc.setFont('times', 'normal');
   doc.text('* Los precios incluyen IVA.', margin, yPosition);
-  yPosition += 4;
+  yPosition += 6;
 
   doc.text('Estamos a su disposición ante cualquier consulta.', margin, yPosition);
 
