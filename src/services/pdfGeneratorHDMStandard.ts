@@ -222,7 +222,8 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 
 
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
-  const headerWidth = pageWidth - (2 * margin);
+  const headerWidth = pageWidth;
+  const headerHeight = 50;
   let finalY = yPosition;
 
   try {
@@ -237,11 +238,8 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     });
 
     const headerData = reader.result as string;
-    const imgProps = doc.getImageProperties(headerData);
-    const imgRatio = imgProps.width / imgProps.height;
-    const headerHeight = headerWidth / imgRatio;
 
-    doc.addImage(headerData, 'PNG', margin, yPosition, headerWidth, headerHeight, undefined, 'FAST');
+    doc.addImage(headerData, 'PNG', 0, yPosition, headerWidth, headerHeight, undefined, 'FAST');
 
     finalY = yPosition + headerHeight + 5;
   } catch (error) {
