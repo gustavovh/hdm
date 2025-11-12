@@ -14,7 +14,7 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
 
-  const { signatureUrl, vendedorName } = await loadVendedorData(presupuesto.vendedor_id);
+  const { signatureUrl, vendedorName, isAdministrativo } = await loadVendedorData(presupuesto.vendedor_id);
 
   let yPosition = margin;
 
@@ -68,7 +68,7 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   }
 
   // Agregar firma en la posición actual
-  addSignature(doc, yPosition, pageWidth, signatureUrl, vendedorName, presupuesto);
+  addSignature(doc, yPosition, pageWidth, signatureUrl, vendedorName, presupuesto, isAdministrativo);
 
   // Agregar páginas de ANEXO con imágenes si existen
   await addAnexoPages(doc, presupuesto.id, pageWidth, pageHeight, margin);
@@ -109,12 +109,12 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
 }
 
 
-async function loadVendedorData(vendedorId: string): Promise<{ signatureUrl: string | null; vendedorName: string }> {
+async function loadVendedorData(vendedorId: string): Promise<{ signatureUrl: string | null; vendedorName: string; isAdministrativo: boolean }> {
   try {
     console.log('Cargando datos del vendedor:', vendedorId);
     const { data: userData, error } = await supabase
       .from('users')
-      .select('signature_url, full_name')
+      .select('signature_url, full_name, role')
       .eq('id', vendedorId)
       .maybeSingle();
 
@@ -169,11 +169,12 @@ async function loadVendedorData(vendedorId: string): Promise<{ signatureUrl: str
       }
     }
 
-    console.log('Retornando datos - signatureUrl:', signatureUrl ? 'EXISTE' : 'NULL', 'vendedorName:', vendedorName);
-    return { signatureUrl, vendedorName };
+    const isAdministrativo = userData?.role === 'administrativo';
+    console.log('Retornando datos - signatureUrl:', signatureUrl ? 'EXISTE' : 'NULL', 'vendedorName:', vendedorName, 'isAdministrativo:', isAdministrativo);
+    return { signatureUrl, vendedorName, isAdministrativo };
   } catch (error) {
     console.error('Error cargando datos del vendedor:', error);
-    return { signatureUrl: null, vendedorName: '' };
+    return { signatureUrl: null, vendedorName: '', isAdministrativo: false };
   }
 }
 
@@ -485,7 +486,7 @@ function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWid
   return yPosition;
 }
 
-function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatureUrl: string | null, vendedorName: string, presupuesto: Presupuesto) {
+function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatureUrl: string | null, vendedorName: string, presupuesto: Presupuesto, isAdministrativo: boolean = false) {
   const margin = 20;
   const signatureY = yPosition + 10;
   const maxWidth = 60;
@@ -540,36 +541,44 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
       doc.setFontSize(10);
       doc.setTextColor(0, 0, 0);
 
-      // Nombre del vendedor (solo si existe)
-      if (vendedorName) {
-        doc.text(vendedorName.toUpperCase(), signatureX + (signatureWidth / 2), textY, { align: 'center' });
+      // Solo mostrar detalles si NO es administrativo
+      if (!isAdministrativo) {
+        // Nombre del vendedor (solo si existe)
+        if (vendedorName) {
+          doc.text(vendedorName.toUpperCase(), signatureX + (signatureWidth / 2), textY, { align: 'center' });
+          textY += 5;
+        }
+
+        // Departamento
+        doc.setFont('times', 'normal');
+        doc.setFontSize(9);
+        doc.text('DEPARTAMENTO COMERCIAL', signatureX + (signatureWidth / 2), textY, { align: 'center' });
         textY += 5;
+
+        // Empresa
+        doc.text('HDM INGENIERIA S.A.', signatureX + (signatureWidth / 2), textY, { align: 'center' });
       }
-
-      // Departamento
-      doc.setFont('times', 'normal');
-      doc.setFontSize(9);
-      doc.text('DEPARTAMENTO COMERCIAL', signatureX + (signatureWidth / 2), textY, { align: 'center' });
-      textY += 5;
-
-      // Empresa
-      doc.text('HDM INGENIERIA S.A.', signatureX + (signatureWidth / 2), textY, { align: 'center' });
 
       console.log('Firma agregada exitosamente');
     } catch (error) {
       console.error('Error añadiendo firma:', error);
       console.error('URL de firma (primeros 100 chars):', signatureUrl?.substring(0, 100));
       // Si hay error con la imagen, al menos mostrar los detalles
-      addSignatureDetails(doc, signatureX, signatureY, maxWidth, vendedorName);
+      addSignatureDetails(doc, signatureX, signatureY, maxWidth, vendedorName, isAdministrativo);
     }
   } else {
     console.log('No hay signatureUrl disponible');
     // Si no hay imagen de firma, mostrar solo los detalles
-    addSignatureDetails(doc, signatureX, signatureY, maxWidth, vendedorName);
+    addSignatureDetails(doc, signatureX, signatureY, maxWidth, vendedorName, isAdministrativo);
   }
 }
 
-function addSignatureDetails(doc: jsPDF, x: number, y: number, width: number, vendedorName: string) {
+function addSignatureDetails(doc: jsPDF, x: number, y: number, width: number, vendedorName: string, isAdministrativo: boolean = false) {
+  // Solo mostrar detalles si NO es administrativo
+  if (isAdministrativo) {
+    return;
+  }
+
   // Línea superior
   doc.setLineWidth(0.5);
   doc.setDrawColor(0, 0, 0);
