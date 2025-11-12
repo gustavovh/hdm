@@ -85,7 +85,7 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
 function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
   doc.saveGraphicsState();
-  const gstate = new (doc as any).GState({ opacity: 0.15 });
+  const gstate = new (doc as any).GState({ opacity: 0.25 });
   doc.setGState(gstate);
   doc.setTextColor(100, 100, 100);
 
@@ -95,7 +95,7 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
 
   const text = 'PRESUPUESTO';
   const centerX = (pageWidth / 2) + 30;
-  const watermarkY = pageHeight * 0.60;
+  const watermarkY = pageHeight * 0.75;
 
   const angle = 45;
 
