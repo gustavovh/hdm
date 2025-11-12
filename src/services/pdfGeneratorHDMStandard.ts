@@ -222,7 +222,7 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 
 
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
-  const logoWidth = 50;
+  const logoWidth = 68;
   const logoHeight = 75;
   let leftMaxY = yPosition;
 
