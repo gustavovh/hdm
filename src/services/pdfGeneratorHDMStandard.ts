@@ -54,7 +54,7 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   // Verificar si hay espacio suficiente para la firma
   // Espacio necesario para firma completa: 40mm es suficiente
   const signatureHeight = 40;
-  const bottomMargin = 10; // Margen inferior mínimo sin pie de página
+  const bottomMargin = 20; // Margen inferior aumentado
   const bottomLimit = pageHeight - bottomMargin;
 
   // Verificar si la firma cabe en la página actual
@@ -219,8 +219,8 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 
 
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
-  const baseLogoWidth = 70;
-  const logoWidth = baseLogoWidth * 1.5;
+  const logoWidth = 80;
+  const logoHeight = 50;
   let leftMaxY = yPosition;
 
   try {
@@ -241,10 +241,10 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
 
     doc.addImage(logoData, 'PNG', margin, yPosition, logoWidth, adjustedHeight, undefined, 'FAST');
 
-    let leftY = yPosition + adjustedHeight + 2;
+    let leftY = yPosition + adjustedHeight + 3.5;
 
     doc.setFont('times', 'normal');
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     const servicesLines = [
       'Sistemas eléctricos de potencia - Obras civiles - Metalúrgica',
       'Domótica - Electrónica de Potencia - Media Tensión 23kV',
@@ -253,17 +253,16 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
 
     servicesLines.forEach(line => {
       doc.text(line, margin, leftY);
-      leftY += 5;
+      leftY += 5.5;
     });
 
     leftMaxY = leftY;
   } catch (error) {
     console.warn('Logo no disponible', error);
-    const fallbackLogoHeight = 22 * 1.5;
-    let leftY = yPosition + fallbackLogoHeight + 2;
+    let leftY = yPosition + logoHeight + 3.5;
 
     doc.setFont('times', 'normal');
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     const servicesLines = [
       'Sistemas eléctricos de potencia - Obras civiles - Metalúrgica',
       'Domótica - Electrónica de Potencia - Media Tensión 23kV',
@@ -272,14 +271,14 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
 
     servicesLines.forEach(line => {
       doc.text(line, margin, leftY);
-      leftY += 5;
+      leftY += 5.5;
     });
 
     leftMaxY = leftY;
   }
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(11);
+  doc.setFontSize(10);
 
   const rightMargin = pageWidth - margin;
   let contactY = yPosition;
@@ -289,7 +288,7 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   doc.text('              setiembre', rightMargin, contactY, { align: 'right' });
   contactY += 5;
   doc.text('              Luque - Paraguay', rightMargin, contactY, { align: 'right' });
-  contactY += 8;
+  contactY += 7;
 
   doc.text('Email: hmino@hdm.com.py', rightMargin, contactY, { align: 'right' });
   contactY += 5;
