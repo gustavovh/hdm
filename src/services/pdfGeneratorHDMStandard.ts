@@ -99,6 +99,61 @@ function addFooter(doc: jsPDF, pageWidth: number, pageHeight: number) {
   doc.text(rightText, pageWidth - margin, footerY, { align: 'right' });
 }
 
+async function loadVendedorData(vendedorId: string): Promise<{ signatureUrl: string | null; vendedorName: string }> {
+  try {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('signature_url, nombre, apellido')
+      .eq('id', vendedorId)
+      .maybeSingle();
+
+    const vendedorName = userData ? `${userData.nombre || ''} ${userData.apellido || ''}`.trim() : 'Vendedor';
+    let signatureUrl: string | null = null;
+
+    if (userData?.signature_url) {
+      // Si ya es una URL pública completa, usarla directamente
+      if (userData.signature_url.startsWith('http')) {
+        // Convertir la imagen a base64 para incluirla en el PDF
+        try {
+          const response = await fetch(userData.signature_url);
+          const blob = await response.blob();
+          signatureUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        } catch (error) {
+          console.warn('Error cargando firma desde URL:', error);
+        }
+      } else {
+        // Si es una ruta, buscar en el bucket 'images'
+        try {
+          const { data } = await supabase.storage
+            .from('images')
+            .createSignedUrl(userData.signature_url, 60);
+
+          if (data?.signedUrl) {
+            const response = await fetch(data.signedUrl);
+            const blob = await response.blob();
+            signatureUrl = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+          }
+        } catch (error) {
+          console.warn('Error cargando firma desde storage:', error);
+        }
+      }
+    }
+
+    return { signatureUrl, vendedorName };
+  } catch (error) {
+    console.warn('Error cargando datos del vendedor:', error);
+    return { signatureUrl: null, vendedorName: 'Vendedor' };
+  }
+}
+
 async function loadVendedorSignature(vendedorId: string): Promise<string | null> {
   try {
     const { data: userData } = await supabase
