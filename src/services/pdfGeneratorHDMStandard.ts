@@ -51,8 +51,9 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   yPosition += 15;
 
-  // Verificar si hay espacio suficiente para la firma (necesitamos ~70mm)
-  const spaceNeeded = 70;
+  // Verificar si hay espacio suficiente para la firma
+  // Espacio necesario: 10mm padding + 30mm imagen + 2mm línea + 15mm textos = ~45mm
+  const spaceNeeded = 45;
   const spaceAvailable = pageHeight - 20 - yPosition; // 20mm para el pie de página
 
   if (spaceAvailable < spaceNeeded) {
