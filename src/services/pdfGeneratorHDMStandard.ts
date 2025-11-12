@@ -437,10 +437,13 @@ function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWid
 function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatureUrl: string | null, vendedorName: string, presupuesto: Presupuesto) {
   const margin = 20;
   const signatureY = yPosition + 10;
+  const maxWidth = 60;
+
+  // Posicionar en el margen derecho
+  const signatureX = pageWidth - margin - maxWidth;
 
   if (signatureUrl) {
     try {
-      const maxWidth = 60;
       const maxHeight = 30;
 
       // Obtener propiedades de la imagen desde jsPDF
@@ -457,9 +460,6 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
         signatureWidth = maxHeight * imgRatio;
       }
 
-      // Posicionar firma a la derecha
-      const signatureX = pageWidth - margin - signatureWidth;
-
       // Agregar imagen con proporciones correctas
       doc.addImage(signatureUrl, 'PNG', signatureX, signatureY, signatureWidth, signatureHeight);
 
@@ -475,8 +475,9 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
       doc.setFontSize(10);
       doc.setTextColor(0, 0, 0);
 
-      // Nombre del vendedor
-      doc.text(vendedorName.toUpperCase(), signatureX + (signatureWidth / 2), textY, { align: 'center' });
+      // Nombre del vendedor (con verificación)
+      const displayName = vendedorName || 'Vendedor';
+      doc.text(displayName.toUpperCase(), signatureX + (signatureWidth / 2), textY, { align: 'center' });
       textY += 5;
 
       // Departamento
@@ -489,8 +490,41 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
       doc.text('HDM INGENIERIA S.A.', signatureX + (signatureWidth / 2), textY, { align: 'center' });
     } catch (error) {
       console.warn('Error añadiendo firma:', error);
+      // Si hay error con la imagen, al menos mostrar los detalles
+      addSignatureDetails(doc, signatureX, signatureY, maxWidth, vendedorName);
     }
+  } else {
+    // Si no hay imagen de firma, mostrar solo los detalles
+    addSignatureDetails(doc, signatureX, signatureY, maxWidth, vendedorName);
   }
+}
+
+function addSignatureDetails(doc: jsPDF, x: number, y: number, width: number, vendedorName: string) {
+  const displayName = vendedorName || 'Vendedor';
+
+  // Línea superior
+  doc.setLineWidth(0.5);
+  doc.setDrawColor(0, 0, 0);
+  doc.line(x, y, x + width, y);
+
+  let textY = y + 5;
+
+  doc.setFont('times', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(0, 0, 0);
+
+  // Nombre del vendedor
+  doc.text(displayName.toUpperCase(), x + (width / 2), textY, { align: 'center' });
+  textY += 5;
+
+  // Departamento
+  doc.setFont('times', 'normal');
+  doc.setFontSize(9);
+  doc.text('DEPARTAMENTO COMERCIAL', x + (width / 2), textY, { align: 'center' });
+  textY += 5;
+
+  // Empresa
+  doc.text('HDM INGENIERIA S.A.', x + (width / 2), textY, { align: 'center' });
 }
 
 function formatCurrency(amount: number): string {
