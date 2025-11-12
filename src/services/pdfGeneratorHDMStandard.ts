@@ -73,14 +73,37 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   // Agregar páginas de ANEXO con imágenes si existen
   await addAnexoPages(doc, presupuesto.id, pageWidth, pageHeight, margin);
 
-  // Agregar marca de agua en TODAS las páginas al final
+  // Agregar marca de agua y footer en TODAS las páginas al final
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
+    addWatermark(doc, pageWidth, pageHeight);
     addFooter(doc, pageWidth, pageHeight);
   }
 
   return doc.output('blob');
+}
+
+function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
+  doc.saveGraphicsState();
+  const gstate = new (doc as any).GState({ opacity: 0.1 });
+  doc.setGState(gstate);
+  doc.setTextColor(150, 150, 150);
+
+  const fontSize = 80;
+  doc.setFontSize(fontSize);
+  doc.setFont('helvetica', 'bold');
+
+  const text = 'PRESUPUESTO';
+  const centerX = pageWidth / 2;
+  const centerY = pageHeight / 2;
+
+  doc.text(text, centerX, centerY, {
+    align: 'center',
+    angle: 45
+  });
+
+  doc.restoreGraphicsState();
 }
 
 function addFooter(doc: jsPDF, pageWidth: number, pageHeight: number) {
@@ -109,14 +132,14 @@ async function loadVendedorData(vendedorId: string): Promise<{ signatureUrl: str
     console.log('Cargando datos del vendedor:', vendedorId);
     const { data: userData, error } = await supabase
       .from('users')
-      .select('signature_url, nombre, apellido')
+      .select('signature_url, full_name')
       .eq('id', vendedorId)
       .maybeSingle();
 
     console.log('Datos del usuario:', userData);
     console.log('Error al cargar usuario:', error);
 
-    const vendedorName = userData ? `${userData.nombre || ''} ${userData.apellido || ''}`.trim() : '';
+    const vendedorName = userData?.full_name || '';
     console.log('Nombre del vendedor:', vendedorName);
     let signatureUrl: string | null = null;
 
