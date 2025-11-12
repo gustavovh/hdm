@@ -70,6 +70,11 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   // Agregar firma en la posición actual
   addSignature(doc, yPosition, pageWidth, signatureUrl, vendedorName, presupuesto);
 
+  // Agregar pie de página (marca de agua) solo en la última página
+  const totalPages = doc.getNumberOfPages();
+  doc.setPage(totalPages);
+  addFooter(doc, pageWidth, pageHeight);
+
   // Agregar páginas de ANEXO con imágenes si existen
   await addAnexoPages(doc, presupuesto.id, pageWidth, pageHeight, margin);
 
@@ -99,16 +104,22 @@ function addFooter(doc: jsPDF, pageWidth: number, pageHeight: number) {
 
 async function loadVendedorData(vendedorId: string): Promise<{ signatureUrl: string | null; vendedorName: string }> {
   try {
-    const { data: userData } = await supabase
+    console.log('Cargando datos del vendedor:', vendedorId);
+    const { data: userData, error } = await supabase
       .from('users')
       .select('signature_url, nombre, apellido')
       .eq('id', vendedorId)
       .maybeSingle();
 
+    console.log('Datos del usuario:', userData);
+    console.log('Error al cargar usuario:', error);
+
     const vendedorName = userData ? `${userData.nombre || ''} ${userData.apellido || ''}`.trim() : '';
+    console.log('Nombre del vendedor:', vendedorName);
     let signatureUrl: string | null = null;
 
     if (userData?.signature_url) {
+      console.log('URL de firma encontrada:', userData.signature_url);
       // Si ya es una URL pública completa, usarla directamente
       if (userData.signature_url.startsWith('http')) {
         // Convertir la imagen a base64 para incluirla en el PDF
@@ -117,11 +128,14 @@ async function loadVendedorData(vendedorId: string): Promise<{ signatureUrl: str
           const blob = await response.blob();
           signatureUrl = await new Promise((resolve) => {
             const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
+            reader.onloadend = () => {
+              console.log('Firma convertida a base64, longitud:', (reader.result as string).length);
+              resolve(reader.result as string);
+            };
             reader.readAsDataURL(blob);
           });
         } catch (error) {
-          console.warn('Error cargando firma desde URL:', error);
+          console.error('Error cargando firma desde URL:', error);
         }
       } else {
         // Si es una ruta, buscar en el bucket 'images'
@@ -135,19 +149,23 @@ async function loadVendedorData(vendedorId: string): Promise<{ signatureUrl: str
             const blob = await response.blob();
             signatureUrl = await new Promise((resolve) => {
               const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result as string);
+              reader.onloadend = () => {
+                console.log('Firma del storage convertida a base64, longitud:', (reader.result as string).length);
+                resolve(reader.result as string);
+              };
               reader.readAsDataURL(blob);
             });
           }
         } catch (error) {
-          console.warn('Error cargando firma desde storage:', error);
+          console.error('Error cargando firma desde storage:', error);
         }
       }
     }
 
+    console.log('Retornando datos - signatureUrl:', signatureUrl ? 'EXISTE' : 'NULL', 'vendedorName:', vendedorName);
     return { signatureUrl, vendedorName };
   } catch (error) {
-    console.warn('Error cargando datos del vendedor:', error);
+    console.error('Error cargando datos del vendedor:', error);
     return { signatureUrl: null, vendedorName: '' };
   }
 }
@@ -405,6 +423,9 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
         const headerEndY = await addHeader(doc, margin, margin, pageWidth);
         addPresupuestoNumber(doc, pageWidth, margin, headerEndY + 5, presupuesto);
       }
+
+      // Agregar pie de página (marca de agua) en todas las páginas
+      addFooter(doc, pageWidth, pageHeight);
     },
   });
 
