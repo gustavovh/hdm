@@ -222,8 +222,6 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 
 
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
-  const headerWidth = pageWidth;
-  const headerHeight = 50;
   let finalY = yPosition;
 
   try {
@@ -238,13 +236,18 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     });
 
     const headerData = reader.result as string;
+    const imgProps = doc.getImageProperties(headerData);
+    const imgRatio = imgProps.width / imgProps.height;
 
-    doc.addImage(headerData, 'PNG', 0, yPosition, headerWidth, headerHeight, undefined, 'FAST');
+    const headerWidth = pageWidth;
+    const headerHeight = headerWidth / imgRatio;
 
-    finalY = yPosition + headerHeight + 5;
+    doc.addImage(headerData, 'PNG', 0, 0, headerWidth, headerHeight, undefined, 'FAST');
+
+    finalY = headerHeight + 5;
   } catch (error) {
     console.warn('Header image no disponible, usando fallback', error);
-    finalY = yPosition + 45;
+    finalY = 45;
   }
 
   return finalY;
