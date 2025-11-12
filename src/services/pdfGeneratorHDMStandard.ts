@@ -94,18 +94,12 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
   doc.setFont('times', 'bold');
 
   const text = 'PRESUPUESTO';
-  const textWidth = doc.getTextWidth(text);
-
   const centerX = pageWidth / 2;
-  const centerY = pageHeight / 2;
+  const watermarkY = pageHeight * 0.65;
 
   const angle = 30;
-  const angleRad = (angle * Math.PI) / 180;
 
-  const offsetX = (textWidth / 2) * Math.cos(angleRad);
-  const offsetY = (textWidth / 2) * Math.sin(angleRad);
-
-  doc.text(text, centerX, centerY, {
+  doc.text(text, centerX, watermarkY, {
     align: 'center',
     baseline: 'middle',
     angle: angle
@@ -228,8 +222,8 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 
 
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
-  const logoWidth = 80;
-  const logoHeight = 50;
+  const logoWidth = 160;
+  const logoHeight = 100;
   let leftMaxY = yPosition;
 
   try {
