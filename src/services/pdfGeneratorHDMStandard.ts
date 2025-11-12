@@ -20,16 +20,16 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   yPosition = await addHeader(doc, margin, yPosition, pageWidth);
 
-  yPosition += 5;
+  yPosition += 3;
 
   const presupuestoNumberY = yPosition;
   yPosition = addPresupuestoNumber(doc, pageWidth, margin, yPosition, presupuesto);
 
-  yPosition += 10;
+  yPosition += 8;
 
   yPosition = addClientInfo(doc, margin, yPosition, presupuesto);
 
-  yPosition += 8;
+  yPosition += 6;
 
   yPosition = addIntroText(doc, margin, yPosition, pageWidth);
 
@@ -37,11 +37,11 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   yPosition = addTrabajosTitle(doc, margin, yPosition);
 
-  yPosition += 5;
+  yPosition += 4;
 
   yPosition = await addItemsTable(doc, margin, yPosition, pageWidth, presupuesto);
 
-  yPosition += 10;
+  yPosition += 8;
 
   yPosition = addFormaPago(doc, margin, yPosition, presupuesto);
 
@@ -337,10 +337,11 @@ function addPresupuestoNumber(doc: jsPDF, pageWidth: number, margin: number, yPo
 
 function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(11);
 
-  const labelX = margin + 35;
-  const valueX = margin + 40;
+  const colWidth = (170 / 12);
+  const labelX = margin + (colWidth * 3);
+  const valueX = margin + (colWidth * 3.5);
 
   doc.text('Fecha:', labelX, yPosition, { align: 'right' });
   doc.setFont('times', 'normal');
@@ -360,10 +361,10 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuest
   const clienteLines = clienteNombre.split('\n');
 
   clienteLines.forEach((line, index) => {
-    doc.text(line, valueX, yPosition + (index * 6));
+    doc.text(line, valueX, yPosition + (index * 5));
   });
 
-  yPosition += (clienteLines.length * 6);
+  yPosition += (clienteLines.length * 5);
 
   yPosition += 3;
 
@@ -375,27 +376,28 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuest
   const conceptoLines = concepto.split('\n');
 
   conceptoLines.forEach((line, index) => {
-    doc.text(line, valueX, yPosition + (index * 6));
+    doc.text(line, valueX, yPosition + (index * 5));
   });
 
-  yPosition += (conceptoLines.length * 6);
+  yPosition += (conceptoLines.length * 5);
 
   return yPosition;
 }
 
 function addIntroText(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): number {
   doc.setFont('times', 'normal');
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   const introText = 'Tengo el agrado de dirigirme a Ud. a fin de presentar la oferta económica por el trabajo de referencia a ser realizado.';
-  const textWidth = (pageWidth - margin) * 0.75;
+  const colWidth = (170 / 12);
+  const textWidth = colWidth * 9;
   const lines = doc.splitTextToSize(introText, textWidth);
   doc.text(lines, margin, yPosition);
-  return yPosition + (lines.length * 6);
+  return yPosition + (lines.length * 5.5);
 }
 
 function addTrabajosTitle(doc: jsPDF, margin: number, yPosition: number): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.text('Trabajos a ser Realizados:', margin, yPosition);
   return yPosition;
 }
@@ -427,7 +429,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     styles: {
       font: 'times',
       fontSize: 9,
-      cellPadding: 2,
+      cellPadding: 2.5,
       lineWidth: 0.1,
       lineColor: [0, 0, 0],
       overflow: 'linebreak',
@@ -444,17 +446,17 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     },
     bodyStyles: {
       textColor: [0, 0, 0],
-      minCellHeight: 8,
+      minCellHeight: 7,
       fontSize: 9,
     },
     columnStyles: {
       0: { halign: 'center', cellWidth: 10 },
       1: { halign: 'center', cellWidth: 15 },
-      2: { halign: 'left', cellWidth: 70 },
-      3: { halign: 'center', cellWidth: 15 },
+      2: { halign: 'left', cellWidth: 68, cellPadding: { left: 2.5, right: 2.5, top: 2.5, bottom: 2.5 } },
+      3: { halign: 'right', cellWidth: 16 },
       4: { halign: 'center', cellWidth: 18 },
       5: { halign: 'right', cellWidth: 25 },
-      6: { halign: 'right', cellWidth: 27 },
+      6: { halign: 'right', cellWidth: 28 },
     },
     margin: { left: margin, right: margin },
     didDrawPage: async (data) => {
@@ -509,10 +511,11 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
 
 function addFormaPago(doc: jsPDF, margin: number, yPosition: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(11);
 
-  const labelX = margin + 35;
-  const valueX = margin + 40;
+  const colWidth = (170 / 12);
+  const labelX = margin + (colWidth * 3);
+  const valueX = margin + (colWidth * 3.5);
 
   doc.text('Forma de pago:', labelX, yPosition, { align: 'right' });
 
@@ -525,24 +528,25 @@ function addFormaPago(doc: jsPDF, margin: number, yPosition: number, presupuesto
 
 function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.text('Observación(es):', margin, yPosition);
-  yPosition += 6;
+  yPosition += 5;
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(11);
+  doc.setFontSize(10);
 
   const observaciones = presupuesto.observaciones ||
     'PRUEBAS DE DESCRIPCION';
 
-  const textWidth = (pageWidth - margin) * 0.85;
+  const colWidth = (170 / 12);
+  const textWidth = colWidth * 10;
   const obsLines = doc.splitTextToSize(observaciones.toUpperCase(), textWidth);
   doc.text(obsLines, margin, yPosition);
-  yPosition += (obsLines.length * 5) + 4;
+  yPosition += (obsLines.length * 5) + 3;
 
   doc.setFont('times', 'normal');
   doc.text('* Los precios incluyen IVA.', margin, yPosition);
-  yPosition += 5;
+  yPosition += 4;
 
   doc.text('Estamos a su disposición ante cualquier consulta.', margin, yPosition);
 
