@@ -226,7 +226,7 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   const logoHeight = 75;
   let leftMaxY = yPosition;
 
-  const logoYPosition = yPosition + 10;
+  const logoYPosition = yPosition;
 
   try {
     const response = await fetch('/hdm-logo.png');
