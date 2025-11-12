@@ -284,7 +284,7 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   doc.setFontSize(10);
 
   const rightMargin = pageWidth - margin;
-  let contactY = yPosition;
+  let contactY = yPosition + 10;
 
   doc.text('Dirección: Profesor Almada C/21 de', rightMargin, contactY, { align: 'right' });
   contactY += 5;
