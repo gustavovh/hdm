@@ -73,7 +73,7 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   // Agregar páginas de ANEXO con imágenes si existen
   await addAnexoPages(doc, presupuesto.id, pageWidth, pageHeight, margin);
 
-  // Agregar pie de página (marca de agua) en TODAS las páginas al final
+  // Agregar marca de agua en TODAS las páginas al final
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
@@ -425,6 +425,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
         const headerEndY = await addHeader(doc, margin, margin, pageWidth);
         addPresupuestoNumber(doc, pageWidth, margin, headerEndY + 5, presupuesto);
       }
+      // NO agregar footer aquí, se agregará al final para todas las páginas
     },
   });
 
@@ -720,7 +721,6 @@ async function addAnexoPages(doc: jsPDF, presupuestoId: string, pageWidth: numbe
       doc.text('Error al cargar la imagen', pageWidth / 2, yPosition, { align: 'center' });
     }
 
-    // Agregar pie de página en cada página de anexo
-    addFooter(doc, pageWidth, pageHeight);
+    // NO agregar footer aquí, se agregará al final para todas las páginas
   }
 }
