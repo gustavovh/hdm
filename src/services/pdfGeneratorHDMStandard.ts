@@ -226,6 +226,8 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   const logoHeight = 75;
   let leftMaxY = yPosition;
 
+  const logoYPosition = yPosition + 10;
+
   try {
     const response = await fetch('/hdm-logo.png');
     const blob = await response.blob();
@@ -242,9 +244,9 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     const imgRatio = imgProps.width / imgProps.height;
     const adjustedHeight = logoWidth / imgRatio;
 
-    doc.addImage(logoData, 'PNG', margin, yPosition, logoWidth, adjustedHeight, undefined, 'FAST');
+    doc.addImage(logoData, 'PNG', margin, logoYPosition, logoWidth, adjustedHeight, undefined, 'FAST');
 
-    let leftY = yPosition + adjustedHeight + 3.5;
+    let leftY = logoYPosition + adjustedHeight + 3.5;
 
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
@@ -262,7 +264,7 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     leftMaxY = leftY;
   } catch (error) {
     console.warn('Logo no disponible', error);
-    let leftY = yPosition + logoHeight + 3.5;
+    let leftY = logoYPosition + logoHeight + 3.5;
 
     doc.setFont('times', 'normal');
     doc.setFontSize(9);
@@ -284,7 +286,7 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   doc.setFontSize(10);
 
   const rightMargin = pageWidth - margin;
-  let contactY = yPosition + 10;
+  let contactY = yPosition;
 
   doc.text('Dirección: Profesor Almada C/21 de', rightMargin, contactY, { align: 'right' });
   contactY += 5;
