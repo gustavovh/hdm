@@ -222,14 +222,11 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 
 
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
-  const logoWidth = 85;
-  const logoHeight = 75;
-  let leftMaxY = yPosition;
-
-  const logoYPosition = yPosition;
+  const headerWidth = pageWidth - (2 * margin);
+  let finalY = yPosition;
 
   try {
-    const response = await fetch('/hdm-logo.png');
+    const response = await fetch('/image copy copy copy copy copy copy copy copy copy copy copy copy copy copy copy copy copy copy copy copy.png');
     const blob = await response.blob();
     const reader = new FileReader();
 
@@ -239,69 +236,20 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
       reader.readAsDataURL(blob);
     });
 
-    const logoData = reader.result as string;
-    const imgProps = doc.getImageProperties(logoData);
+    const headerData = reader.result as string;
+    const imgProps = doc.getImageProperties(headerData);
     const imgRatio = imgProps.width / imgProps.height;
-    const adjustedHeight = logoWidth / imgRatio;
+    const headerHeight = headerWidth / imgRatio;
 
-    doc.addImage(logoData, 'PNG', margin, logoYPosition, logoWidth, adjustedHeight, undefined, 'FAST');
+    doc.addImage(headerData, 'PNG', margin, yPosition, headerWidth, headerHeight, undefined, 'FAST');
 
-    let leftY = logoYPosition + adjustedHeight + 3.5;
-
-    doc.setFont('times', 'normal');
-    doc.setFontSize(9);
-    const servicesLines = [
-      'Sistemas eléctricos de potencia - Obras civiles - Metalúrgica',
-      'Domótica - Electrónica de Potencia - Media Tensión 23kV',
-      'Mediciones Eléctricas - Gestoría ANDE - Asesoría Energética'
-    ];
-
-    servicesLines.forEach(line => {
-      doc.text(line, margin, leftY);
-      leftY += 5.5;
-    });
-
-    leftMaxY = leftY;
+    finalY = yPosition + headerHeight + 5;
   } catch (error) {
-    console.warn('Logo no disponible', error);
-    let leftY = logoYPosition + logoHeight + 3.5;
-
-    doc.setFont('times', 'normal');
-    doc.setFontSize(9);
-    const servicesLines = [
-      'Sistemas eléctricos de potencia - Obras civiles - Metalúrgica',
-      'Domótica - Electrónica de Potencia - Media Tensión 23kV',
-      'Mediciones Eléctricas - Gestoría ANDE - Asesoría Energética'
-    ];
-
-    servicesLines.forEach(line => {
-      doc.text(line, margin, leftY);
-      leftY += 5.5;
-    });
-
-    leftMaxY = leftY;
+    console.warn('Header image no disponible, usando fallback', error);
+    finalY = yPosition + 45;
   }
 
-  doc.setFont('times', 'normal');
-  doc.setFontSize(10);
-
-  const rightMargin = pageWidth - margin;
-  let contactY = yPosition;
-
-  doc.text('Dirección: Profesor Almada C/21 de', rightMargin, contactY, { align: 'right' });
-  contactY += 5;
-  doc.text('              setiembre', rightMargin, contactY, { align: 'right' });
-  contactY += 5;
-  doc.text('              Luque - Paraguay', rightMargin, contactY, { align: 'right' });
-  contactY += 7;
-
-  doc.text('Email: hmino@hdm.com.py', rightMargin, contactY, { align: 'right' });
-  contactY += 5;
-  doc.text('Cel: +595981795669', rightMargin, contactY, { align: 'right' });
-  contactY += 5;
-  doc.text('Ruc: 80122639-2', rightMargin, contactY, { align: 'right' });
-
-  return Math.max(leftMaxY, contactY) + 5;
+  return finalY;
 }
 
 function formatPresupuestoCode(codigo: string): string {
