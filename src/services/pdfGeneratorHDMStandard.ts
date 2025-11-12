@@ -95,7 +95,7 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
 
   const text = 'PRESUPUESTO';
   const centerX = pageWidth / 2;
-  const centerY = pageHeight / 2;
+  const centerY = pageHeight / 2 + 40;
 
   doc.text(text, centerX, centerY, {
     align: 'center',
@@ -219,8 +219,10 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 
 
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
-  const logoWidth = 70;
-  const logoHeight = 22;
+  const baseLogoWidth = 70;
+  const baseLogoHeight = 22;
+  const logoWidth = baseLogoWidth * 1.5;
+  const logoHeight = baseLogoHeight * 1.5;
 
   try {
     const response = await fetch('/hdm-logo.png');
@@ -234,24 +236,44 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     });
 
     const logoData = reader.result as string;
-    doc.addImage(logoData, 'PNG', margin, yPosition, logoWidth, logoHeight, undefined, 'FAST');
+    const imgProps = doc.getImageProperties(logoData);
+    const imgRatio = imgProps.width / imgProps.height;
+    const adjustedHeight = logoWidth / imgRatio;
+
+    doc.addImage(logoData, 'PNG', margin, yPosition, logoWidth, adjustedHeight, undefined, 'FAST');
+
+    doc.setFont('times', 'normal');
+    doc.setFontSize(10);
+    const servicesLines = [
+      'Sistemas eléctricos de potencia - Obras civiles - Metalúrgica',
+      'Domótica - Electrónica de Potencia - Media Tensión 23kV',
+      'Mediciones Eléctricas - Gestoría ANDE - Asesoría Energética'
+    ];
+
+    let serviceY = yPosition + adjustedHeight + 3;
+    servicesLines.forEach(line => {
+      doc.text(line, margin, serviceY);
+      serviceY += 5;
+    });
+
+    return serviceY;
   } catch (error) {
     console.warn('Logo no disponible', error);
+
+    doc.setFont('times', 'normal');
+    doc.setFontSize(10);
+    const servicesLines = [
+      'Sistemas eléctricos de potencia - Obras civiles - Metalúrgica',
+      'Domótica - Electrónica de Potencia - Media Tensión 23kV',
+      'Mediciones Eléctricas - Gestoría ANDE - Asesoría Energética'
+    ];
+
+    let serviceY = yPosition + logoHeight + 3;
+    servicesLines.forEach(line => {
+      doc.text(line, margin, serviceY);
+      serviceY += 5;
+    });
   }
-
-  doc.setFont('times', 'normal');
-  doc.setFontSize(10);
-  const servicesLines = [
-    'Sistemas eléctricos de potencia - Obras civiles - Metalúrgica',
-    'Domótica - Electrónica de Potencia - Media Tensión 23kV',
-    'Mediciones Eléctricas - Gestoría ANDE - Asesoría Energética'
-  ];
-
-  let serviceY = yPosition + logoHeight + 3;
-  servicesLines.forEach(line => {
-    doc.text(line, margin, serviceY);
-    serviceY += 5;
-  });
 
   doc.setFont('times', 'normal');
   doc.setFontSize(12);
