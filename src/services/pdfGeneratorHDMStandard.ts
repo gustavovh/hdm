@@ -52,15 +52,14 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   yPosition += 15;
 
   // Verificar si hay espacio suficiente para la firma
-  // Espacio necesario: 10mm padding + 30mm imagen + 2mm línea + 15mm textos = ~45mm
-  const spaceNeeded = 45;
-  const spaceAvailable = pageHeight - 20 - yPosition; // 20mm para el pie de página
+  // Espacio necesario para firma completa: 40mm es suficiente
+  const signatureHeight = 40;
+  const footerSpace = 20; // Espacio reservado para el pie de página
+  const bottomLimit = pageHeight - footerSpace;
 
-  if (spaceAvailable < spaceNeeded) {
+  // Verificar si la firma cabe en la página actual
+  if (yPosition + signatureHeight > bottomLimit) {
     // No hay espacio suficiente, crear nueva página
-    // Primero agregar pie a la página actual
-    addFooter(doc, pageWidth, pageHeight);
-
     doc.addPage();
     yPosition = await addHeader(doc, margin, margin, pageWidth);
     yPosition += 5;
@@ -68,9 +67,13 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
     yPosition += 30;
   }
 
+  // Agregar firma en la posición actual
   addSignature(doc, yPosition, pageWidth, signatureUrl, vendedorName, presupuesto);
 
-  // Agregar pie a la página final
+  // Agregar pie de página solo en la última página (no duplicar)
+  // El autoTable ya agregó pies en las páginas anteriores
+  const totalPages = doc.getNumberOfPages();
+  doc.setPage(totalPages);
   addFooter(doc, pageWidth, pageHeight);
 
   // Agregar páginas de ANEXO con imágenes si existen
