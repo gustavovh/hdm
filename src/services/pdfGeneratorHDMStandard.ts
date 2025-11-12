@@ -54,8 +54,8 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   // Verificar si hay espacio suficiente para la firma
   // Espacio necesario para firma completa: 40mm es suficiente
   const signatureHeight = 40;
-  const footerSpace = 20; // Espacio reservado para el pie de página
-  const bottomLimit = pageHeight - footerSpace;
+  const bottomMargin = 10; // Margen inferior mínimo sin pie de página
+  const bottomLimit = pageHeight - bottomMargin;
 
   // Verificar si la firma cabe en la página actual
   if (yPosition + signatureHeight > bottomLimit) {
@@ -69,12 +69,6 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   // Agregar firma en la posición actual
   addSignature(doc, yPosition, pageWidth, signatureUrl, vendedorName, presupuesto);
-
-  // Agregar pie de página solo en la última página (no duplicar)
-  // El autoTable ya agregó pies en las páginas anteriores
-  const totalPages = doc.getNumberOfPages();
-  doc.setPage(totalPages);
-  addFooter(doc, pageWidth, pageHeight);
 
   // Agregar páginas de ANEXO con imágenes si existen
   await addAnexoPages(doc, presupuesto.id, pageWidth, pageHeight, margin);
@@ -111,7 +105,7 @@ async function loadVendedorData(vendedorId: string): Promise<{ signatureUrl: str
       .eq('id', vendedorId)
       .maybeSingle();
 
-    const vendedorName = userData ? `${userData.nombre || ''} ${userData.apellido || ''}`.trim() : 'Vendedor';
+    const vendedorName = userData ? `${userData.nombre || ''} ${userData.apellido || ''}`.trim() : '';
     let signatureUrl: string | null = null;
 
     if (userData?.signature_url) {
@@ -154,7 +148,7 @@ async function loadVendedorData(vendedorId: string): Promise<{ signatureUrl: str
     return { signatureUrl, vendedorName };
   } catch (error) {
     console.warn('Error cargando datos del vendedor:', error);
-    return { signatureUrl: null, vendedorName: 'Vendedor' };
+    return { signatureUrl: null, vendedorName: '' };
   }
 }
 
@@ -411,9 +405,6 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
         const headerEndY = await addHeader(doc, margin, margin, pageWidth);
         addPresupuestoNumber(doc, pageWidth, margin, headerEndY + 5, presupuesto);
       }
-
-      // Agregar pie de página en todas las páginas
-      addFooter(doc, pageWidth, pageHeight);
     },
   });
 
@@ -548,10 +539,11 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
       doc.setFontSize(10);
       doc.setTextColor(0, 0, 0);
 
-      // Nombre del vendedor (con verificación)
-      const displayName = vendedorName || 'Vendedor';
-      doc.text(displayName.toUpperCase(), signatureX + (signatureWidth / 2), textY, { align: 'center' });
-      textY += 5;
+      // Nombre del vendedor (solo si existe)
+      if (vendedorName) {
+        doc.text(vendedorName.toUpperCase(), signatureX + (signatureWidth / 2), textY, { align: 'center' });
+        textY += 5;
+      }
 
       // Departamento
       doc.setFont('times', 'normal');
@@ -577,8 +569,6 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
 }
 
 function addSignatureDetails(doc: jsPDF, x: number, y: number, width: number, vendedorName: string) {
-  const displayName = vendedorName || 'Vendedor';
-
   // Línea superior
   doc.setLineWidth(0.5);
   doc.setDrawColor(0, 0, 0);
@@ -590,9 +580,11 @@ function addSignatureDetails(doc: jsPDF, x: number, y: number, width: number, ve
   doc.setFontSize(10);
   doc.setTextColor(0, 0, 0);
 
-  // Nombre del vendedor
-  doc.text(displayName.toUpperCase(), x + (width / 2), textY, { align: 'center' });
-  textY += 5;
+  // Nombre del vendedor (solo si existe)
+  if (vendedorName) {
+    doc.text(vendedorName.toUpperCase(), x + (width / 2), textY, { align: 'center' });
+    textY += 5;
+  }
 
   // Departamento
   doc.setFont('times', 'normal');
