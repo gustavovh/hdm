@@ -57,42 +57,25 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   if (spaceAvailable < spaceNeeded) {
     // No hay espacio suficiente, crear nueva página
+    // Primero agregar pie a la página actual
+    addFooter(doc, pageWidth, pageHeight);
+
     doc.addPage();
-    yPosition = margin;
-    await addHeader(doc, margin, yPosition, pageWidth);
-    yPosition += 20;
+    yPosition = await addHeader(doc, margin, margin, pageWidth);
+    yPosition += 5;
     addPresupuestoNumber(doc, pageWidth, margin, yPosition, presupuesto);
     yPosition += 30;
   }
 
   addSignature(doc, yPosition, pageWidth, vendedorSignature, presupuesto);
 
-  addWatermark(doc, pageWidth, pageHeight);
+  // Agregar pie a la página final
   addFooter(doc, pageWidth, pageHeight);
 
   // Agregar páginas de ANEXO con imágenes si existen
   await addAnexoPages(doc, presupuesto.id, pageWidth, pageHeight, margin);
 
   return doc.output('blob');
-}
-
-function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
-  doc.saveGraphicsState();
-  doc.setGState(new doc.GState({ opacity: 0.30 }));
-  doc.setFont('times', 'bold');
-  doc.setFontSize(80);
-  doc.setTextColor(50, 50, 50);
-
-  const text = 'PRESUPUESTO';
-
-  const startX = 30;
-  const startY = pageHeight / 2 + 60;
-
-  doc.text(text, startX, startY, {
-    angle: 45
-  });
-
-  doc.restoreGraphicsState();
 }
 
 function addFooter(doc: jsPDF, pageWidth: number, pageHeight: number) {
@@ -366,8 +349,8 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
 
       // Si no es la primera página, agregar encabezado
       if (currentPage > 1) {
-        await addHeader(doc, margin, margin, pageWidth);
-        addPresupuestoNumber(doc, pageWidth, margin, margin + 15, presupuesto);
+        const headerEndY = await addHeader(doc, margin, margin, pageWidth);
+        addPresupuestoNumber(doc, pageWidth, margin, headerEndY + 5, presupuesto);
       }
 
       // Agregar pie de página en todas las páginas
