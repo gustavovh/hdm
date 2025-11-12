@@ -55,6 +55,9 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   addWatermark(doc, pageWidth, pageHeight);
 
+  // Agregar páginas de ANEXO con imágenes si existen
+  await addAnexoPages(doc, presupuesto.id, pageWidth, pageHeight, margin);
+
   return doc.output('blob');
 }
 
@@ -321,6 +324,15 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
       6: { halign: 'right', cellWidth: 27 },
     },
     margin: { left: margin, right: margin },
+    didDrawPage: async (data) => {
+      // Si no es la primera página, agregar encabezado
+      if (data.pageNumber > 1) {
+        const currentPage = data.pageNumber;
+        doc.setPage(currentPage);
+        await addHeader(doc, margin, margin, pageWidth);
+        addPresupuestoNumber(doc, pageWidth, margin, margin + 15, presupuesto);
+      }
+    },
   });
 
   const finalY = (doc as any).lastAutoTable.finalY;
@@ -448,4 +460,96 @@ function formatNumber(num: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(num);
+}
+
+async function loadPresupuestoImages(presupuestoId: string): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from('presupuesto_imagenes')
+      .select('url')
+      .eq('presupuesto_id', presupuestoId)
+      .order('orden', { ascending: true });
+
+    if (error) throw error;
+
+    // Convertir URLs a base64 para incluir en el PDF
+    const imageUrls: string[] = [];
+    for (const img of data || []) {
+      try {
+        const response = await fetch(img.url);
+        const blob = await response.blob();
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+        imageUrls.push(base64);
+      } catch (error) {
+        console.warn('Error loading image:', error);
+      }
+    }
+
+    return imageUrls;
+  } catch (error) {
+    console.error('Error loading presupuesto images:', error);
+    return [];
+  }
+}
+
+async function addAnexoPages(doc: jsPDF, presupuestoId: string, pageWidth: number, pageHeight: number, margin: number) {
+  const images = await loadPresupuestoImages(presupuestoId);
+
+  if (images.length === 0) return;
+
+  // Agregar página para cada imagen
+  for (let i = 0; i < images.length; i++) {
+    doc.addPage();
+
+    let yPosition = margin;
+
+    // Agregar encabezado
+    yPosition = await addHeader(doc, margin, yPosition, pageWidth);
+    yPosition += 10;
+
+    // Agregar título ANEXO
+    doc.setFont('times', 'bold');
+    doc.setFontSize(16);
+    doc.text('ANEXO', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 10;
+
+    // Agregar número de anexo
+    doc.setFont('times', 'normal');
+    doc.setFontSize(12);
+    doc.text(`Imagen ${i + 1} de ${images.length}`, pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 15;
+
+    try {
+      // Calcular dimensiones de la imagen manteniendo aspect ratio
+      const imgProps = doc.getImageProperties(images[i]);
+      const imgRatio = imgProps.width / imgProps.height;
+
+      // Área disponible para la imagen
+      const maxWidth = pageWidth - (margin * 2);
+      const maxHeight = pageHeight - yPosition - margin;
+
+      let imgWidth = maxWidth;
+      let imgHeight = maxWidth / imgRatio;
+
+      // Si la altura calculada excede el máximo, ajustar por altura
+      if (imgHeight > maxHeight) {
+        imgHeight = maxHeight;
+        imgWidth = maxHeight * imgRatio;
+      }
+
+      const imgX = (pageWidth - imgWidth) / 2;
+
+      // Agregar imagen centrada
+      doc.addImage(images[i], 'JPEG', imgX, yPosition, imgWidth, imgHeight);
+    } catch (error) {
+      console.warn('Error adding image to PDF:', error);
+      doc.setFont('times', 'normal');
+      doc.setFontSize(10);
+      doc.text('Error al cargar la imagen', pageWidth / 2, yPosition, { align: 'center' });
+    }
+  }
 }

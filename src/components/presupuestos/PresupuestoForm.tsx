@@ -44,6 +44,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
   });
 
   const [items, setItems] = useState<ItemForm[]>([]);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   useEffect(() => {
     if (presupuestoId) {
