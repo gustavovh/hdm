@@ -338,40 +338,7 @@ export class CorporatePDFGenerator {
     const monedaTexto = presupuesto.moneda === 'USD' ? 'Dólares Americanos' : 'Guaraníes';
     doc.text(`Moneda: ${monedaTexto}`, summaryX, summaryStartY + 30);
 
-    // Agregar firma del vendedor
-    let signatureY = summaryStartY + 40;
-    const vendedorName = presupuesto.vendedor?.full_name || 'Vendedor';
-    const signatureUrl = presupuesto.vendedor?.signature_url;
-
-    if (signatureUrl) {
-      try {
-        const signatureBase64 = await this.loadImageAsBase64(signatureUrl);
-        const signatureWidth = 40;
-        const signatureHeight = 20;
-        const xPos = summaryX;
-
-        doc.addImage(signatureBase64, 'PNG', xPos, signatureY, signatureWidth, signatureHeight);
-        signatureY += signatureHeight + 2;
-      } catch (error) {
-        console.error('Error loading signature:', error);
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0, 0, 0);
-        doc.text('_______________________', summaryX, signatureY);
-        signatureY += 4;
-      }
-    } else {
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(0, 0, 0);
-      doc.text('_______________________', summaryX, signatureY);
-      signatureY += 4;
-    }
-
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text(vendedorName, summaryX, signatureY);
+    // No se agrega firma ni nombre en presupuesto administrativo
 
     const footerY = pageHeight - 25;
     doc.setDrawColor(...secondaryColor);
