@@ -51,9 +51,9 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   yPosition += 15;
 
-  // Verificar si hay espacio suficiente para la firma (necesitamos ~50mm)
-  const spaceNeeded = 50;
-  const spaceAvailable = pageHeight - 25 - yPosition; // 25mm para el pie de página
+  // Verificar si hay espacio suficiente para la firma (necesitamos ~70mm)
+  const spaceNeeded = 70;
+  const spaceAvailable = pageHeight - 20 - yPosition; // 20mm para el pie de página
 
   if (spaceAvailable < spaceNeeded) {
     // No hay espacio suficiente, crear nueva página
@@ -67,7 +67,7 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
     yPosition += 30;
   }
 
-  addSignature(doc, yPosition, pageWidth, vendedorSignature, presupuesto);
+  addSignature(doc, yPosition, pageWidth, signatureUrl, vendedorName, presupuesto);
 
   // Agregar pie a la página final
   addFooter(doc, pageWidth, pageHeight);
@@ -434,14 +434,14 @@ function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWid
   return yPosition;
 }
 
-function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatureUrl: string | null, presupuesto: Presupuesto) {
+function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatureUrl: string | null, vendedorName: string, presupuesto: Presupuesto) {
   const margin = 20;
-  const signatureY = yPosition;
+  const signatureY = yPosition + 10;
 
   if (signatureUrl) {
     try {
-      const maxWidth = 70;
-      const maxHeight = 35;
+      const maxWidth = 60;
+      const maxHeight = 30;
 
       // Obtener propiedades de la imagen desde jsPDF
       const imgProps = doc.getImageProperties(signatureUrl);
@@ -457,14 +457,36 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
         signatureWidth = maxHeight * imgRatio;
       }
 
-      const signatureX = (pageWidth - signatureWidth) / 2;
+      // Posicionar firma a la derecha
+      const signatureX = pageWidth - margin - signatureWidth;
 
       // Agregar imagen con proporciones correctas
       doc.addImage(signatureUrl, 'PNG', signatureX, signatureY, signatureWidth, signatureHeight);
 
-      // Solo línea debajo de la firma, sin textos
+      // Línea debajo de la firma
       doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 0, 0);
       doc.line(signatureX, signatureY + signatureHeight + 2, signatureX + signatureWidth, signatureY + signatureHeight + 2);
+
+      // Agregar detalles de la firma debajo
+      let textY = signatureY + signatureHeight + 7;
+
+      doc.setFont('times', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+
+      // Nombre del vendedor
+      doc.text(vendedorName.toUpperCase(), signatureX + (signatureWidth / 2), textY, { align: 'center' });
+      textY += 5;
+
+      // Departamento
+      doc.setFont('times', 'normal');
+      doc.setFontSize(9);
+      doc.text('DEPARTAMENTO COMERCIAL', signatureX + (signatureWidth / 2), textY, { align: 'center' });
+      textY += 5;
+
+      // Empresa
+      doc.text('HDM INGENIERIA S.A.', signatureX + (signatureWidth / 2), textY, { align: 'center' });
     } catch (error) {
       console.warn('Error añadiendo firma:', error);
     }
