@@ -503,10 +503,22 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
 
   if (signatureUrl) {
     try {
+      console.log('Intentando agregar firma, URL length:', signatureUrl.length);
+
       const maxHeight = 30;
+
+      // Detectar el tipo de imagen del data URL
+      let imageType = 'PNG';
+      if (signatureUrl.includes('data:image/jpeg') || signatureUrl.includes('data:image/jpg')) {
+        imageType = 'JPEG';
+      } else if (signatureUrl.includes('data:image/png')) {
+        imageType = 'PNG';
+      }
 
       // Obtener propiedades de la imagen desde jsPDF
       const imgProps = doc.getImageProperties(signatureUrl);
+      console.log('Propiedades de imagen:', imgProps);
+
       const imgRatio = imgProps.width / imgProps.height;
 
       // Calcular dimensiones manteniendo aspect ratio
@@ -519,8 +531,10 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
         signatureWidth = maxHeight * imgRatio;
       }
 
-      // Agregar imagen con proporciones correctas
-      doc.addImage(signatureUrl, 'PNG', signatureX, signatureY, signatureWidth, signatureHeight);
+      console.log(`Agregando imagen: ${signatureWidth}x${signatureHeight} en (${signatureX}, ${signatureY})`);
+
+      // Agregar imagen con proporciones correctas y tipo detectado
+      doc.addImage(signatureUrl, imageType, signatureX, signatureY, signatureWidth, signatureHeight);
 
       // Línea debajo de la firma
       doc.setLineWidth(0.5);
@@ -547,12 +561,16 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
 
       // Empresa
       doc.text('HDM INGENIERIA S.A.', signatureX + (signatureWidth / 2), textY, { align: 'center' });
+
+      console.log('Firma agregada exitosamente');
     } catch (error) {
-      console.warn('Error añadiendo firma:', error);
+      console.error('Error añadiendo firma:', error);
+      console.error('URL de firma (primeros 100 chars):', signatureUrl?.substring(0, 100));
       // Si hay error con la imagen, al menos mostrar los detalles
       addSignatureDetails(doc, signatureX, signatureY, maxWidth, vendedorName);
     }
   } else {
+    console.log('No hay signatureUrl disponible');
     // Si no hay imagen de firma, mostrar solo los detalles
     addSignatureDetails(doc, signatureX, signatureY, maxWidth, vendedorName);
   }
