@@ -14,7 +14,7 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
 
-  const vendedorSignature = await loadVendedorSignature(presupuesto.vendedor_id);
+  const { signatureUrl, vendedorName } = await loadVendedorData(presupuesto.vendedor_id);
 
   let yPosition = margin;
 
