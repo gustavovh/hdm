@@ -10,6 +10,7 @@ import { PresupuestoService, PresupuestoItemService } from '../../services/api';
 import { ProductosList } from '../catalogo/ProductosList';
 import { ProductoFormModal } from '../catalogo/ProductoFormModal';
 import { ImageUpload } from './ImageUpload';
+import { ImageUploadSimple } from './ImageUploadSimple';
 import { ProductosService } from '../../services/productosService';
 import { ClientesService, Cliente } from '../../services/clientesService';
 import { ClienteSearchModal } from './ClienteSearchModal';
@@ -56,6 +57,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
 
   const [items, setItems] = useState<ItemForm[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
   useEffect(() => {
     if (presupuestoId) {
@@ -165,6 +167,51 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
     } catch (error) {
       console.error('Error saving cliente:', error);
       alert('Error al guardar el cliente');
+    }
+  };
+
+  const uploadImages = async (presupuestoId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      for (let i = 0; i < selectedImages.length; i++) {
+        const file = selectedImages[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${presupuestoId}_${Date.now()}_${i}.${fileExt}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('presupuesto-images')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('presupuesto-images')
+          .getPublicUrl(uploadData.path);
+
+        const { error: dbError } = await supabase
+          .from('presupuesto_imagenes')
+          .insert({
+            presupuesto_id: presupuestoId,
+            url: publicUrl,
+            nombre_archivo: file.name,
+            tipo_mime: file.type,
+            tamanio: file.size,
+            orden: i,
+            created_by: user.id
+          });
+
+        if (dbError) throw dbError;
+      }
+
+      setSelectedImages([]);
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      throw error;
     }
   };
 
@@ -346,6 +393,10 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         }
 
         setSavedPresupuestoId(newPresupuesto.id);
+
+        if (selectedImages.length > 0) {
+          await uploadImages(newPresupuesto.id);
+        }
       }
 
       onSave();
@@ -670,6 +721,13 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="border-t border-gray-200 pt-6">
+            <ImageUploadSimple
+              images={selectedImages}
+              onImagesChange={setSelectedImages}
+            />
           </div>
 
           <div className="border-t border-gray-200 pt-6">
