@@ -709,15 +709,6 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
             </div>
           </div>
 
-          {savedPresupuestoId && (
-            <div className="border-t border-gray-200 pt-6">
-              <ImageUpload
-                presupuestoId={savedPresupuestoId}
-                onUploadComplete={() => {}}
-              />
-            </div>
-          )}
-
           <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
             <Button variant="outline" onClick={onCancel} disabled={saving}>
               Cancelar
@@ -798,6 +789,15 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
             </Button>
           </div>
         </div>
+        )}
+
+        {savedPresupuestoId && (
+          <div className="border-t border-gray-200 pt-6">
+            <ImageUpload
+              presupuestoId={savedPresupuestoId}
+              onUploadComplete={() => {}}
+            />
+          </div>
         )}
       </div>
 
