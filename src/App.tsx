@@ -177,6 +177,17 @@ function AuthenticatedApp() {
                   <Package className="w-5 h-5" />
                   Catálogo
                 </button>
+                <button
+                  onClick={() => setCurrentView('users')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
+                    currentView === 'users'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
+                  }`}
+                >
+                  <UserCog className="w-5 h-5" />
+                  Usuarios
+                </button>
               </>
             ) : (
               <>
