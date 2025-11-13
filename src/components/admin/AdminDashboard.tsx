@@ -14,8 +14,9 @@ import { Badge } from '../ui/Badge';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { exportService } from '../../services/exportService';
-import { Filter, RefreshCw, FileText, Trash2, Search, Target, TrendingUp, DollarSign, Users, Download, Calendar, Eye, RotateCw } from 'lucide-react';
+import { Filter, RefreshCw, FileText, Trash2, Search, Target, TrendingUp, DollarSign, Users, Download, Calendar, Eye, RotateCw, Receipt } from 'lucide-react';
 import { CambiarEstadoModal } from '../presupuestos/CambiarEstadoModal';
+import { FacturacionModal } from '../presupuestos/FacturacionModal';
 
 interface GeneralStats {
   totalPresupuestos: number;
@@ -66,6 +67,8 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
   const [currentTarget, setCurrentTarget] = useState<SalesTarget | null>(null);
   const [showCambiarEstado, setShowCambiarEstado] = useState(false);
   const [selectedPresupuestoForEstado, setSelectedPresupuestoForEstado] = useState<Presupuesto | null>(null);
+  const [showFacturacion, setShowFacturacion] = useState(false);
+  const [selectedPresupuestoForFacturacion, setSelectedPresupuestoForFacturacion] = useState<Presupuesto | null>(null);
 
   useEffect(() => {
     loadVendedores();
@@ -868,6 +871,17 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                setSelectedPresupuestoForFacturacion(presupuesto);
+                                setShowFacturacion(true);
+                              }}
+                              className="text-purple-600 hover:text-purple-800 transition-colors"
+                              title="Datos de facturación"
+                            >
+                              <Receipt className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 handleDeletePresupuesto(presupuesto.id);
                               }}
                               className="text-red-600 hover:text-red-800 transition-colors"
@@ -909,6 +923,18 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
           presupuestoCodigo={selectedPresupuestoForEstado.codigo}
           estadoActual={selectedPresupuestoForEstado.estado}
           onEstadoCambiado={loadPresupuestos}
+        />
+      )}
+
+      {showFacturacion && selectedPresupuestoForFacturacion && (
+        <FacturacionModal
+          isOpen={showFacturacion}
+          onClose={() => {
+            setShowFacturacion(false);
+            setSelectedPresupuestoForFacturacion(null);
+          }}
+          presupuesto={selectedPresupuestoForFacturacion}
+          onSuccess={loadPresupuestos}
         />
       )}
     </div>
