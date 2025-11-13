@@ -3,13 +3,15 @@ import { User } from '../../types/database.types';
 import { UserService } from '../../services/userService';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { UserPlus, Edit, Trash2, Shield, UserX } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Shield, UserX, FileText } from 'lucide-react';
 import { UserFormModal } from './UserFormModal';
+import { BillingInfoModal } from './BillingInfoModal';
 
 export function UserList() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showBillingModal, setShowBillingModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -38,6 +40,11 @@ export function UserList() {
     setShowForm(true);
   };
 
+  const handleBillingInfo = (user: User) => {
+    setSelectedUser(user);
+    setShowBillingModal(true);
+  };
+
   const handleToggleActive = async (user: User) => {
     if (
       confirm(
@@ -63,6 +70,17 @@ export function UserList() {
     setShowForm(false);
     setSelectedUser(null);
     loadUsers();
+  };
+
+  const handleBillingSuccess = () => {
+    setShowBillingModal(false);
+    setSelectedUser(null);
+    loadUsers();
+  };
+
+  const handleBillingClose = () => {
+    setShowBillingModal(false);
+    setSelectedUser(null);
   };
 
   if (loading) {
@@ -185,13 +203,23 @@ export function UserList() {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleEdit(user)}
+                          title="Editar usuario"
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
+                          onClick={() => handleBillingInfo(user)}
+                          title="Datos de facturación"
+                        >
+                          <FileText className="w-4 h-4 text-blue-600" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           onClick={() => handleToggleActive(user)}
+                          title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
                         >
                           {user.active ? (
                             <UserX className="w-4 h-4 text-red-600" />
@@ -214,6 +242,15 @@ export function UserList() {
           isOpen={showForm}
           onClose={handleFormClose}
           onSuccess={handleFormSuccess}
+          user={selectedUser}
+        />
+      )}
+
+      {showBillingModal && selectedUser && (
+        <BillingInfoModal
+          isOpen={showBillingModal}
+          onClose={handleBillingClose}
+          onSuccess={handleBillingSuccess}
           user={selectedUser}
         />
       )}
