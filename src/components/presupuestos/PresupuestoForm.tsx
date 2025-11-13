@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, X, Package } from 'lucide-react';
+import { Plus, Trash2, Save, X, Package, Search, User } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
@@ -11,6 +11,8 @@ import { ProductosList } from '../catalogo/ProductosList';
 import { ProductoFormModal } from '../catalogo/ProductoFormModal';
 import { ImageUpload } from './ImageUpload';
 import { ProductosService } from '../../services/productosService';
+import { ClientesService, Cliente } from '../../services/clientesService';
+import { ClienteSearchModal } from './ClienteSearchModal';
 import { supabase } from '../../lib/supabase';
 
 interface PresupuestoFormProps {
@@ -28,6 +30,8 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
   const [saving, setSaving] = useState(false);
   const [showCatalogo, setShowCatalogo] = useState(false);
   const [showProductoForm, setShowProductoForm] = useState(false);
+  const [showClienteSearch, setShowClienteSearch] = useState(false);
+  const [activeTab, setActiveTab] = useState<'detalles' | 'facturacion'>('detalles');
   const [savedPresupuestoId, setSavedPresupuestoId] = useState<string | undefined>(presupuestoId);
 
   const [formData, setFormData] = useState({
@@ -37,10 +41,17 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
     cliente_telefono: '',
     cliente_email: '',
     descripcion: '',
+    duracion_obra: '',
+    porcentaje_anticipo: '',
+    plazo_entrega: '',
     moneda: 'PYG' as 'PYG' | 'USD',
     tipo_cambio: 7500,
     tasa_impuesto: 10,
     tasa_comision: 0,
+    factura_numero: '',
+    factura_timbrado: '',
+    factura_fecha: '',
+    factura_observacion: '',
   });
 
   const [items, setItems] = useState<ItemForm[]>([]);
@@ -66,10 +77,17 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         cliente_telefono: presupuesto.cliente_telefono || '',
         cliente_email: presupuesto.cliente_email || '',
         descripcion: presupuesto.observaciones || '',
+        duracion_obra: '',
+        porcentaje_anticipo: '',
+        plazo_entrega: '',
         moneda: presupuesto.moneda,
         tipo_cambio: presupuesto.tipo_cambio,
         tasa_impuesto: presupuesto.tasa_impuesto,
         tasa_comision: presupuesto.tasa_comision,
+        factura_numero: presupuesto.factura_numero || '',
+        factura_timbrado: presupuesto.factura_timbrado || '',
+        factura_fecha: presupuesto.factura_fecha || '',
+        factura_observacion: presupuesto.factura_observacion || '',
       });
 
       const loadedItems = await PresupuestoItemService.getByPresupuesto(presupuestoId);
@@ -110,6 +128,44 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       },
     ]);
     setShowCatalogo(false);
+  };
+
+  const handleSelectCliente = (cliente: Cliente) => {
+    setFormData({
+      ...formData,
+      cliente_nombre: cliente.nombre,
+      cliente_documento: cliente.documento || '',
+      cliente_telefono: cliente.telefono || '',
+      cliente_email: cliente.email || '',
+    });
+  };
+
+  const handleSaveCliente = async () => {
+    if (!formData.cliente_nombre.trim()) {
+      alert('El nombre del cliente es requerido');
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      await ClientesService.create({
+        nombre: formData.cliente_nombre,
+        documento: formData.cliente_documento || null,
+        direccion: null,
+        telefono: formData.cliente_telefono || null,
+        email: formData.cliente_email || null,
+        ciudad: null,
+        pais: 'Paraguay',
+        vendedor_id: user.id,
+      });
+
+      alert('Cliente guardado correctamente');
+    } catch (error) {
+      console.error('Error saving cliente:', error);
+      alert('Error al guardar el cliente');
+    }
   };
 
   const removeItem = (index: number) => {
@@ -204,13 +260,20 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         codigo = data;
       }
 
+      const observacionesCompletas = [
+        formData.descripcion,
+        formData.duracion_obra && `Duración de la obra: ${formData.duracion_obra}`,
+        formData.porcentaje_anticipo && `Porcentaje de anticipo: ${formData.porcentaje_anticipo}`,
+        formData.plazo_entrega && `Plazo de entrega: ${formData.plazo_entrega}`,
+      ].filter(Boolean).join('\n');
+
       const presupuestoData: any = {
         concepto: formData.concepto,
         cliente_nombre: formData.cliente_nombre,
         cliente_documento: formData.cliente_documento || null,
         cliente_telefono: formData.cliente_telefono || null,
         cliente_email: formData.cliente_email || null,
-        observaciones: formData.descripcion || null,
+        observaciones: observacionesCompletas || null,
         moneda: formData.moneda,
         tipo_cambio: formData.tipo_cambio,
         tasa_impuesto: formData.tasa_impuesto,
@@ -221,6 +284,10 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         total_neto: totals.totalFinal,
         total_impuestos: totals.totalImpuestos,
         total_comisiones: totals.totalComisiones,
+        factura_numero: formData.factura_numero || null,
+        factura_timbrado: formData.factura_timbrado || null,
+        factura_fecha: formData.factura_fecha || null,
+        factura_observacion: formData.factura_observacion || null,
       };
 
       if (!presupuestoId) {
@@ -324,6 +391,30 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
           </Button>
         </div>
 
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            onClick={() => setActiveTab('detalles')}
+            className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+              activeTab === 'detalles'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Detalles
+          </button>
+          <button
+            onClick={() => setActiveTab('facturacion')}
+            className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+              activeTab === 'facturacion'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Datos de Facturación
+          </button>
+        </div>
+
+        {activeTab === 'detalles' && (
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -343,9 +434,31 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Información del Cliente
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Información del Cliente
+              </h3>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowClienteSearch(true)}
+                >
+                  <Search className="w-4 h-4 mr-2" />
+                  Buscar Cliente
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSaveCliente}
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Guardar Cliente
+                </Button>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Nombre del Cliente *"
@@ -434,15 +547,41 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
                 }
               />
             </div>
-            <div className="mt-4">
+            <div className="mt-4 space-y-4">
               <Textarea
-                label="Descripción / Notas"
+                label="Observaciones"
                 value={formData.descripcion}
                 onChange={(e) =>
                   setFormData({ ...formData, descripcion: e.target.value })
                 }
                 rows={3}
               />
+              <div className="grid grid-cols-3 gap-4">
+                <Input
+                  label="Duración de la obra"
+                  value={formData.duracion_obra}
+                  onChange={(e) =>
+                    setFormData({ ...formData, duracion_obra: e.target.value })
+                  }
+                  placeholder="Ej: 30 días"
+                />
+                <Input
+                  label="Porcentaje de anticipo"
+                  value={formData.porcentaje_anticipo}
+                  onChange={(e) =>
+                    setFormData({ ...formData, porcentaje_anticipo: e.target.value })
+                  }
+                  placeholder="Ej: 50%"
+                />
+                <Input
+                  label="Plazo de entrega"
+                  value={formData.plazo_entrega}
+                  onChange={(e) =>
+                    setFormData({ ...formData, plazo_entrega: e.target.value })
+                  }
+                  placeholder="Ej: 15 días"
+                />
+              </div>
             </div>
           </div>
 
@@ -592,7 +731,81 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
             </Button>
           </div>
         </div>
+        )}
+
+        {activeTab === 'facturacion' && (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Facturas Asociadas
+            </h3>
+            <div className="bg-gray-50 rounded-lg p-6">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <Input
+                  label="Fecha"
+                  type="date"
+                  value={formData.factura_fecha}
+                  onChange={(e) =>
+                    setFormData({ ...formData, factura_fecha: e.target.value })
+                  }
+                />
+                <Input
+                  label="Factura Número"
+                  value={formData.factura_numero}
+                  onChange={(e) =>
+                    setFormData({ ...formData, factura_numero: e.target.value })
+                  }
+                  placeholder="Número de factura"
+                />
+                <Input
+                  label="Timbrado Número"
+                  value={formData.factura_timbrado}
+                  onChange={(e) =>
+                    setFormData({ ...formData, factura_timbrado: e.target.value })
+                  }
+                  placeholder="Número de timbrado"
+                />
+                <Input
+                  label="Monto"
+                  type="number"
+                  value="0"
+                  disabled
+                  placeholder="Se calcula automáticamente"
+                />
+              </div>
+              <Textarea
+                label="Observación"
+                value={formData.factura_observacion}
+                onChange={(e) =>
+                  setFormData({ ...formData, factura_observacion: e.target.value })
+                }
+                rows={3}
+                placeholder="Observaciones adicionales sobre la facturación"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+            <Button variant="outline" onClick={onCancel} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => handleSubmit('ABIERTO')}
+              loading={saving}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Guardar Presupuesto
+            </Button>
+          </div>
+        </div>
+        )}
       </div>
+
+      <ClienteSearchModal
+        isOpen={showClienteSearch}
+        onClose={() => setShowClienteSearch(false)}
+        onSelect={handleSelectCliente}
+      />
 
       <Modal
         isOpen={showCatalogo}
