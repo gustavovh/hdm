@@ -61,6 +61,11 @@ export interface User {
   avatar_url?: string;
   signature_url?: string;
   phone?: string;
+  razon_social?: string;
+  ruc?: string;
+  direccion_facturacion?: string;
+  ciudad_facturacion?: string;
+  telefono_facturacion?: string;
   active: boolean;
   created_at: string;
   updated_at: string;
