@@ -14,9 +14,10 @@ import { Badge } from '../ui/Badge';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { exportService } from '../../services/exportService';
-import { Filter, RefreshCw, FileText, Trash2, Search, Target, TrendingUp, DollarSign, Users, Download, Calendar, Eye, RotateCw, Receipt } from 'lucide-react';
+import { Filter, RefreshCw, FileText, Trash2, Search, Target, TrendingUp, DollarSign, Users, Download, Calendar, Eye, RotateCw, Receipt, Copy } from 'lucide-react';
 import { CambiarEstadoModal } from '../presupuestos/CambiarEstadoModal';
 import { FacturacionModal } from '../presupuestos/FacturacionModal';
+import { HDMPDFGeneratorV2 } from '../../services/pdfGeneratorHDMv2';
 
 interface GeneralStats {
   totalPresupuestos: number;
@@ -217,6 +218,53 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
     }
   };
 
+  const handleClonePresupuesto = async (presupuesto: Presupuesto) => {
+    if (!confirm(`¿Deseas clonar el presupuesto ${presupuesto.codigo}?`)) return;
+
+    try {
+      const { codigo, id, created_at, updated_at, deleted_at, ...presupuestoData } = presupuesto;
+
+      const { data: newPresupuesto, error } = await supabase
+        .from('presupuestos')
+        .insert({
+          ...presupuestoData,
+          estado: 'BORRADOR',
+          observaciones: `Clonado de ${codigo}${presupuestoData.observaciones ? ' - ' + presupuestoData.observaciones : ''}`,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      alert(`Presupuesto clonado exitosamente: ${newPresupuesto.codigo}`);
+      loadPresupuestos();
+    } catch (error) {
+      console.error('Error cloning presupuesto:', error);
+      alert('Error al clonar el presupuesto');
+    }
+  };
+
+  const handleDownloadPresupuesto = async (presupuesto: Presupuesto) => {
+    try {
+      const { data: fullPresupuesto, error } = await supabase
+        .from('presupuestos')
+        .select(`
+          *,
+          vendedor:vendedor_id(full_name, email, phone, signature_url)
+        `)
+        .eq('id', presupuesto.id)
+        .single();
+
+      if (error) throw error;
+
+      const pdfGenerator = new HDMPDFGeneratorV2();
+      await pdfGenerator.generatePDF(fullPresupuesto);
+    } catch (error) {
+      console.error('Error downloading presupuesto:', error);
+      alert('Error al descargar el presupuesto');
+    }
+  };
+
   const handleApprove = async (id: string, comentario?: string) => {
     if (!user) return;
     await DiscountRequestService.approve(id, user.id, comentario);
@@ -266,9 +314,13 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
   const getStatusColor = (status: Presupuesto['estado']) => {
     const colors = {
       BORRADOR: 'gray',
+      ABIERTO: 'gray',
       PRESENTADO: 'blue',
-      ACEPTADO: 'green',
-      FACTURADO: 'purple',
+      ACEPTADO: 'blue',
+      EN_EJECUCION: 'yellow',
+      FACTURADO: 'green',
+      RECHAZADO: 'red',
+      CANCELADO: 'red',
       ANULADO: 'red',
     };
     return colors[status] || 'gray';
@@ -277,9 +329,13 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
   const getStatusLabel = (status: Presupuesto['estado']) => {
     const labels = {
       BORRADOR: 'Borrador',
+      ABIERTO: 'Abierto',
       PRESENTADO: 'Presentado',
-      ACEPTADO: 'Aceptado',
+      ACEPTADO: 'Aprobado',
+      EN_EJECUCION: 'En Ejecución',
       FACTURADO: 'Facturado',
+      RECHAZADO: 'Rechazado',
+      CANCELADO: 'Cancelado',
       ANULADO: 'Anulado',
     };
     return labels[status] || status;
@@ -856,6 +912,26 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                               title="Ver detalle"
                             >
                               <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadPresupuesto(presupuesto);
+                              }}
+                              className="text-blue-600 hover:text-blue-800 transition-colors"
+                              title="Descargar PDF"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleClonePresupuesto(presupuesto);
+                              }}
+                              className="text-gray-600 hover:text-gray-800 transition-colors"
+                              title="Clonar presupuesto"
+                            >
+                              <Copy className="w-4 h-4" />
                             </button>
                             <button
                               onClick={(e) => {

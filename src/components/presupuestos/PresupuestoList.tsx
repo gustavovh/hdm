@@ -60,11 +60,11 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
       BORRADOR: 'gray',
       ABIERTO: 'gray',
       PRESENTADO: 'blue',
-      ACEPTADO: 'green',
+      ACEPTADO: 'blue',
       EN_EJECUCION: 'yellow',
-      FACTURADO: 'purple',
+      FACTURADO: 'green',
       RECHAZADO: 'red',
-      CANCELADO: 'orange',
+      CANCELADO: 'red',
       ANULADO: 'red',
     };
     return colors[status] || 'gray';

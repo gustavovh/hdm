@@ -10,7 +10,7 @@ interface CreateUserDTO {
 
 interface UpdateUserDTO {
   full_name?: string;
-  role?: 'admin' | 'vendedor';
+  role?: 'admin' | 'vendedor' | 'administrativo';
   password?: string;
 }
 
@@ -90,7 +90,7 @@ export class UserService {
       }
     }
 
-    const userUpdates: { full_name?: string; role?: 'admin' | 'vendedor' } = {};
+    const userUpdates: { full_name?: string; role?: 'admin' | 'vendedor' | 'administrativo' } = {};
     if (updates.full_name !== undefined) userUpdates.full_name = updates.full_name;
     if (updates.role !== undefined) userUpdates.role = updates.role;
 

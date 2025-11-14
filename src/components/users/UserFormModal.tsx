@@ -57,7 +57,7 @@ export function UserFormModal({
 
     try {
       if (user) {
-        const updates: { full_name: string; role: 'admin' | 'vendedor'; password?: string } = {
+        const updates: { full_name: string; role: 'admin' | 'vendedor' | 'administrativo'; password?: string } = {
           full_name: formData.full_name,
           role: formData.role,
         };
