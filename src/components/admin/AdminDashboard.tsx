@@ -219,7 +219,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
   };
 
   const handleClonePresupuesto = async (presupuesto: Presupuesto) => {
-    if (!confirm(`¿Deseas clonar el presupuesto ${presupuesto.codigo}?`)) return;
+    if (!confirm(`¿Deseas clonar el presupuesto ${presupuesto.codigo}? Se creará un nuevo presupuesto en estado BORRADOR que podrás editar.`)) return;
 
     try {
       const newPresupuestoData = {
@@ -256,8 +256,39 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
         throw error;
       }
 
-      alert(`Presupuesto clonado exitosamente: ${newPresupuesto.codigo}`);
+      const { data: items, error: itemsError } = await supabase
+        .from('presupuesto_items')
+        .select('*')
+        .eq('presupuesto_id', presupuesto.id);
+
+      if (itemsError) {
+        console.error('Error fetching items:', itemsError);
+      } else if (items && items.length > 0) {
+        const newItems = items.map(item => ({
+          presupuesto_id: newPresupuesto.id,
+          descripcion: item.descripcion,
+          cantidad: item.cantidad,
+          precio_unitario: item.precio_unitario,
+          subtotal: item.subtotal,
+          descuento_aplicado: item.descuento_aplicado,
+          orden: item.orden,
+        }));
+
+        const { error: insertItemsError } = await supabase
+          .from('presupuesto_items')
+          .insert(newItems);
+
+        if (insertItemsError) {
+          console.error('Error cloning items:', insertItemsError);
+        }
+      }
+
+      alert(`Presupuesto clonado exitosamente: ${newPresupuesto.codigo}\n\nAhora puedes editarlo haciendo clic en el ícono de ojo.`);
       loadPresupuestos();
+
+      if (onSelectPresupuesto) {
+        onSelectPresupuesto(newPresupuesto.id);
+      }
     } catch (error: any) {
       console.error('Error cloning presupuesto:', error);
       alert(`Error al clonar el presupuesto: ${error.message || 'Error desconocido'}`);
