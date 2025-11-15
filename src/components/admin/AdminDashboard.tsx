@@ -168,7 +168,8 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
       }
 
       const matchesVendedor = selectedVendedor === 'all' || p.vendedor_id === selectedVendedor;
-      return matchesDate && matchesVendedor && !p.deleted_at;
+      const notClonado = p.estado !== 'CLONADO';
+      return matchesDate && matchesVendedor && notClonado && !p.deleted_at;
     });
 
     const stats = filteredData.reduce((acc, p) => {
@@ -353,7 +354,8 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
       p.vendedor?.email?.toLowerCase().includes(presupuestoSearch.toLowerCase());
     const matchesStatus = presupuestoStatusFilter === 'all' || p.estado === presupuestoStatusFilter;
     const matchesVendedor = selectedVendedor === 'all' || p.vendedor_id === selectedVendedor;
-    return matchesSearch && matchesStatus && matchesVendedor && !p.deleted_at;
+    const notClonado = p.estado !== 'CLONADO';
+    return matchesSearch && matchesStatus && matchesVendedor && notClonado && !p.deleted_at;
   });
 
   const getStatusColor = (status: Presupuesto['estado']): 'green' | 'yellow' | 'red' | 'blue' | 'gray' => {
@@ -470,7 +472,8 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
       }
 
       const matchesVendedor = selectedVendedor === 'all' || p.vendedor_id === selectedVendedor;
-      return matchesDate && matchesVendedor && !p.deleted_at;
+      const notClonado = p.estado !== 'CLONADO';
+      return matchesDate && matchesVendedor && notClonado && !p.deleted_at;
     });
   };
 
