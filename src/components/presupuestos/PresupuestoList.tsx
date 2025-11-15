@@ -14,7 +14,7 @@ interface PresupuestoListProps {
 }
 
 export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: PresupuestoListProps) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -156,7 +156,7 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
               <option value="FACTURADO">Facturado</option>
               <option value="RECHAZADO">Rechazado</option>
               <option value="CANCELADO">Cancelado</option>
-              <option value="ANULADO">Anulado</option>
+              {isAdmin && <option value="ANULADO">Anulado</option>}
             </Select>
           </div>
         </div>
