@@ -395,6 +395,26 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
     }).format(amount);
   };
 
+  const formatDateWithTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('es-PY', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  };
+
+  const getDaysElapsed = (dateString: string) => {
+    const created = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - created.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   const getFilterInfo = () => {
     let info = '';
 
@@ -906,7 +926,10 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                         Referencia
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Fecha
+                        Fecha y Hora
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Días Trans.
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Monto
@@ -936,7 +959,18 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                           {presupuesto.concepto || '-'}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                          {new Date(presupuesto.created_at).toLocaleDateString('es-PY')}
+                          {formatDateWithTime(presupuesto.created_at)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-center text-sm text-gray-700">
+                          <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-medium ${
+                            getDaysElapsed(presupuesto.created_at) > 30
+                              ? 'bg-red-100 text-red-800'
+                              : getDaysElapsed(presupuesto.created_at) > 15
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {getDaysElapsed(presupuesto.created_at)} días
+                          </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">
                           {formatCurrency(presupuesto.total_neto + presupuesto.total_impuestos + presupuesto.total_comisiones)}
