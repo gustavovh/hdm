@@ -219,7 +219,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
   };
 
   const handleClonePresupuesto = async (presupuesto: Presupuesto) => {
-    if (!confirm(`¿Deseas clonar el presupuesto ${presupuesto.codigo}? Se creará un nuevo presupuesto en estado BORRADOR que podrás editar.`)) return;
+    if (!confirm(`¿Deseas clonar el presupuesto ${presupuesto.codigo}? Se creará un nuevo presupuesto en estado CLONADO que podrás editar.`)) return;
 
     try {
       const newPresupuestoData = {
@@ -237,7 +237,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
         total_comisiones: presupuesto.total_comisiones,
         tasa_impuesto: presupuesto.tasa_impuesto,
         tasa_comision: presupuesto.tasa_comision,
-        estado: 'BORRADOR' as const,
+        estado: 'CLONADO' as const,
         observaciones: `Clonado de ${presupuesto.codigo}${presupuesto.observaciones ? ' - ' + presupuesto.observaciones : ''}`,
         concepto: presupuesto.concepto,
         condicion_pago: presupuesto.condicion_pago,
@@ -358,7 +358,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
 
   const getStatusColor = (status: Presupuesto['estado']): 'green' | 'yellow' | 'red' | 'blue' | 'gray' => {
     const colors: Record<Presupuesto['estado'], 'green' | 'yellow' | 'red' | 'blue' | 'gray'> = {
-      BORRADOR: 'gray',
+      CLONADO: 'gray',
       ABIERTO: 'gray',
       PRESENTADO: 'blue',
       ACEPTADO: 'blue',
@@ -373,7 +373,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
 
   const getStatusLabel = (status: Presupuesto['estado']) => {
     const labels = {
-      BORRADOR: 'Borrador',
+      CLONADO: 'Clonado',
       ABIERTO: 'Abierto',
       PRESENTADO: 'Presentado',
       ACEPTADO: 'Aprobado',
@@ -891,7 +891,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                   className="w-48"
                 >
                   <option value="all">Todos los estados</option>
-                  <option value="BORRADOR">Borrador</option>
+                  <option value="CLONADO">Clonado</option>
                   <option value="PRESENTADO">Presentado</option>
                   <option value="ACEPTADO">Aceptado</option>
                   <option value="FACTURADO">Facturado</option>

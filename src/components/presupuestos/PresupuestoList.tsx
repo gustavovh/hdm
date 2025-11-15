@@ -28,7 +28,7 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
     e.stopPropagation();
     if (!user) return;
 
-    if (!confirm('¿Deseas clonar este presupuesto? Se creará una copia en estado Borrador.')) {
+    if (!confirm('¿Deseas clonar este presupuesto? Se creará una copia en estado Clonado.')) {
       return;
     }
 
@@ -57,7 +57,7 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
 
   const getStatusColor = (status: Presupuesto['estado']) => {
     const colors: Record<string, string> = {
-      BORRADOR: 'gray',
+      CLONADO: 'gray',
       ABIERTO: 'gray',
       PRESENTADO: 'blue',
       ACEPTADO: 'blue',
@@ -72,7 +72,7 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
 
   const getStatusLabel = (status: Presupuesto['estado']) => {
     const labels: Record<string, string> = {
-      BORRADOR: 'Borrador',
+      CLONADO: 'Clonado',
       ABIERTO: 'Abierto',
       PRESENTADO: 'Presentado',
       ACEPTADO: 'Aceptado',
@@ -148,7 +148,7 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="all">Todos los estados</option>
-              <option value="BORRADOR">Borrador</option>
+              <option value="CLONADO">Clonado</option>
               <option value="ABIERTO">Abierto</option>
               <option value="PRESENTADO">Presentado</option>
               <option value="ACEPTADO">Aceptado</option>

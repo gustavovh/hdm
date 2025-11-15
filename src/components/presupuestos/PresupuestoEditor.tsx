@@ -39,14 +39,19 @@ export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: Presupues
 
     setLoading(true);
     try {
+      const updateData = {
+        ...formData,
+        estado: presupuesto.estado === 'CLONADO' ? 'ABIERTO' : presupuesto.estado,
+      };
+
       const { error } = await supabase
         .from('presupuestos')
-        .update(formData)
+        .update(updateData)
         .eq('id', presupuesto.id);
 
       if (error) throw error;
 
-      alert('Presupuesto actualizado exitosamente');
+      alert('Presupuesto actualizado y abierto exitosamente');
       onUpdate();
     } catch (error: any) {
       console.error('Error updating presupuesto:', error);
@@ -60,7 +65,7 @@ export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: Presupues
     <div className="space-y-6">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="text-lg font-semibold text-blue-900 mb-4">
-          Modo de Edición - Presupuesto en BORRADOR
+          Modo de Edición - Presupuesto en CLONADO
         </h3>
 
         <div className="space-y-6">

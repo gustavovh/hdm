@@ -304,7 +304,7 @@ export class EmailService {
     vendedor: User
   ): Promise<void> {
     const statusLabels: Record<string, string> = {
-      BORRADOR: 'Borrador',
+      CLONADO: 'Clonado',
       PRESENTADO: 'Presentado',
       ACEPTADO: 'Aceptado',
       FACTURADO: 'Facturado',

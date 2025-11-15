@@ -17,13 +17,13 @@ import { Presupuesto, SalesTarget } from '../../types/database.types';
 
 interface DashboardStats {
   total: number;
-  borrador: number;
+  clonado: number;
   presentado: number;
   aceptado: number;
   facturado: number;
   anulado: number;
   montoTotal: number;
-  montoBorrador: number;
+  montoClonado: number;
   montoPresentado: number;
   montoAceptado: number;
   montoFacturado: number;
@@ -35,13 +35,13 @@ export function VendedorDashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     total: 0,
-    borrador: 0,
+    clonado: 0,
     presentado: 0,
     aceptado: 0,
     facturado: 0,
     anulado: 0,
     montoTotal: 0,
-    montoBorrador: 0,
+    montoClonado: 0,
     montoPresentado: 0,
     montoAceptado: 0,
     montoFacturado: 0,
@@ -75,9 +75,9 @@ export function VendedorDashboard() {
         acc.montoTotal += montoTotal;
 
         switch (p.estado) {
-          case 'BORRADOR':
-            acc.borrador++;
-            acc.montoBorrador += montoTotal;
+          case 'CLONADO':
+            acc.clonado++;
+            acc.montoClonado += montoTotal;
             break;
           case 'PRESENTADO':
             acc.presentado++;
@@ -99,13 +99,13 @@ export function VendedorDashboard() {
         return acc;
       }, {
         total: 0,
-        borrador: 0,
+        clonado: 0,
         presentado: 0,
         aceptado: 0,
         facturado: 0,
         anulado: 0,
         montoTotal: 0,
-        montoBorrador: 0,
+        montoClonado: 0,
         montoPresentado: 0,
         montoAceptado: 0,
         montoFacturado: 0,

@@ -48,10 +48,14 @@ export function PresupuestoStatusManager({
 
   const canTransition = (currentStatus: BudgetStatus, nextStatus: BudgetStatus): boolean => {
     const transitions: Record<BudgetStatus, BudgetStatus[]> = {
-      BORRADOR: ['PRESENTADO'],
+      CLONADO: ['ABIERTO'],
+      ABIERTO: ['PRESENTADO'],
       PRESENTADO: ['ACEPTADO', 'ANULADO'],
       ACEPTADO: ['FACTURADO', 'ANULADO'],
+      EN_EJECUCION: [],
       FACTURADO: [],
+      RECHAZADO: [],
+      CANCELADO: [],
       ANULADO: [],
     };
 

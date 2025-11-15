@@ -3,7 +3,7 @@ export type UserRole = 'admin' | 'vendedor' | 'administrativo';
 export type CurrencyType = 'PYG' | 'USD';
 
 export type BudgetStatus =
-  | 'BORRADOR'
+  | 'CLONADO'
   | 'ABIERTO'
   | 'PRESENTADO'
   | 'ACEPTADO'

@@ -329,10 +329,10 @@ export function ReportsDashboard() {
           <div className="p-4 rounded-lg bg-yellow-50 border border-yellow-200">
             <div className="flex items-center gap-2 mb-2">
               <Clock className="w-5 h-5 text-yellow-600" />
-              <span className="font-semibold text-yellow-900">Borrador</span>
+              <span className="font-semibold text-yellow-900">Clonado</span>
             </div>
             <p className="text-2xl font-bold text-yellow-900">
-              {stats.presupuestos_por_estado?.borrador || 0}
+              {stats.presupuestos_por_estado?.clonado || 0}
             </p>
           </div>
 

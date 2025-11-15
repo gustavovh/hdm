@@ -55,7 +55,7 @@ export class PresupuestoService {
       total_neto: total_bruto,
       total_impuestos: (total_bruto * (data.tasa_impuesto || 10)) / 100,
       total_comisiones: (total_bruto * (data.tasa_comision || 5)) / 100,
-      estado: 'BORRADOR' as const,
+      estado: 'CLONADO' as const,
       observaciones: data.observaciones,
     };
 
@@ -123,7 +123,7 @@ export class PresupuestoService {
       total_neto: original.total_bruto,
       total_impuestos: original.total_impuestos,
       total_comisiones: original.total_comisiones,
-      estado: 'BORRADOR' as const,
+      estado: 'CLONADO' as const,
       observaciones: original.observaciones,
       descripcion: original.descripcion,
       dias_validez: original.dias_validez,

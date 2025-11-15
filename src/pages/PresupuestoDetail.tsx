@@ -127,7 +127,7 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
 
   const getStatusBadge = (estado: Presupuesto['estado']) => {
     const badges = {
-      BORRADOR: <Badge variant="neutral">Borrador</Badge>,
+      CLONADO: <Badge variant="neutral">Clonado</Badge>,
       PRESENTADO: <Badge variant="info">Presentado</Badge>,
       ACEPTADO: <Badge variant="success">Aceptado</Badge>,
       FACTURADO: <Badge variant="success">Facturado</Badge>,
@@ -172,7 +172,7 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
           </div>
 
           <div className="flex gap-2">
-            {presupuesto.estado === 'BORRADOR' && (
+            {presupuesto.estado === 'CLONADO' && (
               <Button
                 size="sm"
                 variant={editMode ? "outline" : "primary"}
@@ -373,7 +373,7 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
           <div className="mt-6">
             {activeTab === 'detalles' && (
               <div className="space-y-6">
-                {editMode && presupuesto.estado === 'BORRADOR' ? (
+                {editMode && presupuesto.estado === 'CLONADO' ? (
                   <PresupuestoEditor
                     presupuesto={presupuesto}
                     onUpdate={() => {
