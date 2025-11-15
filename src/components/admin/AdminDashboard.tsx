@@ -222,15 +222,32 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
     if (!confirm(`¿Deseas clonar el presupuesto ${presupuesto.codigo}?`)) return;
 
     try {
-      const { codigo, id, created_at, updated_at, deleted_at, factura_numero, factura_fecha, ...presupuestoData } = presupuesto;
+      const newPresupuestoData = {
+        cliente_nombre: presupuesto.cliente_nombre,
+        cliente_email: presupuesto.cliente_email,
+        cliente_telefono: presupuesto.cliente_telefono,
+        cliente_documento: presupuesto.cliente_documento,
+        vendedor_id: presupuesto.vendedor_id,
+        moneda: presupuesto.moneda,
+        tipo_cambio: presupuesto.tipo_cambio,
+        total_bruto: presupuesto.total_bruto,
+        total_descuento: presupuesto.total_descuento,
+        total_neto: presupuesto.total_neto,
+        total_impuestos: presupuesto.total_impuestos,
+        total_comisiones: presupuesto.total_comisiones,
+        tasa_impuesto: presupuesto.tasa_impuesto,
+        tasa_comision: presupuesto.tasa_comision,
+        estado: 'BORRADOR' as const,
+        observaciones: `Clonado de ${presupuesto.codigo}${presupuesto.observaciones ? ' - ' + presupuesto.observaciones : ''}`,
+        concepto: presupuesto.concepto,
+        condicion_pago: presupuesto.condicion_pago,
+        medio_pago: presupuesto.medio_pago,
+        image_urls: presupuesto.image_urls,
+      };
 
       const { data: newPresupuesto, error } = await supabase
         .from('presupuestos')
-        .insert({
-          ...presupuestoData,
-          estado: 'BORRADOR',
-          observaciones: `Clonado de ${codigo}${presupuestoData.observaciones ? ' - ' + presupuestoData.observaciones : ''}`,
-        })
+        .insert(newPresupuestoData)
         .select()
         .single();
 
