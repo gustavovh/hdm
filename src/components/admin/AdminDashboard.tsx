@@ -222,7 +222,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
     if (!confirm(`¿Deseas clonar el presupuesto ${presupuesto.codigo}?`)) return;
 
     try {
-      const { codigo, id, created_at, updated_at, deleted_at, ...presupuestoData } = presupuesto;
+      const { codigo, id, created_at, updated_at, deleted_at, factura_numero, factura_fecha, ...presupuestoData } = presupuesto;
 
       const { data: newPresupuesto, error } = await supabase
         .from('presupuestos')
@@ -234,13 +234,16 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Clone error details:', error);
+        throw error;
+      }
 
       alert(`Presupuesto clonado exitosamente: ${newPresupuesto.codigo}`);
       loadPresupuestos();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error cloning presupuesto:', error);
-      alert('Error al clonar el presupuesto');
+      alert(`Error al clonar el presupuesto: ${error.message || 'Error desconocido'}`);
     }
   };
 
@@ -305,8 +308,8 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
     return matchesSearch && matchesStatus && matchesVendedor && !p.deleted_at;
   });
 
-  const getStatusColor = (status: Presupuesto['estado']) => {
-    const colors = {
+  const getStatusColor = (status: Presupuesto['estado']): 'green' | 'yellow' | 'red' | 'blue' | 'gray' => {
+    const colors: Record<Presupuesto['estado'], 'green' | 'yellow' | 'red' | 'blue' | 'gray'> = {
       BORRADOR: 'gray',
       ABIERTO: 'gray',
       PRESENTADO: 'blue',
