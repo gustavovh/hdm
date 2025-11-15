@@ -246,19 +246,13 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
 
   const handleDownloadPresupuesto = async (presupuesto: Presupuesto) => {
     try {
-      const { data: fullPresupuesto, error } = await supabase
-        .from('presupuestos')
-        .select(`
-          *,
-          vendedor:vendedor_id(full_name, email, phone, signature_url)
-        `)
-        .eq('id', presupuesto.id)
-        .single();
+      const { data: vendedorData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', presupuesto.vendedor_id)
+        .maybeSingle();
 
-      if (error) throw error;
-
-      const pdfGenerator = new HDMPDFGeneratorV2();
-      await pdfGenerator.generatePDF(fullPresupuesto);
+      await HDMPDFGeneratorV2.downloadPresupuestoPDF(presupuesto, vendedorData || undefined);
     } catch (error) {
       console.error('Error downloading presupuesto:', error);
       alert('Error al descargar el presupuesto');
