@@ -8,7 +8,7 @@ import { AuditTimeline } from '../components/audit/AuditTimeline';
 import { PresupuestoStatusManager } from '../components/presupuestos/PresupuestoStatusManager';
 import { SeguimientoManager } from '../components/seguimiento/SeguimientoManager';
 import { CambiarEstadoModal } from '../components/presupuestos/CambiarEstadoModal';
-import { ItemsEditor } from '../components/presupuestos/ItemsEditor';
+import { PresupuestoEditor } from '../components/presupuestos/PresupuestoEditor';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { BudgetCalculator } from '../services/budgetCalculator';
@@ -39,6 +39,7 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
   const [loading, setLoading] = useState(true);
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showCambiarEstado, setShowCambiarEstado] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'detalles' | 'solicitudes' | 'seguimiento' | 'historial'>(
     'detalles'
   );
@@ -173,38 +174,51 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
           </div>
 
           <div className="flex gap-2">
-            <PresupuestoStatusManager
-              presupuesto={presupuesto}
-              onUpdate={loadPresupuesto}
-              isAdmin={isAdmin}
-            />
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🖱️ Vista Previa button clicked!');
-                handlePreviewPDF();
-              }}
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              Vista Previa
-            </Button>
-            <Button size="sm" variant="secondary" onClick={handleDownloadPDF}>
-              <Download className="w-4 h-4 mr-2" />
-              Descargar PDF
-            </Button>
-            {isVendedor && presupuesto.estado !== 'ANULADO' && (
+            {presupuesto.estado === 'BORRADOR' && (
+              <Button
+                size="sm"
+                variant={editMode ? "outline" : "primary"}
+                onClick={() => setEditMode(!editMode)}
+              >
+                {editMode ? 'Ver Detalles' : 'Editar'}
+              </Button>
+            )}
+            {!editMode && (
               <>
-                <Button onClick={() => setShowRequestForm(true)}>
-                  <Tag className="w-4 h-4 mr-2" />
-                  Solicitar Descuento
+                <PresupuestoStatusManager
+                  presupuesto={presupuesto}
+                  onUpdate={loadPresupuesto}
+                  isAdmin={isAdmin}
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🖱️ Vista Previa button clicked!');
+                    handlePreviewPDF();
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Vista Previa
                 </Button>
-                <Button variant="primary" onClick={() => setShowCambiarEstado(true)}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Pasar de Estado
+                <Button size="sm" variant="secondary" onClick={handleDownloadPDF}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Descargar PDF
                 </Button>
+                {isVendedor && presupuesto.estado !== 'ANULADO' && (
+                  <>
+                    <Button onClick={() => setShowRequestForm(true)}>
+                      <Tag className="w-4 h-4 mr-2" />
+                      Solicitar Descuento
+                    </Button>
+                    <Button variant="primary" onClick={() => setShowCambiarEstado(true)}>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Pasar de Estado
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -367,22 +381,19 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
           <div className="mt-6">
             {activeTab === 'detalles' && (
               <div className="space-y-6">
-                {presupuesto.estado === 'BORRADOR' && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-blue-800 mb-4">
-                      Este presupuesto está en estado <strong>BORRADOR</strong>. Puedes editar los ítems libremente.
-                    </p>
-                    <ItemsEditor
-                      presupuestoId={presupuesto.id}
-                      moneda={presupuesto.moneda}
-                      onItemsUpdated={loadPresupuesto}
-                    />
-                  </div>
-                )}
-
-                {presupuesto.estado !== 'BORRADOR' && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
+                {editMode && presupuesto.estado === 'BORRADOR' ? (
+                  <PresupuestoEditor
+                    presupuesto={presupuesto}
+                    onUpdate={() => {
+                      loadPresupuesto();
+                      setEditMode(false);
+                    }}
+                    onCancel={() => setEditMode(false)}
+                  />
+                ) : (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
@@ -445,7 +456,6 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
                     </tbody>
                   </table>
                 </div>
-                )}
 
                 <div className="flex justify-end">
                   <div className="w-80 space-y-2 bg-gray-50 p-4 rounded-lg">
@@ -501,6 +511,8 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
                     </div>
                   </div>
                 </div>
+                  </>
+                )}
               </div>
             )}
 
