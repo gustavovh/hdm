@@ -80,7 +80,7 @@ export function ItemsEditor({ presupuestoId, moneda, onItemsUpdated }: ItemsEdit
         cantidad: editingItem.cantidad,
         precio_unitario: editingItem.precio_unitario,
         subtotal: subtotal,
-        descuento_aplicado: editingItem.descuento_aplicado,
+        descuento_aplicado: 0,
         orden: editingItem.orden,
       };
 
@@ -209,7 +209,7 @@ export function ItemsEditor({ presupuestoId, moneda, onItemsUpdated }: ItemsEdit
 
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-gray-900">{item.descripcion}</div>
-                <div className="mt-2 grid grid-cols-4 gap-4 text-sm">
+                <div className="mt-2 grid grid-cols-3 gap-4 text-sm">
                   <div>
                     <span className="text-gray-500">Cantidad:</span>
                     <span className="ml-2 font-medium">{item.cantidad}</span>
@@ -221,20 +221,9 @@ export function ItemsEditor({ presupuestoId, moneda, onItemsUpdated }: ItemsEdit
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Descuento:</span>
-                    <span className="ml-2 font-medium text-red-600">
-                      {item.descuento_aplicado > 0
-                        ? `- ${BudgetCalculator.formatCurrency(item.descuento_aplicado, moneda)}`
-                        : '-'}
-                    </span>
-                  </div>
-                  <div>
                     <span className="text-gray-500">Total:</span>
                     <span className="ml-2 font-bold text-blue-600">
-                      {BudgetCalculator.formatCurrency(
-                        item.subtotal - item.descuento_aplicado,
-                        moneda
-                      )}
+                      {BudgetCalculator.formatCurrency(item.subtotal, moneda)}
                     </span>
                   </div>
                 </div>
@@ -329,43 +318,11 @@ export function ItemsEditor({ presupuestoId, moneda, onItemsUpdated }: ItemsEdit
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Descuento Aplicado ({moneda})
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={editingItem.descuento_aplicado}
-                    onChange={(e) =>
-                      setEditingItem({
-                        ...editingItem,
-                        descuento_aplicado: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                  />
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Subtotal:</span>
-                    <span className="font-medium">
-                      {BudgetCalculator.formatCurrency(calculateSubtotal(), moneda)}
-                    </span>
-                  </div>
-                  {editingItem.descuento_aplicado > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Descuento:</span>
-                      <span className="font-medium text-red-600">
-                        - {BudgetCalculator.formatCurrency(editingItem.descuento_aplicado, moneda)}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex justify-between text-base font-bold">
                     <span className="text-gray-700">Total del Ítem:</span>
                     <span className="text-blue-600">
-                      {BudgetCalculator.formatCurrency(calculateTotal(), moneda)}
+                      {BudgetCalculator.formatCurrency(calculateSubtotal(), moneda)}
                     </span>
                   </div>
                 </div>
