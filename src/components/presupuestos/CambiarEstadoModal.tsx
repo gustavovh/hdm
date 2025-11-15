@@ -17,7 +17,6 @@ interface CambiarEstadoModalProps {
 
 const ESTADOS: { value: BudgetStatus; label: string; color: string }[] = [
   { value: 'ABIERTO', label: 'Abierto', color: 'bg-gray-100 text-gray-800' },
-  { value: 'PRESENTADO', label: 'Presentado', color: 'bg-blue-100 text-blue-800' },
   { value: 'EN_EJECUCION', label: 'En Ejecución', color: 'bg-yellow-100 text-yellow-800' },
   { value: 'FACTURADO', label: 'Facturado', color: 'bg-green-100 text-green-800' },
   { value: 'RECHAZADO', label: 'Rechazado', color: 'bg-red-100 text-red-800' },

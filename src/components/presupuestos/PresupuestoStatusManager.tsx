@@ -61,15 +61,6 @@ export function PresupuestoStatusManager({
   const getAvailableActions = () => {
     const actions = [];
 
-    if (presupuesto.estado === 'BORRADOR') {
-      actions.push({
-        status: 'PRESENTADO' as BudgetStatus,
-        label: 'Presentar',
-        icon: Send,
-        color: 'blue',
-      });
-    }
-
     if (presupuesto.estado === 'PRESENTADO') {
       if (isAdmin) {
         actions.push({

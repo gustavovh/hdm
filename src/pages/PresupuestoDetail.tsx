@@ -7,7 +7,6 @@ import { DiscountRequestList } from '../components/discount/DiscountRequestList'
 import { AuditTimeline } from '../components/audit/AuditTimeline';
 import { PresupuestoStatusManager } from '../components/presupuestos/PresupuestoStatusManager';
 import { SeguimientoManager } from '../components/seguimiento/SeguimientoManager';
-import { CambiarEstadoModal } from '../components/presupuestos/CambiarEstadoModal';
 import { PresupuestoEditor } from '../components/presupuestos/PresupuestoEditor';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -38,7 +37,6 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
   const [imagenes, setImagenes] = useState<PresupuestoImagen[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRequestForm, setShowRequestForm] = useState(false);
-  const [showCambiarEstado, setShowCambiarEstado] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'detalles' | 'solicitudes' | 'seguimiento' | 'historial'>(
     'detalles'
@@ -208,16 +206,10 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
                   Descargar PDF
                 </Button>
                 {isVendedor && presupuesto.estado !== 'ANULADO' && (
-                  <>
-                    <Button onClick={() => setShowRequestForm(true)}>
-                      <Tag className="w-4 h-4 mr-2" />
-                      Solicitar Descuento
-                    </Button>
-                    <Button variant="primary" onClick={() => setShowCambiarEstado(true)}>
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Pasar de Estado
-                    </Button>
-                  </>
+                  <Button onClick={() => setShowRequestForm(true)}>
+                    <Tag className="w-4 h-4 mr-2" />
+                    Solicitar Descuento
+                  </Button>
                 )}
               </>
             )}
@@ -549,16 +541,6 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
         />
       )}
 
-      {showCambiarEstado && presupuesto && (
-        <CambiarEstadoModal
-          isOpen={showCambiarEstado}
-          onClose={() => setShowCambiarEstado(false)}
-          presupuestoId={presupuesto.id}
-          presupuestoCodigo={presupuesto.codigo}
-          estadoActual={presupuesto.estado}
-          onEstadoCambiado={loadPresupuesto}
-        />
-      )}
     </div>
   );
 }
