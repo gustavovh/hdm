@@ -22,20 +22,17 @@ export class CorporatePDFGenerator {
   private static async loadImageAsBase64(url: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = 'Anonymous';
+      img.crossOrigin = 'anonymous';
       img.onload = () => {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL('image/png'));
-        } else {
-          reject(new Error('Failed to get canvas context'));
-        }
+        if (!ctx) return reject(new Error('No canvas context'));
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
       };
-      img.onerror = reject;
+      img.onerror = () => reject(new Error('Failed to load image'));
       img.src = url;
     });
   }
@@ -82,7 +79,7 @@ export class CorporatePDFGenerator {
     yTop: number,
     presupuesto: Presupuesto
   ): Promise<number> {
-    // Cargar y dibujar logo HDM
+    // Logo a la izquierda
     try {
       const logoBase64 = await this.loadImageAsBase64('/hdm-logo.png');
       doc.addImage(logoBase64, 'PNG', leftMargin, yTop - 12, 58, 15);
@@ -90,40 +87,37 @@ export class CorporatePDFGenerator {
       console.error('No se pudo cargar el logo:', e);
     }
 
-    // Información de contacto (derecha, alineado a la derecha)
+    // Contacto a la derecha
+    const contactX = pageWidth - rightMargin;
     let y = yTop - 12;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text('Dirección: Profesor Almada c/ 21 de setiembre', pageWidth - rightMargin, y, { align: 'right' });
+    doc.text('Dirección: Profesor Almada c/ 21 de setiembre', contactX, y, { align: 'right' });
     y += 4;
-    doc.text('Luque - Paraguay', pageWidth - rightMargin, y, { align: 'right' });
+    doc.text('Luque - Paraguay', contactX, y, { align: 'right' });
     y += 4;
-    doc.text('Email: hmino@hdm.com.py', pageWidth - rightMargin, y, { align: 'right' });
+    doc.text('Email: hmino@hdm.com.py', contactX, y, { align: 'right' });
     y += 4;
-    doc.text('Cel: +595 981 795 669', pageWidth - rightMargin, y, { align: 'right' });
+    doc.text('Cel: +595 981 795 669', contactX, y, { align: 'right' });
     y += 4;
-    doc.text('RUC: 80122639-2', pageWidth - rightMargin, y, { align: 'right' });
-    y += 4;
+    doc.text('RUC: 80122639-2', contactX, y, { align: 'right' });
 
-    // Centrar título PRESUPUESTO
+    // Título y código centrados
+    const titleY = yTop + 8;
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    const centerX = pageWidth / 2;
-    doc.text('PRESUPUESTO', centerX, y, { align: 'center' });
-    y += 5;
-
-    // Código del presupuesto
+    doc.text('PRESUPUESTO', (pageWidth - rightMargin + leftMargin) / 2, titleY, { align: 'center' });
+    const codeY = titleY + 6;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Código: ${presupuesto.codigo}`, centerX, y, { align: 'center' });
-    y += 5;
+    doc.text(`Código: ${presupuesto.codigo}`, (pageWidth - rightMargin + leftMargin) / 2, codeY, { align: 'center' });
 
-    // Línea separadora
+    // Separador fino
+    const sepY = codeY + 6;
+    doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.2);
-    doc.line(leftMargin, y, pageWidth - rightMargin, y);
-    y += 6;
-
-    return y;
+    doc.line(leftMargin, sepY, pageWidth - rightMargin, sepY);
+    return sepY + 6;
   }
 
   static async generatePresupuestoPDF(
@@ -137,7 +131,7 @@ export class CorporatePDFGenerator {
 
     // Renderizar encabezado
     let yPosition = await CorporatePDFGenerator.renderHeader(
-      doc, pageWidth, 20, 20, 20 + 12, presupuesto
+      doc, pageWidth, 20, 20, 20, presupuesto
     );
 
     yPosition += 5;
