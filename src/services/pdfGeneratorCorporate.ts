@@ -82,43 +82,68 @@ export class CorporatePDFGenerator {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    let yPosition = 20;
 
+    // ===== Encabezado: logo a la izquierda + datos a la derecha =====
+    const leftMargin = 20;
+    const rightMargin = 20;
+    let yPosition = 22;
+
+    // Logo (de /public/hdm-logo.png o config.logo_url si existiera)
+    const logoPath = config.logo_url || '/hdm-logo.png';
+    try {
+      const logoBase64 = await CorporatePDFGenerator.loadImageAsBase64(logoPath);
+      // ancho 58, alto 15 (ajustable)
+      doc.addImage(logoBase64, 'PNG', leftMargin, yPosition - 12, 58, 15);
+    } catch (e) {
+      console.error('No se pudo cargar el logo', e);
+    }
+
+    // Columna derecha (texto alineado a la derecha)
+    const contactX = pageWidth - rightMargin;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(8);
+
+    // Dirección (negrita)
+    doc.setFont('helvetica', 'bold');
+    if (config.direccion) {
+      doc.text(config.direccion, contactX, yPosition - 10, { align: 'right' });
+    }
+
+    // Teléfono / Email / RUC (normal)
+    doc.setFont('helvetica', 'normal');
+    if (config.telefono) {
+      doc.text(config.telefono, contactX, yPosition - 6, { align: 'right' });
+    }
+    if (config.email) {
+      doc.text(config.email, contactX, yPosition - 2, { align: 'right' });
+    }
+    if (config.ruc_empresa) {
+      doc.text(`RUC: ${config.ruc_empresa}`, contactX, yPosition + 2, { align: 'right' });
+    }
+
+    // Título y código (derecha)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('PRESUPUESTO', contactX, yPosition + 12, { align: 'right' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(presupuesto.codigo, contactX, yPosition + 18, { align: 'right' });
+
+    // Separador visual fino
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(20, yPosition + 22, pageWidth - 20, yPosition + 22);
+
+    // Avanza el cursor para el resto del documento
+    yPosition = yPosition + 26;
+    // ===== Fin encabezado =====
+
+    // Colores de tema (para tablas/box/total/footers)
     const primaryColor = this.hexToRgb(config.colores?.primary || '#2563eb');
     const secondaryColor = this.hexToRgb(config.colores?.secondary || '#64748b');
 
-    doc.setFillColor(...primaryColor);
-    doc.rect(0, 0, pageWidth, 35, 'F');
-
-    yPosition = 15;
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text(config.nombre_empresa, 20, yPosition);
-
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PRESUPUESTO', pageWidth - 20, yPosition, { align: 'right' });
-
-    yPosition += 8;
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    if (config.ruc_empresa) {
-      doc.text(`RUC: ${config.ruc_empresa}`, 20, yPosition);
-    }
-    doc.text(presupuesto.codigo, pageWidth - 20, yPosition, { align: 'right' });
-
-    if (config.direccion || config.telefono || config.email) {
-      yPosition += 4;
-      const contactInfo = [
-        config.direccion,
-        config.telefono,
-        config.email,
-      ].filter(Boolean).join(' | ');
-      doc.text(contactInfo, 20, yPosition);
-    }
-
-    yPosition = 45;
+    // ===== Bloques de cabecera de datos (cliente/fecha) =====
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
 
@@ -157,7 +182,6 @@ export class CorporatePDFGenerator {
     if (presupuesto.cliente_ruc) {
       doc.text(`RUC: ${presupuesto.cliente_ruc}`, 25, yPosition);
     }
-
     if (presupuesto.estado) {
       doc.text(`Estado: ${presupuesto.estado}`, 25 + (pageWidth - 40) / 2 + 5, yPosition);
     }
@@ -166,7 +190,6 @@ export class CorporatePDFGenerator {
     if (presupuesto.cliente_telefono) {
       doc.text(`Tel: ${presupuesto.cliente_telefono}`, 25, yPosition);
     }
-
     if (presupuesto.dias_validez) {
       doc.text(
         `Validez: ${presupuesto.dias_validez} días`,
@@ -175,8 +198,9 @@ export class CorporatePDFGenerator {
       );
     }
 
-    yPosition = 85;
+    yPosition = yPosition + 12;
 
+    // ===== Tabla de items =====
     const items = presupuesto.items || [];
     const tableData = items.map((item, index) => [
       index + 1,
@@ -195,17 +219,7 @@ export class CorporatePDFGenerator {
 
     autoTable(doc, {
       startY: yPosition,
-      head: [
-        [
-          '#',
-          'Descripción',
-          'Cant.',
-          'Precio Unit.',
-          'Subtotal',
-          'Descuento',
-          'Total',
-        ],
-      ],
+      head: [[ '#', 'Descripción', 'Cant.', 'Precio Unit.', 'Subtotal', 'Descuento', 'Total' ]],
       body: tableData,
       theme: 'striped',
       headStyles: {
@@ -228,6 +242,7 @@ export class CorporatePDFGenerator {
 
     yPosition = (doc as any).lastAutoTable.finalY + 10;
 
+    // ===== Banner de descuento aprobado (si existe) =====
     if (solicitudAprobada) {
       doc.setFillColor(...primaryColor);
       doc.setDrawColor(...primaryColor);
@@ -268,6 +283,7 @@ export class CorporatePDFGenerator {
       yPosition += 8;
     }
 
+    // ===== Resumen (totales) =====
     const summaryStartY = yPosition;
     const summaryX = pageWidth - 75;
 
@@ -338,8 +354,7 @@ export class CorporatePDFGenerator {
     const monedaTexto = presupuesto.moneda === 'USD' ? 'Dólares Americanos' : 'Guaraníes';
     doc.text(`Moneda: ${monedaTexto}`, summaryX, summaryStartY + 30);
 
-    // No se agrega firma ni nombre en presupuesto administrativo
-
+    // ===== Footer =====
     const footerY = pageHeight - 25;
     doc.setDrawColor(...secondaryColor);
     doc.setLineWidth(0.3);
