@@ -40,7 +40,7 @@ export class HDMPDFGenerator {
     let yPosition = topMargin;
 
     try {
-      const logoBase64 = await this.loadImageAsBase64('/hdm logo copy.png');
+      const logoBase64 = await this.loadImageAsBase64('/hdm-logo.png');
       doc.addImage(logoBase64, 'PNG', leftMargin, yPosition, 60, 18);
     } catch (error) {
       console.error('Error loading logo:', error);
