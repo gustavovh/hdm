@@ -4,13 +4,15 @@ import { PresupuestoService } from '../../services/api';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
+import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import {
   Send,
   CheckCircle,
   FileText,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 
 interface PresupuestoStatusManagerProps {
@@ -46,74 +48,48 @@ export function PresupuestoStatusManager({
   });
   const [observaciones, setObservaciones] = useState('');
 
-  const canTransition = (currentStatus: BudgetStatus, nextStatus: BudgetStatus): boolean => {
-    const transitions: Record<BudgetStatus, BudgetStatus[]> = {
-      CLONADO: ['ABIERTO'],
-      ABIERTO: ['PRESENTADO'],
-      PRESENTADO: ['ACEPTADO', 'ANULADO'],
-      ACEPTADO: ['FACTURADO', 'ANULADO'],
-      EN_EJECUCION: [],
-      FACTURADO: [],
-      RECHAZADO: [],
-      CANCELADO: [],
-      ANULADO: [],
-    };
+  const getAvailableStates = (): BudgetStatus[] => {
+    const allStates: BudgetStatus[] = [
+      'CLONADO',
+      'ABIERTO',
+      'PRESENTADO',
+      'ACEPTADO',
+      'EN_EJECUCION',
+      'FACTURADO',
+      'RECHAZADO',
+      'CANCELADO'
+    ];
 
-    return transitions[currentStatus]?.includes(nextStatus) || false;
+    // Vendedores no pueden anular
+    if (!isAdmin) {
+      return allStates.filter(s => s !== presupuesto.estado);
+    }
+
+    // Admins pueden cambiar a cualquier estado incluyendo ANULADO
+    return [...allStates, 'ANULADO'].filter(s => s !== presupuesto.estado);
   };
 
-  const getAvailableActions = () => {
-    const actions = [];
+  const getStatusLabel = (status: BudgetStatus): string => {
+    const labels: Record<BudgetStatus, string> = {
+      CLONADO: 'Clonado',
+      ABIERTO: 'Abierto',
+      PRESENTADO: 'Presentado',
+      ACEPTADO: 'Aceptado',
+      EN_EJECUCION: 'En Ejecución',
+      FACTURADO: 'Facturado',
+      RECHAZADO: 'Rechazado',
+      CANCELADO: 'Cancelado',
+      ANULADO: 'Anulado',
+    };
+    return labels[status] || status;
+  };
 
-    if (presupuesto.estado === 'ABIERTO') {
-      actions.push({
-        status: 'PRESENTADO' as BudgetStatus,
-        label: 'Presentar',
-        icon: Send,
-        color: 'blue',
-      });
-    }
-
-    if (presupuesto.estado === 'PRESENTADO') {
-      if (isAdmin) {
-        actions.push({
-          status: 'ACEPTADO' as BudgetStatus,
-          label: 'Aceptar',
-          icon: CheckCircle,
-          color: 'green',
-        });
-        actions.push({
-          status: 'ANULADO' as BudgetStatus,
-          label: 'Anular',
-          icon: XCircle,
-          color: 'red',
-        });
-      }
-    }
-
-    if (presupuesto.estado === 'ACEPTADO') {
-      actions.push({
-        status: 'FACTURADO' as BudgetStatus,
-        label: 'Facturar',
-        icon: FileText,
-        color: 'purple',
-      });
-      if (isAdmin) {
-        actions.push({
-          status: 'ANULADO' as BudgetStatus,
-          label: 'Anular',
-          icon: XCircle,
-          color: 'red',
-        });
-      }
-    }
-
-    return actions;
+  const handleOpenModal = () => {
+    setShowModal(true);
   };
 
   const handleStatusChange = (status: BudgetStatus) => {
     setTargetStatus(status);
-    setShowModal(true);
   };
 
   const handleConfirm = async () => {
@@ -156,55 +132,57 @@ export function PresupuestoStatusManager({
     }
   };
 
-  const actions = getAvailableActions();
+  const availableStates = getAvailableStates();
 
-  if (actions.length === 0) {
+  if (presupuesto.estado === 'FACTURADO' || presupuesto.estado === 'ANULADO') {
     return null;
   }
 
   return (
     <>
-      <div className="flex gap-2">
-        {actions.map((action) => {
-          const Icon = action.icon;
-          const colors = {
-            blue: 'bg-blue-600 hover:bg-blue-700',
-            green: 'bg-green-600 hover:bg-green-700',
-            purple: 'bg-purple-600 hover:bg-purple-700',
-            red: 'bg-red-600 hover:bg-red-700',
-          };
-
-          return (
-            <Button
-              key={action.status}
-              size="sm"
-              onClick={() => handleStatusChange(action.status)}
-              className={colors[action.color as keyof typeof colors]}
-            >
-              <Icon className="w-4 h-4 mr-2" />
-              {action.label}
-            </Button>
-          );
-        })}
-      </div>
+      <Button
+        size="sm"
+        onClick={handleOpenModal}
+        className="bg-blue-600 hover:bg-blue-700"
+      >
+        <RefreshCw className="w-4 h-4 mr-2" />
+        Cambiar Estado
+      </Button>
 
       <Modal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title={`Confirmar cambio de estado`}
+        onClose={() => {
+          setShowModal(false);
+          setTargetStatus(null);
+        }}
+        title="Cambiar Estado del Presupuesto"
       >
         <div className="space-y-4">
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-blue-800">
               <p className="font-medium">
-                Cambiar estado de "{presupuesto.estado}" a "{targetStatus}"
+                Estado actual: {getStatusLabel(presupuesto.estado)}
               </p>
               <p className="mt-1 text-blue-700">
-                Esta acción quedará registrada en el historial de auditoría.
+                Selecciona el nuevo estado para este presupuesto. Esta acción quedará registrada en el historial.
               </p>
             </div>
           </div>
+
+          <Select
+            label="Nuevo Estado"
+            value={targetStatus || ''}
+            onChange={(e) => handleStatusChange(e.target.value as BudgetStatus)}
+            required
+          >
+            <option value="">Seleccionar estado...</option>
+            {availableStates.map((status) => (
+              <option key={status} value={status}>
+                {getStatusLabel(status)}
+              </option>
+            ))}
+          </Select>
 
           {targetStatus === 'FACTURADO' && (
             <div className="space-y-3 border-t pt-4">
@@ -288,11 +266,21 @@ export function PresupuestoStatusManager({
           />
 
           <div className="flex gap-3 justify-end pt-4 border-t">
-            <Button variant="ghost" onClick={() => setShowModal(false)}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowModal(false);
+                setTargetStatus(null);
+              }}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleConfirm} loading={loading}>
-              Confirmar
+            <Button
+              onClick={handleConfirm}
+              loading={loading}
+              disabled={!targetStatus}
+            >
+              Confirmar Cambio
             </Button>
           </div>
         </div>
