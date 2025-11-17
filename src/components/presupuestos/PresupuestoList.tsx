@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Search, Filter, Copy } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Copy, ArrowRight } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
@@ -7,6 +7,7 @@ import { Badge } from '../ui/Badge';
 import { Presupuesto } from '../../types/database.types';
 import { PresupuestoService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { PresupuestoStatusManager } from './PresupuestoStatusManager';
 
 interface PresupuestoListProps {
   onSelectPresupuesto: (id: string) => void;
@@ -229,15 +230,22 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
                       Creado: {new Date(presupuesto.created_at).toLocaleDateString('es-PY')}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => handleClone(e, presupuesto.id)}
-                    title="Clonar presupuesto"
-                  >
-                    <Copy className="w-4 h-4 mr-2" />
-                    Clonar
-                  </Button>
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                    <PresupuestoStatusManager
+                      presupuesto={presupuesto}
+                      onUpdate={loadPresupuestos}
+                      isAdmin={isAdmin}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleClone(e, presupuesto.id)}
+                      title="Clonar presupuesto"
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Clonar
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
