@@ -74,6 +74,57 @@ export class CorporatePDFGenerator {
       : [37, 99, 235];
   }
 
+  private static async renderHeader(
+    doc: jsPDF,
+    pageWidth: number,
+    leftMargin: number,
+    rightMargin: number,
+    yTop: number,
+    presupuesto: Presupuesto
+  ): Promise<number> {
+    // Logo
+    try {
+      const logoBase64 = await this.loadImageAsBase64('/hdm-logo.png');
+      doc.addImage(logoBase64, 'PNG', leftMargin, yTop - 12, 58, 15);
+    } catch (e) {
+      console.error('No se pudo cargar el logo:', e);
+    }
+
+    // Bloque de contacto (derecha)
+    const contactX = pageWidth - rightMargin;
+    let y = yTop - 12;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Dirección: Profesor Almada c/ 21 de setiembre', contactX, y, { align: 'right' });
+    y += 4;
+    doc.text('Luque - Paraguay', contactX, y, { align: 'right' });
+    y += 4;
+    doc.text('Email: hmino@hdm.com.py', contactX, y, { align: 'right' });
+    y += 4;
+    doc.text('Cel: +595 981 795 669', contactX, y, { align: 'right' });
+    y += 4;
+    doc.text('RUC: 80122639-2', contactX, y, { align: 'right' });
+
+    // Título y código centrados
+    const titleY = yTop + 8;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PRESUPUESTO', (pageWidth - rightMargin + leftMargin) / 2, titleY, { align: 'center' });
+
+    const codeY = titleY + 6;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Código: ${presupuesto.codigo}`, (pageWidth - rightMargin + leftMargin) / 2, codeY, { align: 'center' });
+
+    // Separador
+    const sepY = codeY + 6;
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.2);
+    doc.line(leftMargin, sepY, pageWidth - rightMargin, sepY);
+
+    return sepY + 6;
+  }
+
   static async generatePresupuestoPDF(
     presupuesto: Presupuesto,
     solicitudAprobada?: SolicitudDescuento
@@ -82,43 +133,13 @@ export class CorporatePDFGenerator {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    let yPosition = 20;
 
-    const primaryColor = this.hexToRgb(config.colores?.primary || '#2563eb');
-    const secondaryColor = this.hexToRgb(config.colores?.secondary || '#64748b');
+    // Renderizar encabezado
+    let yPosition = await CorporatePDFGenerator.renderHeader(
+      doc, pageWidth, 20, 20, 20 + 12, presupuesto
+    );
 
-    doc.setFillColor(...primaryColor);
-    doc.rect(0, 0, pageWidth, 35, 'F');
-
-    yPosition = 15;
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text(config.nombre_empresa, 20, yPosition);
-
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PRESUPUESTO', pageWidth - 20, yPosition, { align: 'right' });
-
-    yPosition += 8;
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    if (config.ruc_empresa) {
-      doc.text(`RUC: ${config.ruc_empresa}`, 20, yPosition);
-    }
-    doc.text(presupuesto.codigo, pageWidth - 20, yPosition, { align: 'right' });
-
-    if (config.direccion || config.telefono || config.email) {
-      yPosition += 4;
-      const contactInfo = [
-        config.direccion,
-        config.telefono,
-        config.email,
-      ].filter(Boolean).join(' | ');
-      doc.text(contactInfo, 20, yPosition);
-    }
-
-    yPosition = 45;
+    yPosition += 5;
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
 

@@ -34,6 +34,57 @@ export class HDMPDFGeneratorV2 {
     });
   }
 
+  private static async renderHeader(
+    doc: jsPDF,
+    pageWidth: number,
+    leftMargin: number,
+    rightMargin: number,
+    yTop: number,
+    presupuesto: Presupuesto
+  ): Promise<number> {
+    // Logo
+    try {
+      const logoBase64 = await this.loadImageAsBase64('/hdm-logo.png');
+      doc.addImage(logoBase64, 'PNG', leftMargin, yTop - 12, 58, 15);
+    } catch (e) {
+      console.error('No se pudo cargar el logo:', e);
+    }
+
+    // Bloque de contacto (derecha)
+    const contactX = pageWidth - rightMargin;
+    let y = yTop - 12;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Dirección: Profesor Almada c/ 21 de setiembre', contactX, y, { align: 'right' });
+    y += 4;
+    doc.text('Luque - Paraguay', contactX, y, { align: 'right' });
+    y += 4;
+    doc.text('Email: hmino@hdm.com.py', contactX, y, { align: 'right' });
+    y += 4;
+    doc.text('Cel: +595 981 795 669', contactX, y, { align: 'right' });
+    y += 4;
+    doc.text('RUC: 80122639-2', contactX, y, { align: 'right' });
+
+    // Título y código centrados
+    const titleY = yTop + 8;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PRESUPUESTO', (pageWidth - rightMargin + leftMargin) / 2, titleY, { align: 'center' });
+
+    const codeY = titleY + 6;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Código: ${presupuesto.codigo}`, (pageWidth - rightMargin + leftMargin) / 2, codeY, { align: 'center' });
+
+    // Separador
+    const sepY = codeY + 6;
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.2);
+    doc.line(leftMargin, sepY, pageWidth - rightMargin, sepY);
+
+    return sepY + 6;
+  }
+
   private static async getAdminUser(): Promise<User | null> {
     try {
       const { supabase } = await import('../lib/supabase');
@@ -73,39 +124,16 @@ export class HDMPDFGeneratorV2 {
     const leftMargin = 20;
     const rightMargin = 20;
     const topMargin = 15;
-    let yPosition = topMargin;
 
     // Watermark - "PRESUPUESTO" en diagonal
     this.addWatermark(doc, pageWidth, pageHeight);
 
-    // Logo
-    try {
-      const logoBase64 = await this.loadImageAsBase64('/hdm-logo.png');
-      doc.addImage(logoBase64, 'PNG', leftMargin, yPosition, 50, 15);
-    } catch (error) {
-      console.error('Error loading logo:', error);
-    }
+    // Renderizar encabezado
+    let yPosition = await HDMPDFGeneratorV2.renderHeader(
+      doc, pageWidth, leftMargin, rightMargin, topMargin + 12, presupuesto
+    );
 
-    // Información de contacto (derecha)
-    const contactX = pageWidth - rightMargin;
-    let contactY = yPosition;
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Direccion: Profesor Almada C/21 de', contactX, contactY, { align: 'right' });
-    contactY += 4;
-    doc.text('setiembre', contactX, contactY, { align: 'right' });
-    contactY += 4;
-    doc.text('Luque - Paraguay', contactX, contactY, { align: 'right' });
-    contactY += 4;
-    doc.text('Email: hmino@hdm.com.py', contactX, contactY, { align: 'right' });
-    contactY += 4;
-    doc.text('Cel: +595981795669', contactX, contactY, { align: 'right' });
-    contactY += 4;
-    doc.text('Ruc: 80122639-2', contactX, contactY, { align: 'right' });
-
-    yPosition = 35;
-
-    // Servicios (debajo del logo)
+    // Servicios (debajo del encabezado)
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
     doc.text('Sistemas eléctricos de potencia - Obras civiles - Metalúrgica', leftMargin, yPosition);
@@ -120,14 +148,7 @@ export class HDMPDFGeneratorV2 {
     doc.setFont('helvetica', 'normal');
     doc.text('MECARPA', leftMargin + 5, yPosition);
 
-    yPosition = 55;
-
-    // Título "Presupuesto #"
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Presupuesto #: ${presupuesto.codigo}`, pageWidth / 2, yPosition, { align: 'center' });
-
-    yPosition = 70;
+    yPosition += 10;
 
     // Información del cliente
     doc.setFontSize(9);

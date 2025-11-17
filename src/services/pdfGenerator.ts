@@ -4,7 +4,7 @@ import { Presupuesto, SolicitudDescuento } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
 export class PDFGenerator {
-  static async loadImageAsBase64(url: string): Promise<string> {
+  private static async loadImageAsBase64(url: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -25,33 +25,68 @@ export class PDFGenerator {
     });
   }
 
+  private static async renderHeader(
+    doc: jsPDF,
+    pageWidth: number,
+    leftMargin: number,
+    rightMargin: number,
+    yTop: number,
+    presupuesto: Presupuesto
+  ): Promise<number> {
+    // Logo
+    try {
+      const logoBase64 = await this.loadImageAsBase64('/hdm-logo.png');
+      doc.addImage(logoBase64, 'PNG', leftMargin, yTop - 12, 58, 15);
+    } catch (e) {
+      console.error('No se pudo cargar el logo:', e);
+    }
+
+    // Bloque de contacto (derecha)
+    const contactX = pageWidth - rightMargin;
+    let y = yTop - 12;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Dirección: Profesor Almada c/ 21 de setiembre', contactX, y, { align: 'right' });
+    y += 4;
+    doc.text('Luque - Paraguay', contactX, y, { align: 'right' });
+    y += 4;
+    doc.text('Email: hmino@hdm.com.py', contactX, y, { align: 'right' });
+    y += 4;
+    doc.text('Cel: +595 981 795 669', contactX, y, { align: 'right' });
+    y += 4;
+    doc.text('RUC: 80122639-2', contactX, y, { align: 'right' });
+
+    // Título y código centrados
+    const titleY = yTop + 8;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PRESUPUESTO', (pageWidth - rightMargin + leftMargin) / 2, titleY, { align: 'center' });
+
+    const codeY = titleY + 6;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Código: ${presupuesto.codigo}`, (pageWidth - rightMargin + leftMargin) / 2, codeY, { align: 'center' });
+
+    // Separador
+    const sepY = codeY + 6;
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.2);
+    doc.line(leftMargin, sepY, pageWidth - rightMargin, sepY);
+
+    return sepY + 6;
+  }
+
   static async generatePresupuestoPDF(
     presupuesto: Presupuesto,
     solicitudAprobada?: SolicitudDescuento
   ): Promise<jsPDF> {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
-    let yPosition = 20;
 
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('HDM - Presupuesto', pageWidth / 2, yPosition, { align: 'center' });
-
-    yPosition += 15;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Código: ${presupuesto.codigo}`, 20, yPosition);
-    doc.text(
-      `Fecha: ${new Date(presupuesto.created_at).toLocaleDateString()}`,
-      pageWidth - 20,
-      yPosition,
-      { align: 'right' }
+    // Renderizar encabezado
+    let yPosition = await PDFGenerator.renderHeader(
+      doc, pageWidth, 20, 20, 20 + 12, presupuesto
     );
-
-    yPosition += 5;
-    doc.setLineWidth(0.5);
-    doc.line(20, yPosition, pageWidth - 20, yPosition);
-    yPosition += 10;
 
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
