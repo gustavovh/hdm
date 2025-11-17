@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Presupuesto, SolicitudDescuento } from '../types/database.types';
-import { BudgetCalculator } from './budgetCalculator';
+import { DEFAULT_PDF_OPTIONS, formatGs } from './pdfGeneratorHDMv2';
 
 export class PDFGenerator {
   static async loadImageAsBase64(url: string): Promise<string> {
@@ -27,11 +27,19 @@ export class PDFGenerator {
 
   static async generatePresupuestoPDF(
     presupuesto: Presupuesto,
-    solicitudAprobada?: SolicitudDescuento
+    solicitudAprobada?: SolicitudDescuento,
+    options?: Partial<typeof DEFAULT_PDF_OPTIONS> & { margins?: Partial<typeof DEFAULT_PDF_OPTIONS.margins> }
   ): Promise<jsPDF> {
-    const doc = new jsPDF();
+    const opts = { ...DEFAULT_PDF_OPTIONS, ...(options || {}) };
+    opts.margins = { ...DEFAULT_PDF_OPTIONS.margins, ...(options?.margins || {}) };
+
+    const doc = new jsPDF({
+      unit: opts.unit,
+      format: opts.format,
+      orientation: opts.orientation,
+    });
     const pageWidth = doc.internal.pageSize.getWidth();
-    let yPosition = 20;
+    let yPosition = opts.margins.top;
 
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
@@ -40,48 +48,48 @@ export class PDFGenerator {
     yPosition += 15;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Código: ${presupuesto.codigo}`, 20, yPosition);
+    doc.text(`Código: ${presupuesto.codigo}`, opts.margins.left, yPosition);
     doc.text(
       `Fecha: ${new Date(presupuesto.created_at).toLocaleDateString()}`,
-      pageWidth - 20,
+      pageWidth - opts.margins.right,
       yPosition,
       { align: 'right' }
     );
 
     yPosition += 5;
     doc.setLineWidth(0.5);
-    doc.line(20, yPosition, pageWidth - 20, yPosition);
+    doc.line(opts.margins.left, yPosition, pageWidth - opts.margins.right, yPosition);
     yPosition += 10;
 
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('Información del Cliente', 20, yPosition);
+    doc.text('Información del Cliente', opts.margins.left, yPosition);
     yPosition += 7;
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Nombre: ${presupuesto.cliente_nombre}`, 20, yPosition);
+    doc.text(`Nombre: ${presupuesto.cliente_nombre}`, opts.margins.left, yPosition);
     yPosition += 5;
     if (presupuesto.cliente_email) {
-      doc.text(`Email: ${presupuesto.cliente_email}`, 20, yPosition);
+      doc.text(`Email: ${presupuesto.cliente_email}`, opts.margins.left, yPosition);
       yPosition += 5;
     }
     if (presupuesto.cliente_telefono) {
-      doc.text(`Teléfono: ${presupuesto.cliente_telefono}`, 20, yPosition);
+      doc.text(`Teléfono: ${presupuesto.cliente_telefono}`, opts.margins.left, yPosition);
       yPosition += 5;
     }
 
     yPosition += 5;
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('Información del Vendedor', 20, yPosition);
+    doc.text('Información del Vendedor', opts.margins.left, yPosition);
     yPosition += 7;
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Vendedor: ${presupuesto.vendedor?.full_name || 'N/A'}`, 20, yPosition);
+    doc.text(`Vendedor: ${presupuesto.vendedor?.full_name || 'N/A'}`, opts.margins.left, yPosition);
     yPosition += 5;
-    doc.text(`Email: ${presupuesto.vendedor?.email || 'N/A'}`, 20, yPosition);
+    doc.text(`Email: ${presupuesto.vendedor?.email || 'N/A'}`, opts.margins.left, yPosition);
     yPosition += 10;
 
     const items = presupuesto.items || [];
@@ -89,15 +97,12 @@ export class PDFGenerator {
       index + 1,
       item.descripcion,
       item.cantidad.toString(),
-      BudgetCalculator.formatCurrency(item.precio_unitario, presupuesto.moneda),
-      BudgetCalculator.formatCurrency(item.subtotal, presupuesto.moneda),
+      formatGs(item.precio_unitario),
+      formatGs(item.subtotal),
       item.descuento_aplicado > 0
-        ? BudgetCalculator.formatCurrency(item.descuento_aplicado, presupuesto.moneda)
+        ? formatGs(item.descuento_aplicado)
         : '-',
-      BudgetCalculator.formatCurrency(
-        item.subtotal - item.descuento_aplicado,
-        presupuesto.moneda
-      ),
+      formatGs(item.subtotal - item.descuento_aplicado),
     ]);
 
     autoTable(doc, {
@@ -115,7 +120,13 @@ export class PDFGenerator {
       ],
       body: tableData,
       theme: 'striped',
-      headStyles: { fillColor: [59, 130, 246], fontSize: 9 },
+      headStyles: { 
+        fillColor: [59, 130, 246], 
+        fontSize: 9,
+        fontStyle: DEFAULT_PDF_OPTIONS.table.headerFontStyle,
+        halign: 'center',
+        valign: 'middle',
+      },
       bodyStyles: { fontSize: 9 },
       columnStyles: {
         0: { cellWidth: 10 },
@@ -126,19 +137,28 @@ export class PDFGenerator {
         5: { cellWidth: 25, halign: 'right' },
         6: { cellWidth: 25, halign: 'right' },
       },
+      styles: {
+        lineWidth: DEFAULT_PDF_OPTIONS.table.borderWidthPt,
+      },
+      margin: { left: opts.margins.left, right: opts.margins.right },
+      didDrawPage: () => {
+        if (opts.watermark.enabled) {
+          this.addWatermark(doc, doc.internal.pageSize.getWidth(), doc.internal.pageSize.getHeight(), opts);
+        }
+      },
     });
 
     yPosition = (doc as any).lastAutoTable.finalY + 10;
 
     if (solicitudAprobada) {
       doc.setFillColor(219, 234, 254);
-      doc.rect(20, yPosition, pageWidth - 40, 30, 'F');
+      doc.rect(opts.margins.left, yPosition, pageWidth - opts.margins.left - opts.margins.right, 30, 'F');
 
       yPosition += 7;
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(29, 78, 216);
-      doc.text('Descuento Aprobado', 25, yPosition);
+      doc.text('Descuento Aprobado', opts.margins.left + 5, yPosition);
 
       yPosition += 6;
       doc.setFontSize(9);
@@ -149,24 +169,17 @@ export class PDFGenerator {
         solicitudAprobada.estado === 'APROBADO_MODIFICADO'
           ? 'APROBADO CON MODIFICACIÓN'
           : 'APROBADO';
-      doc.text(`Estado: ${estadoText}`, 25, yPosition);
+      doc.text(`Estado: ${estadoText}`, opts.margins.left + 5, yPosition);
 
       yPosition += 4;
-      doc.text(`Tipo: ${solicitudAprobada.tipo}`, 25, yPosition);
+      doc.text(`Tipo: ${solicitudAprobada.tipo}`, opts.margins.left + 5, yPosition);
 
       yPosition += 4;
       const valorAprobado = solicitudAprobada.valor_aprobado || 0;
       if (solicitudAprobada.tipo === 'PORCENTAJE') {
-        doc.text(`Descuento: ${valorAprobado}%`, 25, yPosition);
+        doc.text(`Descuento: ${valorAprobado}%`, opts.margins.left + 5, yPosition);
       } else {
-        doc.text(
-          `Descuento: ${BudgetCalculator.formatCurrency(
-            valorAprobado,
-            presupuesto.moneda
-          )}`,
-          25,
-          yPosition
-        );
+        doc.text(`Descuento: ${formatGs(valorAprobado)}`, opts.margins.left + 5, yPosition);
       }
 
       yPosition += 4;
@@ -174,27 +187,27 @@ export class PDFGenerator {
         `Aprobado el: ${new Date(
           solicitudAprobada.applied_at || ''
         ).toLocaleDateString()}`,
-        25,
+        opts.margins.left + 5,
         yPosition
       );
 
       if (solicitudAprobada.comentario_admin) {
         yPosition += 4;
-        doc.text(`Observaciones: ${solicitudAprobada.comentario_admin}`, 25, yPosition);
+        doc.text(`Observaciones: ${solicitudAprobada.comentario_admin}`, opts.margins.left + 5, yPosition);
       }
 
       yPosition += 10;
     }
 
     const summaryStartY = yPosition;
-    const summaryX = pageWidth - 70;
+    const summaryX = pageWidth - opts.margins.right - 55;
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
 
     doc.text('Total Bruto:', summaryX, summaryStartY);
     doc.text(
-      BudgetCalculator.formatCurrency(presupuesto.total_bruto, presupuesto.moneda),
+      formatGs(presupuesto.total_bruto),
       summaryX + 50,
       summaryStartY,
       { align: 'right' }
@@ -204,10 +217,7 @@ export class PDFGenerator {
       doc.text('Descuento:', summaryX, summaryStartY + 5);
       doc.setTextColor(220, 38, 38);
       doc.text(
-        `- ${BudgetCalculator.formatCurrency(
-          presupuesto.total_descuento,
-          presupuesto.moneda
-        )}`,
+        `- ${formatGs(presupuesto.total_descuento)}`,
         summaryX + 50,
         summaryStartY + 5,
         { align: 'right' }
@@ -217,7 +227,7 @@ export class PDFGenerator {
 
     doc.text('Total Neto:', summaryX, summaryStartY + 10);
     doc.text(
-      BudgetCalculator.formatCurrency(presupuesto.total_neto, presupuesto.moneda),
+      formatGs(presupuesto.total_neto),
       summaryX + 50,
       summaryStartY + 10,
       { align: 'right' }
@@ -229,10 +239,7 @@ export class PDFGenerator {
       summaryStartY + 15
     );
     doc.text(
-      BudgetCalculator.formatCurrency(
-        presupuesto.total_impuestos,
-        presupuesto.moneda
-      ),
+      formatGs(presupuesto.total_impuestos),
       summaryX + 50,
       summaryStartY + 15,
       { align: 'right' }
@@ -245,10 +252,7 @@ export class PDFGenerator {
     doc.setFontSize(12);
     doc.text('TOTAL:', summaryX, summaryStartY + 24);
     doc.text(
-      BudgetCalculator.formatCurrency(
-        presupuesto.total_neto + presupuesto.total_impuestos,
-        presupuesto.moneda
-      ),
+      formatGs(presupuesto.total_neto + presupuesto.total_impuestos),
       summaryX + 50,
       summaryStartY + 24,
       { align: 'right' }
@@ -289,27 +293,59 @@ export class PDFGenerator {
     doc.setTextColor(0, 0, 0);
     doc.text(vendedorName, summaryX, signatureY);
 
-    const footerY = doc.internal.pageSize.getHeight() - 20;
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(128, 128, 128);
-    doc.text(
-      `Generado el ${new Date().toLocaleString()}`,
-      pageWidth / 2,
-      footerY,
-      { align: 'center' }
-    );
-
-    if (solicitudAprobada) {
+    // Footer opcional
+    const pageHeight = doc.internal.pageSize.getHeight();
+    if (opts.footerEnabled) {
+      const footerY = pageHeight - opts.margins.bottom;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(128, 128, 128);
       doc.text(
-        `ID Solicitud: ${solicitudAprobada.id}`,
+        `Generado el ${new Date().toLocaleString()}`,
         pageWidth / 2,
-        footerY + 4,
+        footerY,
         { align: 'center' }
       );
+
+      if (solicitudAprobada) {
+        doc.text(
+          `ID Solicitud: ${solicitudAprobada.id}`,
+          pageWidth / 2,
+          footerY + 4,
+          { align: 'center' }
+        );
+      }
+    }
+
+    // Watermark
+    if (opts.watermark.enabled) {
+      this.addWatermark(doc, pageWidth, pageHeight, opts);
     }
 
     return doc;
+  }
+
+  private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number, opts: typeof DEFAULT_PDF_OPTIONS) {
+    if (!opts.watermark.enabled) return;
+
+    doc.saveGraphicsState();
+    const gstate = new doc.GState({ opacity: opts.watermark.opacity });
+    doc.setGState(gstate);
+    doc.setTextColor(180, 180, 180);
+
+    doc.setFontSize(opts.watermark.fontSizePt);
+    doc.setFont('helvetica', 'bold');
+
+    const text = opts.watermark.text;
+    const centerX = pageWidth / 2;
+    const centerY = pageHeight / 2;
+
+    doc.text(text, centerX, centerY, {
+      align: 'center',
+      angle: opts.watermark.rotationDeg
+    });
+
+    doc.restoreGraphicsState();
   }
 
   static async downloadPresupuestoPDF(
