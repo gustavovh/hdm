@@ -3,6 +3,35 @@ import autoTable from 'jspdf-autotable';
 import { Presupuesto, User } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
+export const DEFAULT_PDF_OPTIONS = {
+  unit: 'mm' as const,
+  format: 'a4' as const,
+  orientation: 'portrait' as const,
+  margins: { left: 20, right: 20, top: 20, bottom: 20 },
+  footerEnabled: false,
+  watermark: {
+    enabled: true,
+    text: 'PRESUPUESTO',
+    rotationDeg: -30,
+    fontSizePt: 80,
+    opacity: 0.12
+  },
+  fonts: {
+    body: { family: 'times', style: 'normal', size: 11 },
+    bold: { family: 'times', style: 'bold', size: 11 }
+  },
+  table: {
+    borderWidthPt: 0.75,
+    headerFontStyle: 'bold' as const,
+    columnWidthsMm: [8, 18, 90, 18, 16, 22, 22],
+    align: ['center','center','left','right','center','right','right'] as const
+  }
+};
+
+const formatGs = (n: number | string) =>
+  (typeof n === 'number' ? n : Number(String(n).replace(/[^\d]/g, '')))
+    .toLocaleString('es-PY');
+
 export class HDMPDFGeneratorV2 {
   private static readonly VERSION = 'v2.9.1-Y1.3-X+20';
 
@@ -54,29 +83,67 @@ export class HDMPDFGeneratorV2 {
     }
   }
 
+  static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number, opts: typeof DEFAULT_PDF_OPTIONS) {
+    if (!opts.watermark?.enabled) return;
+
+    // Try save/restore if available
+    try { (doc as any).saveGraphicsState?.(); } catch {}
+
+    // Try to set GState (opacity) if available
+    try {
+      // @ts-ignore - some jsPDF versions expose GState/ setGState
+      const gstate = new (doc as any).GState({ opacity: opts.watermark.opacity });
+      // @ts-ignore
+      (doc as any).setGState(gstate);
+    } catch (e) {
+      // Fallback: use a light gray color approximating opacity
+      const grayVal = Math.round(255 * (1 - (opts.watermark.opacity ?? 0.12)));
+      doc.setTextColor(grayVal, grayVal, grayVal);
+    }
+
+    const text = opts.watermark.text || 'PRESUPUESTO';
+    doc.setFontSize(opts.watermark.fontSizePt || 80);
+    doc.setFont('helvetica', 'bold');
+
+    const centerX = pageWidth / 2;
+    const centerY = pageHeight / 2;
+
+    doc.text(text, centerX, centerY, {
+      align: 'center',
+      angle: opts.watermark.rotationDeg ?? -30
+    });
+
+    try { (doc as any).restoreGraphicsState?.(); } catch {}
+  }
+
   static async generatePresupuestoPDF(
     presupuesto: Presupuesto,
-    vendedor?: User
+    vendedor?: User,
+    options?: Partial<typeof DEFAULT_PDF_OPTIONS> & { margins?: Partial<typeof DEFAULT_PDF_OPTIONS.margins> }
   ): Promise<jsPDF> {
     console.log(`📄 HDMPDFGeneratorV2 ${this.VERSION} - Generating PDF...`);
-    console.log('👤 Vendedor parameter received:', vendedor?.full_name || 'UNDEFINED');
-    console.log('📋 Presupuesto vendedor_id:', presupuesto.vendedor_id);
-    console.log('🔍 Presupuesto.vendedor:', presupuesto.vendedor?.full_name || 'NOT LOADED');
+
+    const opts = { ...DEFAULT_PDF_OPTIONS, ...(options || {}) } as typeof DEFAULT_PDF_OPTIONS;
+    opts.margins = { ...DEFAULT_PDF_OPTIONS.margins, ...(options?.margins || {}) };
 
     const doc = new jsPDF({
-      unit: 'mm',
-      format: 'a4',
+      unit: opts.unit,
+      format: opts.format,
+      orientation: opts.orientation,
     });
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const leftMargin = 20;
-    const rightMargin = 20;
-    const topMargin = 15;
+    const leftMargin = opts.margins.left;
+    const rightMargin = opts.margins.right;
+    const topMargin = opts.margins.top;
+    const bottomMargin = opts.margins.bottom;
     let yPosition = topMargin;
 
-    // Watermark - "PRESUPUESTO" en diagonal
-    this.addWatermark(doc, pageWidth, pageHeight);
+    // Watermark on the first page (autoTable will also call in didDrawPage)
+    if (opts.watermark.enabled) {
+      this.addWatermark(doc, pageWidth, pageHeight, opts);
+    }
 
     // Logo
     try {
@@ -86,9 +153,19 @@ export class HDMPDFGeneratorV2 {
       console.error('Error loading logo:', error);
     }
 
-    // Información de contacto (derecha)
+    // Services block (exactly 3 lines)
+    yPosition += 18;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Sistemas eléctricos de potencia - Obras civiles - Metalúrgica', leftMargin, yPosition);
+    yPosition += 3.8;
+    doc.text('Domótica - Electrónica de Potencia - Media Tensión 23kV', leftMargin, yPosition);
+    yPosition += 3.8;
+    doc.text('Mediciones Eléctricas - Gestoría ANDE - Asesoría Energética', leftMargin, yPosition);
+
+    // Contact block on the right
     const contactX = pageWidth - rightMargin;
-    let contactY = yPosition;
+    let contactY = topMargin;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.text('Direccion: Profesor Almada C/21 de', contactX, contactY, { align: 'right' });
@@ -103,126 +180,124 @@ export class HDMPDFGeneratorV2 {
     contactY += 4;
     doc.text('Ruc: 80122639-2', contactX, contactY, { align: 'right' });
 
-    yPosition = 35;
-
-    // Servicios (debajo del logo)
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Sistemas eléctricos de potencia - Obras civiles - Metalúrgica', leftMargin, yPosition);
-    yPosition += 3.5;
-    doc.text('Domotica - Electrónica de Potencia - Media Tensión 23kV', leftMargin, yPosition);
-    yPosition += 3.5;
-    doc.text('Mediciones Eléctricas - Gestoria ANDE - Asesoria Energética', leftMargin, yPosition);
-
-    // Logo Mecarpa (si existe)
-    yPosition += 6;
-    doc.setFontSize(6);
-    doc.setFont('helvetica', 'normal');
-    doc.text('MECARPA', leftMargin + 5, yPosition);
-
-    yPosition = 55;
-
-    // Título "Presupuesto #"
+    // Title
+    yPosition = Math.max(yPosition + 12, 55);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Presupuesto #: ${presupuesto.codigo}`, pageWidth / 2, yPosition, { align: 'center' });
+    doc.text(`Presupuesto #: ${presupuesto.codigo}`, (pageWidth - rightMargin + leftMargin) / 2, yPosition, { align: 'center' });
 
-    yPosition = 70;
+    yPosition += 15;
 
-    // Información del cliente
+    // Metadata block
+    const metaLabelWidth = Math.floor((pageWidth - leftMargin - rightMargin) * 0.28);
+    const metaValueX = leftMargin + metaLabelWidth + 6;
+    let metaY = yPosition;
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
 
-    doc.text('Fecha:', leftMargin, yPosition);
-    doc.text(new Date(presupuesto.created_at).toLocaleDateString('es-PY'), leftMargin + 30, yPosition);
-    yPosition += 6;
+    doc.text('Fecha:', leftMargin, metaY);
+    doc.text(new Date(presupuesto.created_at).toLocaleDateString('es-PY'), metaValueX, metaY);
+    metaY += 3.2;
 
     doc.setFont('helvetica', 'bold');
-    doc.text('Señores:', leftMargin, yPosition);
+    doc.text('Señores:', leftMargin, metaY);
     doc.setFont('helvetica', 'normal');
-    doc.text(presupuesto.cliente_nombre.toUpperCase(), leftMargin + 30, yPosition);
-    yPosition += 6;
+    doc.text(presupuesto.cliente_nombre.toUpperCase(), metaValueX, metaY);
+    metaY += 3.8;
 
     doc.setFont('helvetica', 'bold');
-    doc.text('Referencia de', leftMargin, yPosition);
-    yPosition += 5;
-    doc.text('presupuesto:', leftMargin, yPosition);
+    doc.text('Referencia de', leftMargin, metaY);
+    doc.text('presupuesto:', leftMargin, metaY + 3.2);
     doc.setFont('helvetica', 'normal');
-    doc.text(presupuesto.concepto || 'N/A', leftMargin + 30, yPosition);
-    yPosition += 8;
+    const concepto = presupuesto.concepto || 'N/A';
+    const conceptoLines = doc.splitTextToSize(concepto.toUpperCase(), pageWidth - leftMargin - rightMargin - metaLabelWidth - 10);
+    doc.text(conceptoLines, metaValueX, metaY);
+    metaY += Math.max(8, conceptoLines.length * 4) + 2;
 
-    // Texto introductorio
-    doc.setFont('helvetica', 'normal');
+    yPosition = metaY + 6;
+
+    // Intro text
     const introText = 'Tengo el agrado de dirigirme a Ud. A fin de presentar la oferta económica por el trabajo de referencia a ser realizado.';
     const splitIntro = doc.splitTextToSize(introText, pageWidth - leftMargin - rightMargin);
+    doc.setFont('helvetica', 'normal');
     doc.text(splitIntro, leftMargin, yPosition);
     yPosition += splitIntro.length * 5 + 3;
 
-    // "Trabajos a ser Realizados:"
+    // Title trabajos
     doc.setFont('helvetica', 'bold');
     doc.text('Trabajos a ser Realizados:', leftMargin, yPosition);
-    yPosition += 8;
+    yPosition += 6;
 
-    // Tabla de items
+    // Table
     const tableData = presupuesto.items?.map((item, index) => [
       (index + 1).toString(),
+      item.grupo || '',
       item.descripcion,
       item.cantidad.toFixed(2),
       item.unidad_medida || 'UNID',
-      this.formatNumber(item.precio_unitario),
-      this.formatNumber(item.total || (item.cantidad * item.precio_unitario))
+      formatGs(item.precio_unitario),
+      formatGs(item.total || (item.cantidad * item.precio_unitario))
     ]) || [];
 
     autoTable(doc, {
       startY: yPosition,
-      head: [['#', 'Descripción', 'Cantidad', 'Unidad', 'P.Unitario', 'Sub Total']],
+      head: [['#', 'Item|Grp', 'Descripción', 'Cantidad', 'Unidad', 'P.Unitario', 'Sub Total']],
       body: tableData,
       theme: 'plain',
+      margin: { left: leftMargin, right: rightMargin },
       styles: {
         fontSize: 9,
         cellPadding: 2,
         lineColor: [0, 0, 0],
-        lineWidth: 0.1,
+        lineWidth: DEFAULT_PDF_OPTIONS.table.borderWidthPt,
       },
       headStyles: {
         fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
-        fontStyle: 'bold',
-        lineWidth: 0.5,
-        lineColor: [0, 0, 0],
+        fontStyle: DEFAULT_PDF_OPTIONS.table.headerFontStyle,
+        lineWidth: DEFAULT_PDF_OPTIONS.table.borderWidthPt,
+        halign: 'center',
+        valign: 'middle',
       },
       columnStyles: {
-        0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 80, halign: 'left' },
-        2: { cellWidth: 20, halign: 'right' },
-        3: { cellWidth: 18, halign: 'center' },
-        4: { cellWidth: 25, halign: 'right' },
-        5: { cellWidth: 25, halign: 'right' },
+        0: { halign: 'center', cellWidth: 8 },
+        1: { halign: 'center', cellWidth: 18 },
+        2: { halign: 'left', cellWidth: 90 },
+        3: { halign: 'right', cellWidth: 18 },
+        4: { halign: 'center', cellWidth: 16 },
+        5: { halign: 'right', cellWidth: 22 },
+        6: { halign: 'right', cellWidth: 22 },
       },
-      margin: { left: leftMargin, right: rightMargin },
-      didDrawPage: (data) => {
-        // Agregar watermark en cada página
-        this.addWatermark(doc, pageWidth, pageHeight);
+      didDrawPage: () => {
+        if (opts.watermark.enabled) this.addWatermark(doc, pageWidth, pageHeight, opts);
       },
     });
 
-    yPosition = (doc as any).lastAutoTable.finalY + 5;
+    yPosition = (doc as any).lastAutoTable?.finalY || yPosition + 8;
 
-    // Total
-    doc.setFontSize(9);
+    // TOTAL row with top border
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(1);
+    doc.line(leftMargin, yPosition + 2, pageWidth - rightMargin, yPosition + 2);
+    doc.setLineWidth(0.3);
+
+    const totalLabelX = pageWidth - rightMargin - 22 - 2;
+    const totalAmountX = pageWidth - rightMargin;
+    const totalY = yPosition + 8;
     doc.setFont('helvetica', 'bold');
-    const totalText = `TOTAL Gs.: ${this.formatNumber(presupuesto.total_neto + presupuesto.total_impuestos)}`;
-    doc.text(totalText, pageWidth - rightMargin, yPosition, { align: 'right' });
-    yPosition += 8;
+    doc.setFontSize(9);
+    doc.text('TOTAL Gs.:', totalLabelX, totalY, { align: 'right' });
+    doc.text(formatGs(presupuesto.total_neto + presupuesto.total_impuestos), totalAmountX, totalY, { align: 'right' });
 
-    // Forma de pago
+    yPosition = totalY + 10;
+
+    // Forma de pago / Observaciones
     doc.setFont('helvetica', 'bold');
     doc.text('Forma de pago:', leftMargin, yPosition);
     doc.setFont('helvetica', 'normal');
     doc.text(presupuesto.condicion_pago || 'CONTADO', leftMargin + 35, yPosition);
     yPosition += 8;
 
-    // Observaciones
     if (presupuesto.observaciones) {
       doc.setFont('helvetica', 'bold');
       doc.text('Observación(es):', leftMargin, yPosition);
@@ -235,19 +310,18 @@ export class HDMPDFGeneratorV2 {
 
     yPosition += 3;
 
-    // Nota de IVA
+    // Nota IVA
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.text('* Los precios incluyen IVA.', leftMargin, yPosition);
     yPosition += 8;
 
-    // Texto de cierre
+    // Cierre
     doc.setFontSize(9);
     doc.text('Estamos a su disposición ante cualquier consulta.', leftMargin, yPosition);
-    yPosition += 15; // 3 líneas de espacio
+    yPosition += 15;
 
-    // Firma del vendedor que creó el presupuesto - centrada en la página
-    // Si el vendedor es administrativo, usa la firma del admin en su lugar
+    // Firma
     let signingUser = vendedor;
     const isAdministrativoCreator = vendedor?.role === 'administrativo';
     if (isAdministrativoCreator) {
@@ -258,12 +332,9 @@ export class HDMPDFGeneratorV2 {
         console.log('✅ Usando firma del admin:', adminUser.full_name);
       }
     }
-    console.log('👤 Signing user:', signingUser?.full_name, 'Role:', signingUser?.role, 'Has signature:', !!signingUser?.signature_url);
-    console.log('📝 Vendedor object passed:', vendedor ? 'YES' : 'NO');
     if (signingUser) {
       const centerX = pageWidth / 2;
 
-      // Si hay firma, agregarla
       if (signingUser.signature_url) {
         try {
           const signatureBase64 = await this.loadImageAsBase64(signingUser.signature_url);
@@ -273,10 +344,10 @@ export class HDMPDFGeneratorV2 {
           yPosition += signatureHeight + 2;
         } catch (error) {
           console.error('Error loading signature:', error);
-          yPosition += 8; // Espacio si no hay firma
+          yPosition += 8;
         }
       } else {
-        yPosition += 8; // Espacio si no hay firma
+        yPosition += 8;
       }
 
       doc.setFontSize(8);
@@ -284,7 +355,6 @@ export class HDMPDFGeneratorV2 {
       doc.text('...........................', centerX, yPosition, { align: 'center' });
       yPosition += 4;
 
-      // Si es administrativo, mostrar firma especial
       if (isAdministrativoCreator) {
         doc.setFont('helvetica', 'bold');
         doc.text('ING. HERNAN MIÑO', centerX, yPosition, { align: 'center' });
@@ -292,7 +362,6 @@ export class HDMPDFGeneratorV2 {
         doc.setFont('helvetica', 'normal');
         doc.text('CAT A - 7822', centerX, yPosition, { align: 'center' });
       } else {
-        // Vendedor o admin normal
         doc.setFont('helvetica', 'bold');
         doc.text(signingUser.full_name || 'N/A', centerX, yPosition, { align: 'center' });
         yPosition += 4;
@@ -301,19 +370,20 @@ export class HDMPDFGeneratorV2 {
           doc.text(signingUser.phone, centerX, yPosition, { align: 'center' });
           yPosition += 4;
         }
-        // Agregar nombre de la empresa
         doc.setFont('helvetica', 'bold');
         doc.text('HDM INGENIERIA S.A.', centerX, yPosition, { align: 'center' });
       }
     }
 
-    // Footer
-    const footerY = pageHeight - 10;
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'italic');
-    doc.text('HDM Ingeniería S.A.', leftMargin, footerY);
-    doc.text('Presupuesto', pageWidth / 2, footerY, { align: 'center' });
-    doc.text('Página 1 de 1', pageWidth - rightMargin, footerY, { align: 'right' });
+    // Footer (solo si se activa)
+    if (opts.footerEnabled) {
+      const footerY = pageHeight - bottomMargin;
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'italic');
+      doc.text('HDM Ingeniería S.A.', leftMargin, footerY);
+      doc.text('Presupuesto', pageWidth / 2, footerY, { align: 'center' });
+      doc.text('Página 1 de 1', pageWidth - rightMargin, footerY, { align: 'right' });
+    }
 
     return doc;
   }
@@ -338,7 +408,6 @@ export class HDMPDFGeneratorV2 {
       const newWindow = window.open(pdfUrl, '_blank');
       if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
         console.warn('⚠️ Popup blocked! Downloading PDF instead...');
-        // Alternative: download if popup is blocked
         const link = document.createElement('a');
         link.href = pdfUrl;
         link.download = `presupuesto_${presupuesto.codigo}.pdf`;
@@ -353,51 +422,5 @@ export class HDMPDFGeneratorV2 {
       alert('Error al generar la vista previa del PDF: ' + (error instanceof Error ? error.message : 'Error desconocido'));
       throw error;
     }
-  }
-
-  private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
-    console.log('💧 Adding watermark v2.9 - OFFSET 1.3 + RIGHT SHIFT');
-
-    // Configurar opacidad y color
-    doc.saveGraphicsState();
-    const gstate = new doc.GState({ opacity: 0.1 });
-    doc.setGState(gstate);
-    doc.setTextColor(120, 120, 120);
-
-    // Tamaño reducido para mejor centrado
-    const fontSize = 80;
-    doc.setFontSize(fontSize);
-    doc.setFont('helvetica', 'bold');
-
-    const text = 'PRESUPUESTO';
-
-    // Centro de la página
-    const baseCenterX = pageWidth / 2;
-    const baseCenterY = pageHeight / 2;
-
-    // Medir dimensiones del texto
-    const textWidth = doc.getTextWidth(text);
-    const textHeightMM = fontSize * 0.352778; // Convertir puntos a mm
-
-    console.log('📏 Text - Width:', textWidth, 'mm, Height:', textHeightMM, 'mm');
-    console.log('📍 Base center:', baseCenterX, baseCenterY);
-
-    // Ajustar posición vertical con offset 1.3
-    const adjustedY = baseCenterY + (textHeightMM * 1.3);
-
-    // Ajustar posición horizontal: mover hacia la derecha para dar más margen izquierdo
-    const adjustedX = baseCenterX + 35; // +35mm hacia la derecha
-
-    console.log('🎯 Drawing at - X:', adjustedX, 'Y:', adjustedY, '(Y offset:', textHeightMM * 1.3, 'mm, X shift: +35mm)');
-
-    // Dibujar el texto rotado
-    doc.text(text, adjustedX, adjustedY, {
-      align: 'center',
-      angle: 45
-    });
-
-    console.log('✅ Watermark rendered (80pt font, Y:1.3, X:+20mm)');
-
-    doc.restoreGraphicsState();
   }
 }
