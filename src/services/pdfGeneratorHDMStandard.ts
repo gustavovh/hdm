@@ -223,10 +223,12 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 
 
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
-  let finalY = yPosition;
+  const leftMargin = margin;
+  let yTop = yPosition;
 
+  // Logo HDM (izquierda)
   try {
-    const response = await fetch('/image copy copy copy copy copy copy copy copy copy copy copy copy copy copy copy copy copy copy copy copy.png');
+    const response = await fetch('/hdm-logo.png');
     const blob = await response.blob();
     const reader = new FileReader();
 
@@ -236,22 +238,48 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
       reader.readAsDataURL(blob);
     });
 
-    const headerData = reader.result as string;
-    const imgProps = doc.getImageProperties(headerData);
-    const imgRatio = imgProps.width / imgProps.height;
-
-    const headerWidth = pageWidth;
-    const headerHeight = headerWidth / imgRatio;
-
-    doc.addImage(headerData, 'PNG', 0, 0, headerWidth, headerHeight, undefined, 'FAST');
-
-    finalY = headerHeight + 5;
+    const logoData = reader.result as string;
+    doc.addImage(logoData, 'PNG', leftMargin, yTop, 40, 12);
   } catch (error) {
-    console.warn('Header image no disponible, usando fallback', error);
-    finalY = 45;
+    console.warn('Logo no disponible', error);
   }
 
-  return finalY;
+  // Información de contacto (derecha)
+  const contactX = pageWidth - margin - 80;
+  let yContact = yTop;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Direccion: Profesor Almada C21 de', contactX, yContact);
+  yContact += 4;
+  doc.text('setiembre', contactX, yContact);
+  yContact += 4;
+  doc.text('Luque - Paraguay', contactX, yContact);
+  yContact += 4;
+  doc.text('Email: hmino@hdm.com.py', contactX, yContact);
+  yContact += 4;
+  doc.text('Cel: +595981795669', contactX, yContact);
+  yContact += 4;
+  doc.text('Ruc: 80122639-2', contactX, yContact);
+
+  let yAfterLogo = yTop + 14;
+
+  // Líneas de servicios debajo del logo
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Sistemas eléctricos de potencia - Obras civiles - Metalúrgica', leftMargin, yAfterLogo);
+  yAfterLogo += 3.5;
+  doc.text('Domotica - Electrónica de Potencia - Media Tensión 23kV', leftMargin, yAfterLogo);
+  yAfterLogo += 3.5;
+  doc.text('Mediciones Eléctricas - Gestoria ANDE - Asesoria Energética', leftMargin, yAfterLogo);
+  yAfterLogo += 5;
+
+  // Logo MECARPA (pequeño)
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('MECARPA', leftMargin + 5, yAfterLogo);
+  yAfterLogo += 8;
+
+  return yAfterLogo;
 }
 
 function formatPresupuestoCode(codigo: string): string {
