@@ -1,8 +1,8 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Presupuesto, SolicitudDescuento } from '../types/database.types';
-import { BudgetCalculator } from './budgetCalculator';
 import { supabase } from '../lib/supabase';
+import { DEFAULT_PDF_OPTIONS, formatGs } from './pdfGeneratorHDMv2';
 
 interface PDFConfig {
   logo_url?: string;
@@ -76,13 +76,21 @@ export class CorporatePDFGenerator {
 
   static async generatePresupuestoPDF(
     presupuesto: Presupuesto,
-    solicitudAprobada?: SolicitudDescuento
+    solicitudAprobada?: SolicitudDescuento,
+    options?: Partial<typeof DEFAULT_PDF_OPTIONS> & { margins?: Partial<typeof DEFAULT_PDF_OPTIONS.margins> }
   ): Promise<jsPDF> {
     const config = await this.getConfig();
-    const doc = new jsPDF();
+    const opts = { ...DEFAULT_PDF_OPTIONS, ...(options || {}) };
+    opts.margins = { ...DEFAULT_PDF_OPTIONS.margins, ...(options?.margins || {}) };
+
+    const doc = new jsPDF({
+      unit: opts.unit,
+      format: opts.format,
+      orientation: opts.orientation,
+    });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    let yPosition = 20;
+    let yPosition = opts.margins.top;
 
     const primaryColor = this.hexToRgb(config.colores?.primary || '#2563eb');
     const secondaryColor = this.hexToRgb(config.colores?.secondary || '#64748b');
@@ -94,19 +102,19 @@ export class CorporatePDFGenerator {
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
-    doc.text(config.nombre_empresa, 20, yPosition);
+    doc.text(config.nombre_empresa, opts.margins.left, yPosition);
 
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('PRESUPUESTO', pageWidth - 20, yPosition, { align: 'right' });
+    doc.text('PRESUPUESTO', pageWidth - opts.margins.right, yPosition, { align: 'right' });
 
     yPosition += 8;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     if (config.ruc_empresa) {
-      doc.text(`RUC: ${config.ruc_empresa}`, 20, yPosition);
+      doc.text(`RUC: ${config.ruc_empresa}`, opts.margins.left, yPosition);
     }
-    doc.text(presupuesto.codigo, pageWidth - 20, yPosition, { align: 'right' });
+    doc.text(presupuesto.codigo, pageWidth - opts.margins.right, yPosition, { align: 'right' });
 
     if (config.direccion || config.telefono || config.email) {
       yPosition += 4;
@@ -115,7 +123,7 @@ export class CorporatePDFGenerator {
         config.telefono,
         config.email,
       ].filter(Boolean).join(' | ');
-      doc.text(contactInfo, 20, yPosition);
+      doc.text(contactInfo, opts.margins.left, yPosition);
     }
 
     yPosition = 45;
@@ -123,54 +131,57 @@ export class CorporatePDFGenerator {
     doc.setFontSize(10);
 
     doc.setFillColor(245, 245, 245);
-    doc.rect(20, yPosition, (pageWidth - 40) / 2 - 5, 30, 'F');
-    doc.rect(20 + (pageWidth - 40) / 2 + 5, yPosition, (pageWidth - 40) / 2 - 5, 30, 'F');
+    const boxWidth = (pageWidth - opts.margins.left - opts.margins.right - 10) / 2;
+    doc.rect(opts.margins.left, yPosition, boxWidth, 30, 'F');
+    doc.rect(opts.margins.left + boxWidth + 10, yPosition, boxWidth, 30, 'F');
 
     yPosition += 7;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(...primaryColor);
-    doc.text('CLIENTE', 25, yPosition);
-    doc.text('FECHA', 25 + (pageWidth - 40) / 2 + 5, yPosition);
+    const clientX = opts.margins.left + 5;
+    const fechaX = opts.margins.left + boxWidth + 15;
+    doc.text('CLIENTE', clientX, yPosition);
+    doc.text('FECHA', fechaX, yPosition);
 
     yPosition += 6;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(0, 0, 0);
-    doc.text(presupuesto.cliente_nombre, 25, yPosition);
+    doc.text(presupuesto.cliente_nombre, clientX, yPosition);
     doc.text(
       new Date(presupuesto.created_at).toLocaleDateString('es-PY'),
-      25 + (pageWidth - 40) / 2 + 5,
+      fechaX,
       yPosition
     );
 
     yPosition += 4;
     if (presupuesto.concepto) {
       doc.setFont('helvetica', 'bold');
-      doc.text('Concepto:', 25, yPosition);
+      doc.text('Concepto:', clientX, yPosition);
       doc.setFont('helvetica', 'normal');
       yPosition += 4;
-      doc.text(presupuesto.concepto, 25, yPosition);
+      doc.text(presupuesto.concepto, clientX, yPosition);
     }
 
     yPosition += 4;
     if (presupuesto.cliente_ruc) {
-      doc.text(`RUC: ${presupuesto.cliente_ruc}`, 25, yPosition);
+      doc.text(`RUC: ${presupuesto.cliente_ruc}`, clientX, yPosition);
     }
 
     if (presupuesto.estado) {
-      doc.text(`Estado: ${presupuesto.estado}`, 25 + (pageWidth - 40) / 2 + 5, yPosition);
+      doc.text(`Estado: ${presupuesto.estado}`, fechaX, yPosition);
     }
 
     yPosition += 4;
     if (presupuesto.cliente_telefono) {
-      doc.text(`Tel: ${presupuesto.cliente_telefono}`, 25, yPosition);
+      doc.text(`Tel: ${presupuesto.cliente_telefono}`, clientX, yPosition);
     }
 
     if (presupuesto.dias_validez) {
       doc.text(
         `Validez: ${presupuesto.dias_validez} días`,
-        25 + (pageWidth - 40) / 2 + 5,
+        fechaX,
         yPosition
       );
     }
@@ -182,15 +193,12 @@ export class CorporatePDFGenerator {
       index + 1,
       item.descripcion,
       item.cantidad.toString(),
-      BudgetCalculator.formatCurrency(item.precio_unitario, presupuesto.moneda),
-      BudgetCalculator.formatCurrency(item.subtotal, presupuesto.moneda),
+      formatGs(item.precio_unitario),
+      formatGs(item.subtotal),
       item.descuento_aplicado > 0
-        ? BudgetCalculator.formatCurrency(item.descuento_aplicado, presupuesto.moneda)
+        ? formatGs(item.descuento_aplicado)
         : '-',
-      BudgetCalculator.formatCurrency(
-        item.subtotal - item.descuento_aplicado,
-        presupuesto.moneda
-      ),
+      formatGs(item.subtotal - item.descuento_aplicado),
     ]);
 
     autoTable(doc, {
@@ -211,7 +219,9 @@ export class CorporatePDFGenerator {
       headStyles: {
         fillColor: primaryColor,
         fontSize: 9,
-        fontStyle: 'bold',
+        fontStyle: DEFAULT_PDF_OPTIONS.table.headerFontStyle,
+        halign: 'center',
+        valign: 'middle',
       },
       bodyStyles: { fontSize: 9 },
       columnStyles: {
@@ -224,6 +234,15 @@ export class CorporatePDFGenerator {
         6: { cellWidth: 25, halign: 'right' },
       },
       alternateRowStyles: { fillColor: [249, 250, 251] },
+      styles: {
+        lineWidth: DEFAULT_PDF_OPTIONS.table.borderWidthPt,
+      },
+      margin: { left: opts.margins.left, right: opts.margins.right },
+      didDrawPage: () => {
+        if (opts.watermark.enabled) {
+          this.addWatermark(doc, pageWidth, pageHeight, opts);
+        }
+      },
     });
 
     yPosition = (doc as any).lastAutoTable.finalY + 10;
@@ -232,13 +251,13 @@ export class CorporatePDFGenerator {
       doc.setFillColor(...primaryColor);
       doc.setDrawColor(...primaryColor);
       doc.setLineWidth(0.5);
-      doc.rect(20, yPosition, pageWidth - 40, 25, 'S');
+      doc.rect(opts.margins.left, yPosition, pageWidth - opts.margins.left - opts.margins.right, 25, 'S');
 
       yPosition += 6;
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...primaryColor);
-      doc.text('✓ DESCUENTO APROBADO', 25, yPosition);
+      doc.text('✓ DESCUENTO APROBADO', opts.margins.left + 5, yPosition);
 
       yPosition += 5;
       doc.setFontSize(8);
@@ -249,27 +268,27 @@ export class CorporatePDFGenerator {
       const descuentoText =
         solicitudAprobada.tipo === 'PORCENTAJE'
           ? `${valorAprobado}%`
-          : BudgetCalculator.formatCurrency(valorAprobado, presupuesto.moneda);
+          : formatGs(valorAprobado);
 
-      doc.text(`Tipo: ${solicitudAprobada.tipo} | Valor: ${descuentoText}`, 25, yPosition);
+      doc.text(`Tipo: ${solicitudAprobada.tipo} | Valor: ${descuentoText}`, opts.margins.left + 5, yPosition);
 
       yPosition += 4;
       doc.text(
         `Aprobado: ${new Date(solicitudAprobada.applied_at || '').toLocaleDateString()}`,
-        25,
+        opts.margins.left + 5,
         yPosition
       );
 
       if (solicitudAprobada.comentario_admin) {
         yPosition += 4;
-        doc.text(`Obs: ${solicitudAprobada.comentario_admin}`, 25, yPosition);
+        doc.text(`Obs: ${solicitudAprobada.comentario_admin}`, opts.margins.left + 5, yPosition);
       }
 
       yPosition += 8;
     }
 
     const summaryStartY = yPosition;
-    const summaryX = pageWidth - 75;
+    const summaryX = pageWidth - opts.margins.right - 55;
 
     doc.setFillColor(248, 250, 252);
     doc.rect(summaryX - 5, summaryStartY - 5, 75, 35, 'F');
@@ -280,8 +299,8 @@ export class CorporatePDFGenerator {
 
     doc.text('Total Bruto:', summaryX, summaryStartY);
     doc.text(
-      BudgetCalculator.formatCurrency(presupuesto.total_bruto, presupuesto.moneda),
-      pageWidth - 25,
+      formatGs(presupuesto.total_bruto),
+      pageWidth - opts.margins.right - 5,
       summaryStartY,
       { align: 'right' }
     );
@@ -290,8 +309,8 @@ export class CorporatePDFGenerator {
       doc.text('Descuento:', summaryX, summaryStartY + 5);
       doc.setTextColor(220, 38, 38);
       doc.text(
-        `- ${BudgetCalculator.formatCurrency(presupuesto.total_descuento, presupuesto.moneda)}`,
-        pageWidth - 25,
+        `- ${formatGs(presupuesto.total_descuento)}`,
+        pageWidth - opts.margins.right - 5,
         summaryStartY + 5,
         { align: 'right' }
       );
@@ -300,34 +319,31 @@ export class CorporatePDFGenerator {
 
     doc.text('Subtotal:', summaryX, summaryStartY + 10);
     doc.text(
-      BudgetCalculator.formatCurrency(presupuesto.total_neto, presupuesto.moneda),
-      pageWidth - 25,
+      formatGs(presupuesto.total_neto),
+      pageWidth - opts.margins.right - 5,
       summaryStartY + 10,
       { align: 'right' }
     );
 
     doc.text(`IVA (${presupuesto.tasa_impuesto}%):`, summaryX, summaryStartY + 15);
     doc.text(
-      BudgetCalculator.formatCurrency(presupuesto.total_impuestos, presupuesto.moneda),
-      pageWidth - 25,
+      formatGs(presupuesto.total_impuestos),
+      pageWidth - opts.margins.right - 5,
       summaryStartY + 15,
       { align: 'right' }
     );
 
     doc.setDrawColor(...primaryColor);
     doc.setLineWidth(0.8);
-    doc.line(summaryX, summaryStartY + 18, pageWidth - 20, summaryStartY + 18);
+    doc.line(summaryX, summaryStartY + 18, pageWidth - opts.margins.right, summaryStartY + 18);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(...primaryColor);
     doc.text('TOTAL:', summaryX, summaryStartY + 25);
     doc.text(
-      BudgetCalculator.formatCurrency(
-        presupuesto.total_neto + presupuesto.total_impuestos,
-        presupuesto.moneda
-      ),
-      pageWidth - 25,
+      formatGs(presupuesto.total_neto + presupuesto.total_impuestos),
+      pageWidth - opts.margins.right - 5,
       summaryStartY + 25,
       { align: 'right' }
     );
@@ -340,29 +356,60 @@ export class CorporatePDFGenerator {
 
     // No se agrega firma ni nombre en presupuesto administrativo
 
-    const footerY = pageHeight - 25;
-    doc.setDrawColor(...secondaryColor);
-    doc.setLineWidth(0.3);
-    doc.line(20, footerY - 5, pageWidth - 20, footerY - 5);
+    // Footer opcional
+    if (opts.footerEnabled) {
+      const footerY = pageHeight - opts.margins.bottom;
+      doc.setDrawColor(...secondaryColor);
+      doc.setLineWidth(0.3);
+      doc.line(opts.margins.left, footerY - 5, pageWidth - opts.margins.right, footerY - 5);
 
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'italic');
-    doc.setTextColor(100, 100, 100);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(100, 100, 100);
 
-    if (config.pie_pagina) {
-      const lines = doc.splitTextToSize(config.pie_pagina, pageWidth - 40);
-      doc.text(lines, pageWidth / 2, footerY, { align: 'center' });
+      if (config.pie_pagina) {
+        const lines = doc.splitTextToSize(config.pie_pagina, pageWidth - opts.margins.left - opts.margins.right);
+        doc.text(lines, pageWidth / 2, footerY, { align: 'center' });
+      }
+
+      doc.setFontSize(6);
+      doc.text(
+        `Documento generado el ${new Date().toLocaleString('es-PY')}`,
+        pageWidth / 2,
+        footerY + 10,
+        { align: 'center' }
+      );
     }
 
-    doc.setFontSize(6);
-    doc.text(
-      `Documento generado el ${new Date().toLocaleString('es-PY')}`,
-      pageWidth / 2,
-      footerY + 10,
-      { align: 'center' }
-    );
+    // Watermark
+    if (opts.watermark.enabled) {
+      this.addWatermark(doc, pageWidth, pageHeight, opts);
+    }
 
     return doc;
+  }
+
+  private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number, opts: typeof DEFAULT_PDF_OPTIONS) {
+    if (!opts.watermark.enabled) return;
+
+    doc.saveGraphicsState();
+    const gstate = new doc.GState({ opacity: opts.watermark.opacity });
+    doc.setGState(gstate);
+    doc.setTextColor(180, 180, 180);
+
+    doc.setFontSize(opts.watermark.fontSizePt);
+    doc.setFont('helvetica', 'bold');
+
+    const text = opts.watermark.text;
+    const centerX = pageWidth / 2;
+    const centerY = pageHeight / 2;
+
+    doc.text(text, centerX, centerY, {
+      align: 'center',
+      angle: opts.watermark.rotationDeg
+    });
+
+    doc.restoreGraphicsState();
   }
 
   static async downloadPresupuestoPDF(

@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Presupuesto, PresupuestoImagen } from '../types/database.types';
-import { BudgetCalculator } from './budgetCalculator';
+import { DEFAULT_PDF_OPTIONS, formatGs } from './pdfGeneratorHDMv2';
 
 export class HDMPDFGenerator {
   private static async loadImageAsBase64(url: string): Promise<string> {
@@ -26,17 +26,22 @@ export class HDMPDFGenerator {
   }
   static async generatePresupuestoPDF(
     presupuesto: Presupuesto,
-    imagenes: PresupuestoImagen[] = []
+    imagenes: PresupuestoImagen[] = [],
+    options?: Partial<typeof DEFAULT_PDF_OPTIONS> & { margins?: Partial<typeof DEFAULT_PDF_OPTIONS.margins> }
   ): Promise<jsPDF> {
+    const opts = { ...DEFAULT_PDF_OPTIONS, ...(options || {}) };
+    opts.margins = { ...DEFAULT_PDF_OPTIONS.margins, ...(options?.margins || {}) };
+
     const doc = new jsPDF({
-      unit: 'mm',
-      format: 'a4',
+      unit: opts.unit,
+      format: opts.format,
+      orientation: opts.orientation,
     });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const leftMargin = 15;
-    const rightMargin = 15;
-    const topMargin = 15;
+    const leftMargin = opts.margins.left;
+    const rightMargin = opts.margins.right;
+    const topMargin = opts.margins.top;
     let yPosition = topMargin;
 
     try {
@@ -52,9 +57,9 @@ export class HDMPDFGenerator {
     doc.setTextColor(0, 0, 0);
     doc.text('Sistemas eléctricos de potencia - Obras civiles - Metalúrgica', leftMargin, yPosition);
     yPosition += 3;
-    doc.text('Domotica - Electrónica de Potencia - Media Tensión 23kV', leftMargin, yPosition);
+    doc.text('Domótica - Electrónica de Potencia - Media Tensión 23kV', leftMargin, yPosition);
     yPosition += 3;
-    doc.text('Mediciones Eléctricas - Gesteria ANDE - Asesoria Energética', leftMargin, yPosition);
+    doc.text('Mediciones Eléctricas - Gestoría ANDE - Asesoría Energética', leftMargin, yPosition);
 
     const contactStartY = topMargin;
     let contactY = contactStartY;
@@ -126,32 +131,32 @@ export class HDMPDFGenerator {
 
     const items = presupuesto.items || [];
     const tableData = items.map((item, index) => {
-      const itemGrupo = item.grupo || '';
       return [
         (index + 1).toString(),
-        itemGrupo,
+        '',  // Item|Grp (no disponible en el tipo)
         item.descripcion,
         item.cantidad.toFixed(2),
-        item.unidad || 'UNID',
-        BudgetCalculator.formatCurrency(item.precio_unitario, presupuesto.moneda).replace('$', '').replace('₲', '').trim(),
-        BudgetCalculator.formatCurrency(item.subtotal, presupuesto.moneda).replace('$', '').replace('₲', '').trim(),
+        'UNID',  // Unidad (no disponible en el tipo)
+        formatGs(item.precio_unitario),
+        formatGs(item.subtotal),
       ];
     });
 
     autoTable(doc, {
       startY: yPosition,
       margin: { left: leftMargin, right: rightMargin },
-      head: [['#', 'Item|Grp', 'Descripción', 'Cantidad', 'Unidad', 'P.Unitario', 'Sub Total']],
+      head: [['#', 'Item|Grp', 'Descripción', 'Cantidad', 'Unidad', 'P.Unit.', 'Sub Total']],
       body: tableData,
       theme: 'grid',
       headStyles: {
         fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
         fontSize: 8,
-        fontStyle: 'bold',
-        lineWidth: 0.5,
+        fontStyle: DEFAULT_PDF_OPTIONS.table.headerFontStyle,
+        lineWidth: DEFAULT_PDF_OPTIONS.table.borderWidthPt,
         lineColor: [0, 0, 0],
         halign: 'center',
+        valign: 'middle',
       },
       bodyStyles: {
         fontSize: 8,
@@ -159,37 +164,44 @@ export class HDMPDFGenerator {
         cellPadding: 2,
       },
       columnStyles: {
-        0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 18, halign: 'center' },
-        2: { cellWidth: 'auto' },
-        3: { cellWidth: 18, halign: 'center' },
-        4: { cellWidth: 16, halign: 'center' },
-        5: { cellWidth: 25, halign: 'right' },
-        6: { cellWidth: 25, halign: 'right' },
+        0: { cellWidth: DEFAULT_PDF_OPTIONS.table.columnWidthsMm[0], halign: 'center' },
+        1: { cellWidth: DEFAULT_PDF_OPTIONS.table.columnWidthsMm[1], halign: 'center' },
+        2: { cellWidth: DEFAULT_PDF_OPTIONS.table.columnWidthsMm[2], halign: 'left' },
+        3: { cellWidth: DEFAULT_PDF_OPTIONS.table.columnWidthsMm[3], halign: 'right' },
+        4: { cellWidth: DEFAULT_PDF_OPTIONS.table.columnWidthsMm[4], halign: 'center' },
+        5: { cellWidth: DEFAULT_PDF_OPTIONS.table.columnWidthsMm[5], halign: 'right' },
+        6: { cellWidth: DEFAULT_PDF_OPTIONS.table.columnWidthsMm[6], halign: 'right' },
       },
       styles: {
-        lineWidth: 0.3,
+        lineWidth: DEFAULT_PDF_OPTIONS.table.borderWidthPt,
         lineColor: [0, 0, 0],
+      },
+      didDrawPage: () => {
+        if (opts.watermark.enabled) {
+          this.addWatermark(doc, pageWidth, pageHeight, opts);
+        }
       },
     });
 
     yPosition = (doc as any).lastAutoTable.finalY + 4;
 
+    // TOTAL row con borde superior
     const currencySymbol = presupuesto.moneda === 'USD' ? '' : 'Gs.:';
     doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.3);
-    const totalBoxX = pageWidth - rightMargin - 50;
-    doc.rect(totalBoxX, yPosition, 50, 8);
+    doc.setLineWidth(1);
+    const totalRowY = yPosition;
+    const totalLabelX = pageWidth - rightMargin - DEFAULT_PDF_OPTIONS.table.columnWidthsMm[6] - DEFAULT_PDF_OPTIONS.table.columnWidthsMm[5];
+    const totalValueX = pageWidth - rightMargin - DEFAULT_PDF_OPTIONS.table.columnWidthsMm[6];
+    
+    // Línea superior del TOTAL
+    doc.line(totalLabelX, totalRowY, pageWidth - rightMargin, totalRowY);
+    
+    yPosition += 4;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    doc.text(`TOTAL ${currencySymbol}`, totalBoxX + 2, yPosition + 5);
-    doc.text(
-      BudgetCalculator.formatCurrency(presupuesto.total_neto, presupuesto.moneda).replace('$', '').replace('₲', '').trim(),
-      pageWidth - rightMargin - 2,
-      yPosition + 5,
-      { align: 'right' }
-    );
+    doc.text(`TOTAL ${currencySymbol}`, totalValueX - 2, yPosition, { align: 'right' });
+    doc.text(formatGs(presupuesto.total_neto), pageWidth - rightMargin - 2, yPosition, { align: 'right' });
 
     yPosition += 16;
     doc.setFontSize(9);
@@ -220,6 +232,11 @@ export class HDMPDFGenerator {
 
     yPosition += 8;
     doc.text('Estamos a su disposición ante cualquier consulta.', leftMargin, yPosition);
+
+    // Watermark
+    if (opts.watermark.enabled) {
+      this.addWatermark(doc, pageWidth, pageHeight, opts);
+    }
 
     // Agregar imágenes si existen
     if (imagenes.length > 0) {
@@ -284,16 +301,6 @@ export class HDMPDFGenerator {
       yPosition += totalRows * (imgHeight + spacing) + 10;
     }
 
-    doc.setFontSize(55);
-    doc.setTextColor(245, 245, 245);
-    doc.setFont('helvetica', 'bold');
-    doc.saveGraphicsState();
-    doc.text('PRESUPUESTO', pageWidth / 2, pageHeight / 2, {
-      align: 'center',
-      angle: 45,
-    });
-    doc.restoreGraphicsState();
-
     // Verificar si hay espacio para la firma
     if (yPosition > pageHeight - 60) {
       doc.addPage();
@@ -333,6 +340,29 @@ export class HDMPDFGenerator {
     doc.text(vendedorName, pageWidth - rightMargin - 42, yPosition, { align: 'left' });
 
     return doc;
+  }
+
+  private static addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number, opts: typeof DEFAULT_PDF_OPTIONS) {
+    if (!opts.watermark.enabled) return;
+
+    doc.saveGraphicsState();
+    const gstate = new doc.GState({ opacity: opts.watermark.opacity });
+    doc.setGState(gstate);
+    doc.setTextColor(180, 180, 180);
+
+    doc.setFontSize(opts.watermark.fontSizePt);
+    doc.setFont('helvetica', 'bold');
+
+    const text = opts.watermark.text;
+    const centerX = pageWidth / 2;
+    const centerY = pageHeight / 2;
+
+    doc.text(text, centerX, centerY, {
+      align: 'center',
+      angle: opts.watermark.rotationDeg
+    });
+
+    doc.restoreGraphicsState();
   }
 
   static async downloadPresupuestoPDF(
