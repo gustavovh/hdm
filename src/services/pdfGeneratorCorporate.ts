@@ -22,7 +22,7 @@ export class CorporatePDFGenerator {
   private static async loadImageAsBase64(url: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      img.crossOrigin = 'Anonymous';
       img.onload = () => {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
@@ -35,7 +35,7 @@ export class CorporatePDFGenerator {
           reject(new Error('Failed to get canvas context'));
         }
       };
-      img.onerror = () => reject(new Error('Failed to load image'));
+      img.onerror = reject;
       img.src = url;
     });
   }
@@ -82,57 +82,48 @@ export class CorporatePDFGenerator {
     yTop: number,
     presupuesto: Presupuesto
   ): Promise<number> {
-    // Logo HDM (izquierda)
+    // Cargar y dibujar logo HDM
     try {
       const logoBase64 = await this.loadImageAsBase64('/hdm-logo.png');
-      doc.addImage(logoBase64, 'PNG', leftMargin, yTop, 40, 12);
+      doc.addImage(logoBase64, 'PNG', leftMargin, yTop - 12, 58, 15);
     } catch (e) {
       console.error('No se pudo cargar el logo:', e);
     }
 
-    // Información de contacto (derecha)
-    const contactX = pageWidth - rightMargin - 80;
-    let yContact = yTop;
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Direccion: Profesor Almada C21 de', contactX, yContact);
-    yContact += 4;
-    doc.text('setiembre', contactX, yContact);
-    yContact += 4;
-    doc.text('Luque - Paraguay', contactX, yContact);
-    yContact += 4;
-    doc.text('Email: hmino@hdm.com.py', contactX, yContact);
-    yContact += 4;
-    doc.text('Cel: +595981795669', contactX, yContact);
-    yContact += 4;
-    doc.text('Ruc: 80122639-2', contactX, yContact);
-
-    let yAfterLogo = yTop + 14;
-
-    // Líneas de servicios debajo del logo
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Sistemas eléctricos de potencia - Obras civiles - Metalúrgica', leftMargin, yAfterLogo);
-    yAfterLogo += 3.5;
-    doc.text('Domotica - Electrónica de Potencia - Media Tensión 23kV', leftMargin, yAfterLogo);
-    yAfterLogo += 3.5;
-    doc.text('Mediciones Eléctricas - Gestoria ANDE - Asesoria Energética', leftMargin, yAfterLogo);
-    yAfterLogo += 5;
-
-    // Logo MECARPA (pequeño)
+    // Información de contacto (derecha, alineado a la derecha)
+    let y = yTop - 12;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text('MECARPA', leftMargin + 5, yAfterLogo);
-    yAfterLogo += 8;
+    doc.text('Dirección: Profesor Almada c/ 21 de setiembre', pageWidth - rightMargin, y, { align: 'right' });
+    y += 4;
+    doc.text('Luque - Paraguay', pageWidth - rightMargin, y, { align: 'right' });
+    y += 4;
+    doc.text('Email: hmino@hdm.com.py', pageWidth - rightMargin, y, { align: 'right' });
+    y += 4;
+    doc.text('Cel: +595 981 795 669', pageWidth - rightMargin, y, { align: 'right' });
+    y += 4;
+    doc.text('RUC: 80122639-2', pageWidth - rightMargin, y, { align: 'right' });
+    y += 4;
 
-    // Presupuesto # centrado
-    doc.setFontSize(11);
+    // Centrar título PRESUPUESTO
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     const centerX = pageWidth / 2;
-    doc.text(`Presupuesto #: ${presupuesto.codigo}`, centerX, yAfterLogo, { align: 'center' });
-    yAfterLogo += 8;
+    doc.text('PRESUPUESTO', centerX, y, { align: 'center' });
+    y += 5;
 
-    return yAfterLogo;
+    // Código del presupuesto
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Código: ${presupuesto.codigo}`, centerX, y, { align: 'center' });
+    y += 5;
+
+    // Línea separadora
+    doc.setLineWidth(0.2);
+    doc.line(leftMargin, y, pageWidth - rightMargin, y);
+    y += 6;
+
+    return y;
   }
 
   static async generatePresupuestoPDF(
