@@ -46,16 +46,18 @@ export class HDMPDFGenerator {
       console.error('Error loading logo:', error);
     }
 
-    yPosition += 20;
-    doc.setFontSize(7);
+    const contactX = pageWidth - rightMargin;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Dirección: Profesor Almada C/21 de', contactX, yPosition, { align: 'right' });
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    doc.text('Sistemas eléctricos de potencia - Obras civiles - Metalúrgica', leftMargin, yPosition);
-    yPosition += 3;
-    doc.text('Domotica - Electrónica de Potencia - Media Tensión 23kV', leftMargin, yPosition);
-    yPosition += 3;
-    doc.text('Mediciones Eléctricas - Gesteria ANDE - Asesoria Energética', leftMargin, yPosition);
-
+    doc.text('setiembre', contactX, yPosition + 4, { align: 'right' });
+    doc.text('Luque - Paraguay', contactX, yPosition + 8, { align: 'right' });
+    doc.text('Email: hmino@hdm.com.py', contactX, yPosition + 12, { align: 'right' });
+    doc.text('Cel: +595981795669', contactX, yPosition + 16, { align: 'right' });
+    doc.text('Ruc: 80122639-2', contactX, yPosition + 20, { align: 'right' });
+  // bajar el cursor para el resto del contenido
+    yPosition += 35;
     const contactStartY = topMargin;
     let contactY = contactStartY;
     doc.setFontSize(7);
