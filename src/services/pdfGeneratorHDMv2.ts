@@ -43,12 +43,18 @@ export class HDMPDFGeneratorV2 {
     presupuesto: Presupuesto
   ): Promise<number> {
     // Logo HDM (izquierda)
-    try {
-      const logoBase64 = await this.loadImageAsBase64('/hdm-logo.png');
-      doc.addImage(logoBase64, 'PNG', leftMargin, yTop, 40, 12);
-    } catch (e) {
-      console.error('No se pudo cargar el logo:', e);
-    }
+  const leftMargin = 20;
+  const rightMargin = 20;
+  const topMargin = 20;
+
+  let yPosition = await this.renderHeader(
+  doc,
+  pageWidth,
+  leftMargin,
+  rightMargin,
+  topMargin,
+  presupuesto
+);
 
     // Información de contacto (derecha)
     const contactX = pageWidth - rightMargin - 80;
@@ -79,11 +85,6 @@ export class HDMPDFGeneratorV2 {
     doc.text('Mediciones Eléctricas - Gestoria ANDE - Asesoria Energética', leftMargin, yAfterLogo);
     yAfterLogo += 5;
 
-    // Logo MECARPA (pequeño)
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text('MECARPA', leftMargin + 5, yAfterLogo);
-    yAfterLogo += 8;
 
     // Presupuesto # centrado
     doc.setFontSize(11);
