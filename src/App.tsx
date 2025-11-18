@@ -324,7 +324,7 @@ function LoginForm() {
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-8">
         <div className="text-center mb-8">
           <img
-            src="/hdm logo copy.png"
+            src="/hdm-logo.png"
             alt="HDM Ingeniería"
             className="h-16 w-auto mx-auto mb-4 object-contain"
           />
@@ -436,7 +436,7 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-8">
         <div className="text-center mb-8">
           <img
-            src="/hdm logo copy.png"
+            src="/hdm-logo.png"
             alt="HDM Ingeniería"
             className="h-16 w-auto mx-auto mb-4 object-contain"
           />
@@ -533,7 +533,7 @@ function ResetPasswordForm({ onSuccess }: { onSuccess: () => void }) {
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-8">
         <div className="text-center mb-8">
           <img
-            src="/hdm logo copy.png"
+            src="/hdm-logo.png"
             alt="HDM Ingeniería"
             className="h-16 w-auto mx-auto mb-4 object-contain"
           />
