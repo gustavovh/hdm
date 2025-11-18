@@ -3,6 +3,9 @@ import autoTable from 'jspdf-autotable';
 import { Presupuesto, SolicitudDescuento } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
+const LOGO_WIDTH_MM = 50;
+const LOGO_HEIGHT_MM = 13;
+
 export class PDFGenerator {
   private static async loadImageAsBase64(url: string): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -36,7 +39,7 @@ export class PDFGenerator {
     // Logo
     try {
       const logoBase64 = await this.loadImageAsBase64('/hdm-logo.png');
-      doc.addImage(logoBase64, 'PNG', leftMargin, yTop - 12, 58, 15);
+      doc.addImage(logoBase64, 'PNG', leftMargin, yTop - 12, LOGO_WIDTH_MM, LOGO_HEIGHT_MM);
     } catch (e) {
       console.error('No se pudo cargar el logo:', e);
     }

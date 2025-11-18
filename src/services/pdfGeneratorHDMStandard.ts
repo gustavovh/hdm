@@ -3,6 +3,9 @@ import autoTable from 'jspdf-autotable';
 import { Presupuesto } from '../types/database.types';
 import { supabase } from '../lib/supabase';
 
+const LOGO_WIDTH_MM = 50;
+const LOGO_HEIGHT_MM = 13;
+
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -239,7 +242,7 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     });
 
     const logoData = reader.result as string;
-    doc.addImage(logoData, 'PNG', leftMargin, yTop, 40, 12);
+    doc.addImage(logoData, 'PNG', leftMargin, yTop, LOGO_WIDTH_MM, LOGO_HEIGHT_MM);
   } catch (error) {
     console.warn('Logo no disponible', error);
   }
