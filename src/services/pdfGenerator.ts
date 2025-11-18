@@ -62,7 +62,7 @@ export class PDFGenerator {
     const lineGap = 4;              // interlineado de 4mm
 
     // Ancho deseado del logo/servicios y límite por espacio disponible
-    const desiredLogoWidth = 120; // <— si queda chico, podremos subir a 130
+    const desiredLogoWidth = 130; // ancho ampliado para logo más grande
     const maxAllowed = contactX - leftColumnX - 10; // dejar 10mm de gap con la columna derecha
     const leftColumnWidth = Math.min(desiredLogoWidth, maxAllowed);
 
