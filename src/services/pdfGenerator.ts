@@ -61,10 +61,10 @@ export class PDFGenerator {
     const headerTopY = yTop - 12;   // sube un poquito el header
     const lineGap = 4;              // interlineado de 4mm
 
-    // Ancho deseado del logo/servicios y límite por espacio disponible
-    const desiredLogoWidth = 130; // ancho ampliado para logo más grande
-    const maxAllowed = contactX - leftColumnX - 10; // dejar 10mm de gap con la columna derecha
-    const leftColumnWidth = Math.min(desiredLogoWidth, maxAllowed);
+    // Usar el máximo ancho disponible para logo y servicios
+    const gap = 12; // separación con la columna derecha
+    const maxAllowed = contactX - leftColumnX - gap;
+    const leftColumnWidth = maxAllowed; // usar SIEMPRE el máximo posible
 
     // --- RIGHT column (100% alineado a derecha) ---
     let rightY = headerTopY;
@@ -102,12 +102,11 @@ export class PDFGenerator {
 
     const wrapped: string[] = [];
     for (const line of servicesLines) {
-      const parts = doc.splitTextToSize(line, leftColumnWidth);
-      wrapped.push(...parts);
+      wrapped.push(...doc.splitTextToSize(line, leftColumnWidth));
     }
 
     wrapped.forEach((ln, i) => {
-      doc.text(ln, leftColumnX, currentY + i * lineGap);
+      doc.text(ln, leftColumnX, currentY + i * 4);
     });
 
     const servicesBottomY = wrapped.length ? currentY + (wrapped.length - 1) * lineGap : currentY;
