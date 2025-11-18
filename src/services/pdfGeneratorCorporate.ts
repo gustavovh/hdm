@@ -128,10 +128,21 @@ export class CorporatePDFGenerator {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+    const leftMargin = 20;
+    const rightMargin = 20;
+    const topMargin = 20;
+
+    // Define colors from config
+    const primaryColor = config.colores?.primary
+      ? this.hexToRgb(config.colores.primary)
+      : [37, 99, 235] as [number, number, number];
+    const secondaryColor = config.colores?.secondary
+      ? this.hexToRgb(config.colores.secondary)
+      : [59, 130, 246] as [number, number, number];
 
     // Renderizar encabezado
     let yPosition = await CorporatePDFGenerator.renderHeader(
-      doc, pageWidth, 20, 20, 20, presupuesto
+      doc, pageWidth, leftMargin, rightMargin, topMargin, presupuesto
     );
 
     yPosition += 5;
