@@ -63,12 +63,16 @@ export class HDMPDFGeneratorV2 {
 
     // --- Layout constants (A4 in mm) ---
     const leftColumnX = leftMargin;
-    const leftColumnWidth = 95;     // << ancho objetivo para logo y bloque de servicios
+    const contactX = pageWidth - rightMargin;
     const headerTopY = yTop - 12;   // sube un poquito el header
     const lineGap = 4;              // interlineado de 4mm
 
+    // Ancho deseado del logo/servicios y límite por espacio disponible
+    const desiredLogoWidth = 120; // <— si queda chico, podremos subir a 130
+    const maxAllowed = contactX - leftColumnX - 10; // dejar 10mm de gap con la columna derecha
+    const leftColumnWidth = Math.min(desiredLogoWidth, maxAllowed);
+
     // --- RIGHT column (100% alineado a derecha) ---
-    const contactX = pageWidth - rightMargin;
     let rightY = headerTopY;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
