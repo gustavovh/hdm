@@ -3,6 +3,9 @@ import autoTable from 'jspdf-autotable';
 import { Presupuesto, User } from '../types/database.types';
 import { BudgetCalculator } from './budgetCalculator';
 
+const LOGO_WIDTH_MM = 50;
+const LOGO_HEIGHT_MM = 13;
+
 export class HDMPDFGeneratorV2 {
   private static readonly VERSION = 'v2.9.1-Y1.3-X+20';
 
@@ -16,20 +19,35 @@ export class HDMPDFGeneratorV2 {
   private static async loadImageAsBase64(url: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = 'Anonymous';
+      img.crossOrigin = 'anonymous';
       img.onload = () => {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL('image/png'));
-        } else {
-          reject(new Error('Failed to get canvas context'));
-        }
+        if (!ctx) return reject(new Error('No canvas context'));
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
       };
-      img.onerror = reject;
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = url;
+    });
+  }
+
+  private static async loadImageAsBase64WithSize(url: string): Promise<{ dataUrl: string; width: number; height: number }> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Failed to get canvas context'));
+        ctx.drawImage(img, 0, 0);
+        resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.width, height: img.height });
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
       img.src = url;
     });
   }
@@ -42,58 +60,71 @@ export class HDMPDFGeneratorV2 {
     yTop: number,
     presupuesto: Presupuesto
   ): Promise<number> {
-    // Logo HDM (izquierda)
-  const leftMargin = 20;
-  const rightMargin = 20;
-  const topMargin = 20;
 
-  let yPosition = await this.renderHeader(
-  doc,
-  pageWidth,
-  leftMargin,
-  rightMargin,
-  topMargin,
-  presupuesto
-);
+    // --- Layout constants (A4 in mm) ---
+    const leftColumnX = leftMargin;
+    const contactX = pageWidth - rightMargin;
+    const headerTopY = yTop - 12;   // sube un poquito el header
+    const lineGap = 4;              // interlineado de 4mm
 
-    // Información de contacto (derecha)
-    const contactX = pageWidth - rightMargin - 80;
-    let yContact = yTop;
-    doc.setFontSize(9);
+    // Usar el máximo ancho disponible para logo y servicios
+    const gap = 12; // separación con la columna derecha
+    const maxAllowed = contactX - leftColumnX - gap;
+    const leftColumnWidth = maxAllowed; // usar SIEMPRE el máximo posible
+
+    // --- RIGHT column (100% alineado a derecha) ---
+    let rightY = headerTopY;
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text('Direccion: Profesor Almada C21 de', contactX, yContact);
-    yContact += 4;
-    doc.text('setiembre', contactX, yContact);
-    yContact += 4;
-    doc.text('Luque - Paraguay', contactX, yContact);
-    yContact += 4;
-    doc.text('Email: hmino@hdm.com.py', contactX, yContact);
-    yContact += 4;
-    doc.text('Cel: +595981795669', contactX, yContact);
-    yContact += 4;
-    doc.text('Ruc: 80122639-2', contactX, yContact);
+    doc.text('Dirección: Profesor Almada C/21 de setiembre', contactX, rightY, { align: 'right' }); rightY += lineGap;
+    doc.text('Luque - Paraguay',                                  contactX, rightY, { align: 'right' }); rightY += lineGap;
+    doc.text(`Email: hmino@hdm.com.py`,                           contactX, rightY, { align: 'right' }); rightY += lineGap;
+    doc.text(`Cel: +595981795669`,                                contactX, rightY, { align: 'right' }); rightY += lineGap;
+    doc.text(`RUC: 80122639-2`,                                   contactX, rightY, { align: 'right' });
 
-    let yAfterLogo = yTop + 14;
+    // --- LEFT column: LOGO (misma ANCHURA que servicios, SIN deformar) ---
+    let currentY = headerTopY;
+    try {
+      const logo = await this.loadImageAsBase64WithSize('/hdm-logo.png');
+      const aspect = logo.height / logo.width;
+      const logoW = leftColumnWidth;           // ancho fijo
+      const logoH = logoW * aspect;            // alto proporcional
+      doc.addImage(logo.dataUrl, 'PNG', leftColumnX, currentY, logoW, logoH);
+      currentY += logoH + 6;                   // espacio debajo del logo
+    } catch (e) {
+      console.error('Logo error:', e);
+      currentY += 12; // fallback spacing
+    }
 
-    // Líneas de servicios debajo del logo
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Sistemas eléctricos de potencia - Obras civiles - Metalúrgica', leftMargin, yAfterLogo);
-    yAfterLogo += 3.5;
-    doc.text('Domotica - Electrónica de Potencia - Media Tensión 23kV', leftMargin, yAfterLogo);
-    yAfterLogo += 3.5;
-    doc.text('Mediciones Eléctricas - Gestoria ANDE - Asesoria Energética', leftMargin, yAfterLogo);
-    yAfterLogo += 5;
-
-
-    // Presupuesto # centrado
-    doc.setFontSize(11);
+    // --- LEFT column: BLOQUE "servicios" (negrita, wrap al MISMO ancho del logo) ---
     doc.setFont('helvetica', 'bold');
-    const centerX = pageWidth / 2;
-    doc.text(`Presupuesto #: ${presupuesto.codigo}`, centerX, yAfterLogo, { align: 'center' });
-    yAfterLogo += 8;
+    doc.setFontSize(8);
 
-    return yAfterLogo;
+    const servicesLines = [
+      'Sistemas eléctricos de potencia – Obras civiles – Metalúrgica',
+      'Domótica – Electrónica de Potencia – Media Tensión 23kV',
+      'Mediciones Eléctricas – Gestoría ANDE – Asesoría Energética',
+    ];
+
+    const wrapped: string[] = [];
+    for (const line of servicesLines) {
+      wrapped.push(...doc.splitTextToSize(line, leftColumnWidth));
+    }
+
+    wrapped.forEach((ln, i) => {
+      doc.text(ln, leftColumnX, currentY + i * 4);
+    });
+
+    const servicesBottomY = wrapped.length ? currentY + (wrapped.length - 1) * lineGap : currentY;
+    const sepY = servicesBottomY + 8; // separador después del bloque
+
+    // --- Línea separadora fina de todo el header ---
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.2);
+    doc.line(leftMargin, sepY, pageWidth - rightMargin, sepY);
+
+    // Devolver la siguiente Y disponible
+    return sepY + 6;
   }
 
   private static async getAdminUser(): Promise<User | null> {
@@ -139,9 +170,9 @@ export class HDMPDFGeneratorV2 {
     // Watermark - "PRESUPUESTO" en diagonal
     this.addWatermark(doc, pageWidth, pageHeight);
 
-    // Renderizar encabezado (incluye logo, contacto, servicios, MECARPA y título)
+    // Renderizar encabezado
     let yPosition = await HDMPDFGeneratorV2.renderHeader(
-      doc, pageWidth, leftMargin, rightMargin, topMargin + 12, presupuesto
+      doc, pageWidth, leftMargin, rightMargin, topMargin, presupuesto
     );
 
     // Información del cliente

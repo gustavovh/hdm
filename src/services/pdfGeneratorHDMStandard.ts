@@ -3,6 +3,9 @@ import autoTable from 'jspdf-autotable';
 import { Presupuesto } from '../types/database.types';
 import { supabase } from '../lib/supabase';
 
+const LOGO_WIDTH_MM = 50;
+const LOGO_HEIGHT_MM = 13;
+
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -224,9 +227,21 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
   const leftMargin = margin;
-  let yTop = yPosition;
+  const rightMargin = margin;
+  const yTop = yPosition;
+  
+  // ---- CONFIG ----
+  const LINE_HEIGHT = 4;          // interlineado general
+  const SEPARATOR_GAP = 6;        // espacio antes de la línea separadora
 
-  // Logo HDM (izquierda)
+  // ---- LOGO (izquierda, mantener aspecto) ----
+  const MAX_W = 85;          // límite de ancho
+  const TARGET_H = 28;       // altura deseada (más alto)
+  const LIFT_UP = 4;         // mover un poco hacia arriba
+
+  let logoY = yTop - LIFT_UP;
+  let scaledW = 60;
+  let scaledH = 20;
   try {
     const response = await fetch('/hdm-logo.png');
     const blob = await response.blob();
@@ -239,47 +254,72 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     });
 
     const logoData = reader.result as string;
-    doc.addImage(logoData, 'PNG', leftMargin, yTop, 40, 12);
+
+    // cargar dimensiones reales desde el DataURL para respetar el aspecto
+    const tmpImg: HTMLImageElement = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error('No se pudo leer dimensiones del logo'));
+      i.src = logoData;
+    });
+
+    const natW = tmpImg.width || 1;
+    const natH = tmpImg.height || 1;
+    const aspect = natW / natH;
+
+    // escalar por altura objetivo y luego limitar por ancho máximo (sin deformar)
+    scaledH = TARGET_H;
+    scaledW = TARGET_H * aspect;
+    if (scaledW > MAX_W) {
+      scaledW = MAX_W;
+      scaledH = MAX_W / aspect;
+    }
+
+    doc.addImage(logoData, 'PNG', leftMargin, logoY, scaledW, scaledH);
   } catch (error) {
     console.warn('Logo no disponible', error);
   }
 
-  // Información de contacto (derecha)
-  const contactX = pageWidth - margin - 80;
-  let yContact = yTop;
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Direccion: Profesor Almada C21 de', contactX, yContact);
-  yContact += 4;
-  doc.text('setiembre', contactX, yContact);
-  yContact += 4;
-  doc.text('Luque - Paraguay', contactX, yContact);
-  yContact += 4;
-  doc.text('Email: hmino@hdm.com.py', contactX, yContact);
-  yContact += 4;
-  doc.text('Cel: +595981795669', contactX, yContact);
-  yContact += 4;
-  doc.text('Ruc: 80122639-2', contactX, yContact);
-
-  let yAfterLogo = yTop + 14;
-
-  // Líneas de servicios debajo del logo
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Sistemas eléctricos de potencia - Obras civiles - Metalúrgica', leftMargin, yAfterLogo);
-  yAfterLogo += 3.5;
-  doc.text('Domotica - Electrónica de Potencia - Media Tensión 23kV', leftMargin, yAfterLogo);
-  yAfterLogo += 3.5;
-  doc.text('Mediciones Eléctricas - Gestoria ANDE - Asesoria Energética', leftMargin, yAfterLogo);
-  yAfterLogo += 5;
-
-  // Logo MECARPA (pequeño)
+  // ---- BLOQUE CONTACTO (derecha, totalmente alineado a la derecha) ----
+  const contactX = pageWidth - rightMargin;
+  let cy = logoY + 1; // arranca a nivel del logo
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.text('MECARPA', leftMargin + 5, yAfterLogo);
-  yAfterLogo += 8;
+  doc.text('Dirección: Profesor Almada C/21 de setiembre', contactX, cy, { align: 'right' });
+  cy += LINE_HEIGHT;
+  doc.text('Luque - Paraguay', contactX, cy, { align: 'right' });
+  cy += LINE_HEIGHT;
+  doc.text('Email: hmino@hdm.com.py', contactX, cy, { align: 'right' });
+  cy += LINE_HEIGHT;
+  doc.text('Cel: +595981795669', contactX, cy, { align: 'right' });
+  cy += LINE_HEIGHT;
+  doc.text('RUC: 80122639-2', contactX, cy, { align: 'right' });
+  const contactBottom = cy;
 
-  return yAfterLogo;
+  // ---- BLOQUE DE SERVICIOS (debajo del logo; usa la altura real escalada) ----
+  const UNDER_LOGO_GAP = 8;   // separación segura
+  let sy = logoY + scaledH + UNDER_LOGO_GAP; // asegura que no pise el logo
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  const servicesLines = [
+    'Sistemas eléctricos de potencia – Obras civiles – Metalúrgica',
+    'Domótica – Electrónica de Potencia – Media Tensión 23kV',
+    'Mediciones Eléctricas – Gestoría ANDE – Asesoría Energética'
+  ];
+  for (const line of servicesLines) {
+    doc.text(line, leftMargin + 2, sy);
+    sy += LINE_HEIGHT;
+  }
+  const servicesBottom = sy;
+
+  // ---- SEPARADOR (debajo del mayor elemento) ----
+  const maxBottom = Math.max(contactBottom, servicesBottom);
+  const sepY = maxBottom + SEPARATOR_GAP;
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.2);
+  doc.line(leftMargin, sepY, pageWidth - rightMargin, sepY);
+
+  return sepY + 6;
 }
 
 function formatPresupuestoCode(codigo: string): string {
