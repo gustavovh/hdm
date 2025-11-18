@@ -36,28 +36,51 @@ export class PDFGenerator {
     yTop: number,
     presupuesto: Presupuesto
   ): Promise<number> {
+    let LOGO_HEIGHT_MM = 0;
+    const yLogoTop = yTop - 10;
+    
     // Logo
     try {
       const logoBase64 = await this.loadImageAsBase64('/hdm-logo.png');
-      doc.addImage(logoBase64, 'PNG', leftMargin, yTop - 12, LOGO_WIDTH_MM, LOGO_HEIGHT_MM);
+      
+      // Bigger logo with preserved aspect ratio
+      const props = (doc as any).getImageProperties
+        ? (doc as any).getImageProperties(logoBase64)
+        : { width: 580, height: 150 }; // fallback to ~3.87:1
+      
+      const LOGO_WIDTH_MM = 92; // target width
+      LOGO_HEIGHT_MM = (props.height / props.width) * LOGO_WIDTH_MM;
+      
+      doc.addImage(logoBase64, 'PNG', leftMargin, yLogoTop, LOGO_WIDTH_MM, LOGO_HEIGHT_MM);
     } catch (e) {
       console.error('No se pudo cargar el logo:', e);
     }
 
-    // Bloque de contacto (derecha)
-    const contactX = pageWidth - rightMargin;
-    let y = yTop - 12;
+    // Services text below logo (bold)
+    const yUnderStart = yLogoTop + LOGO_HEIGHT_MM + 5;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text('Dirección: Profesor Almada c/ 21 de setiembre', contactX, y, { align: 'right' });
+    let yServices = yUnderStart;
+    doc.text('Sistemas eléctricos de potencia – Obras civiles – Metalúrgica', leftMargin + 2, yServices);
+    yServices += 4;
+    doc.text('Domótica – Electrónica de Potencia – Media Tensión 23kV', leftMargin + 2, yServices);
+    yServices += 4;
+    doc.text('Mediciones Eléctricas – Gestoría ANDE – Asesoría Energética', leftMargin + 2, yServices);
+
+    // Bloque de contacto (derecha, flush right)
+    const contactX = pageWidth - rightMargin;
+    let y = yTop - 10;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Dirección: Profesor Almada C/21 de setiembre', contactX, y, { align: 'right' });
     y += 4;
     doc.text('Luque - Paraguay', contactX, y, { align: 'right' });
     y += 4;
     doc.text('Email: hmino@hdm.com.py', contactX, y, { align: 'right' });
     y += 4;
-    doc.text('Cel: +595 981 795 669', contactX, y, { align: 'right' });
+    doc.text('Cel: +595981795669', contactX, y, { align: 'right' });
     y += 4;
-    doc.text('RUC: 80122639-2', contactX, y, { align: 'right' });
+    doc.text('Ruc: 80122639-2', contactX, y, { align: 'right' });
 
     // Título y código centrados
     const titleY = yTop + 8;
@@ -71,7 +94,7 @@ export class PDFGenerator {
     doc.text(`Código: ${presupuesto.codigo}`, (pageWidth - rightMargin + leftMargin) / 2, codeY, { align: 'center' });
 
     // Separador
-    const sepY = codeY + 6;
+    const sepY = Math.max(yUnderStart + 6, yTop + LOGO_HEIGHT_MM + 10);
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.2);
     doc.line(leftMargin, sepY, pageWidth - rightMargin, sepY);
