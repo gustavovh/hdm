@@ -228,11 +228,17 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
   const leftMargin = margin;
   const rightMargin = margin;
-  let yTop = yPosition;
-  let LOGO_HEIGHT_MM = 0;
-  const yLogoTop = yTop - 10;
+  const yTop = yPosition;
+  
+  // ---- CONFIG ----
+  const LOGO_W = 85;              // ancho del logo
+  const LOGO_H = 22;              // alto proporcionado al ancho
+  const UNDER_LOGO_GAP = 8;       // espacio entre logo y textos inferiores
+  const LINE_HEIGHT = 4;          // interlineado general
+  const SEPARATOR_GAP = 6;        // espacio antes de la línea separadora
 
-  // Logo HDM (izquierda)
+  // ---- LOGO (izquierda) ----
+  const logoTop = yTop;  // ancla superior del encabezado
   try {
     const response = await fetch('/hdm-logo.png');
     const blob = await response.blob();
@@ -245,48 +251,46 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     });
 
     const logoData = reader.result as string;
-    
-    // Bigger logo with preserved aspect ratio
-    const props = (doc as any).getImageProperties
-      ? (doc as any).getImageProperties(logoData)
-      : { width: 580, height: 150 }; // fallback to ~3.87:1
-    
-    const LOGO_WIDTH_MM = 92; // target width
-    LOGO_HEIGHT_MM = (props.height / props.width) * LOGO_WIDTH_MM;
-    
-    doc.addImage(logoData, 'PNG', leftMargin, yLogoTop, LOGO_WIDTH_MM, LOGO_HEIGHT_MM);
+    doc.addImage(logoData, 'PNG', leftMargin, logoTop, LOGO_W, LOGO_H);
   } catch (error) {
     console.warn('Logo no disponible', error);
   }
 
-  // Services text below logo (bold)
-  const yUnderStart = yLogoTop + LOGO_HEIGHT_MM + 5;
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  let yServices = yUnderStart;
-  doc.text('Sistemas eléctricos de potencia – Obras civiles – Metalúrgica', leftMargin + 2, yServices);
-  yServices += 4;
-  doc.text('Domótica – Electrónica de Potencia – Media Tensión 23kV', leftMargin + 2, yServices);
-  yServices += 4;
-  doc.text('Mediciones Eléctricas – Gestoría ANDE – Asesoría Energética', leftMargin + 2, yServices);
-
-  // Información de contacto (derecha, flush right)
+  // ---- BLOQUE CONTACTO (derecha, totalmente alineado a la derecha) ----
   const contactX = pageWidth - rightMargin;
-  let yContact = yTop - 10;
+  let cy = logoTop + 1; // arranca a nivel del logo
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.text('Dirección: Profesor Almada C/21 de setiembre', contactX, yContact, { align: 'right' });
-  yContact += 4;
-  doc.text('Luque - Paraguay', contactX, yContact, { align: 'right' });
-  yContact += 4;
-  doc.text('Email: hmino@hdm.com.py', contactX, yContact, { align: 'right' });
-  yContact += 4;
-  doc.text('Cel: +595981795669', contactX, yContact, { align: 'right' });
-  yContact += 4;
-  doc.text('Ruc: 80122639-2', contactX, yContact, { align: 'right' });
+  doc.text('Dirección: Profesor Almada C/21 de setiembre', contactX, cy, { align: 'right' });
+  cy += LINE_HEIGHT;
+  doc.text('Luque - Paraguay', contactX, cy, { align: 'right' });
+  cy += LINE_HEIGHT;
+  doc.text('Email: hmino@hdm.com.py', contactX, cy, { align: 'right' });
+  cy += LINE_HEIGHT;
+  doc.text('Cel: +595981795669', contactX, cy, { align: 'right' });
+  cy += LINE_HEIGHT;
+  doc.text('RUC: 80122639-2', contactX, cy, { align: 'right' });
+  const contactBottom = cy;
 
-  // Separator line
-  const sepY = Math.max(yUnderStart + 6, yTop + LOGO_HEIGHT_MM + 10);
+  // ---- BLOQUE DE SERVICIOS (debajo del logo; en bold y sin superposición) ----
+  let sy = logoTop + LOGO_H + UNDER_LOGO_GAP; // asegura que no pise el logo
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  const servicesLines = [
+    'Sistemas eléctricos de potencia – Obras civiles – Metalúrgica',
+    'Domótica – Electrónica de Potencia – Media Tensión 23kV',
+    'Mediciones Eléctricas – Gestoría ANDE – Asesoría Energética'
+  ];
+  for (const line of servicesLines) {
+    doc.text(line, leftMargin + 2, sy);
+    sy += LINE_HEIGHT;
+  }
+  const servicesBottom = sy;
+
+  // ---- SEPARADOR (debajo del mayor elemento) ----
+  const maxBottom = Math.max(contactBottom, servicesBottom);
+  const sepY = maxBottom + SEPARATOR_GAP;
+  doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.2);
   doc.line(leftMargin, sepY, pageWidth - rightMargin, sepY);
 
