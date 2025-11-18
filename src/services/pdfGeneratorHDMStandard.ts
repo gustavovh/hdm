@@ -227,7 +227,10 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 
 async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
   const leftMargin = margin;
+  const rightMargin = margin;
   let yTop = yPosition;
+  let LOGO_HEIGHT_MM = 0;
+  const yLogoTop = yTop - 10;
 
   // Logo HDM (izquierda)
   try {
@@ -248,45 +251,46 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
       ? (doc as any).getImageProperties(logoData)
       : { width: 580, height: 150 }; // fallback to ~3.87:1
     
-    const LOGO_WIDTH_MM = 85; // target width
-    const LOGO_HEIGHT_MM = (props.height / props.width) * LOGO_WIDTH_MM;
+    const LOGO_WIDTH_MM = 92; // target width
+    LOGO_HEIGHT_MM = (props.height / props.width) * LOGO_WIDTH_MM;
     
-    const LOGO_Y = (yTop ?? 20) - 14; // slightly lower for spacing
-    doc.addImage(logoData, 'PNG', leftMargin, LOGO_Y, LOGO_WIDTH_MM, LOGO_HEIGHT_MM);
+    doc.addImage(logoData, 'PNG', leftMargin, yLogoTop, LOGO_WIDTH_MM, LOGO_HEIGHT_MM);
   } catch (error) {
     console.warn('Logo no disponible', error);
   }
 
-  // Información de contacto (derecha)
-  const contactX = pageWidth - margin - 80;
-  let yContact = yTop - 14;
-  doc.setFontSize(9);
+  // Services text below logo (bold)
+  const yUnderStart = yLogoTop + LOGO_HEIGHT_MM + 5;
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.text('Direccion: Profesor Almada C21 de', contactX, yContact);
-  yContact += 4;
-  doc.text('setiembre', contactX, yContact);
-  yContact += 4;
-  doc.text('Luque - Paraguay', contactX, yContact);
-  yContact += 4;
-  doc.text('Email: hmino@hdm.com.py', contactX, yContact);
-  yContact += 4;
-  doc.text('Cel: +595981795669', contactX, yContact);
-  yContact += 4;
-  doc.text('Ruc: 80122639-2', contactX, yContact);
+  let yServices = yUnderStart;
+  doc.text('Sistemas eléctricos de potencia – Obras civiles – Metalúrgica', leftMargin + 2, yServices);
+  yServices += 4;
+  doc.text('Domótica – Electrónica de Potencia – Media Tensión 23kV', leftMargin + 2, yServices);
+  yServices += 4;
+  doc.text('Mediciones Eléctricas – Gestoría ANDE – Asesoría Energética', leftMargin + 2, yServices);
 
-  let yAfterLogo = yTop + 14;
+  // Información de contacto (derecha, flush right)
+  const contactX = pageWidth - rightMargin;
+  let yContact = yTop - 10;
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Dirección: Profesor Almada C/21 de setiembre', contactX, yContact, { align: 'right' });
+  yContact += 4;
+  doc.text('Luque - Paraguay', contactX, yContact, { align: 'right' });
+  yContact += 4;
+  doc.text('Email: hmino@hdm.com.py', contactX, yContact, { align: 'right' });
+  yContact += 4;
+  doc.text('Cel: +595981795669', contactX, yContact, { align: 'right' });
+  yContact += 4;
+  doc.text('Ruc: 80122639-2', contactX, yContact, { align: 'right' });
 
-  // Líneas de servicios debajo del logo
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Sistemas eléctricos de potencia - Obras civiles - Metalúrgica', leftMargin, yAfterLogo);
-  yAfterLogo += 3.5;
-  doc.text('Domotica - Electrónica de Potencia - Media Tensión 23kV', leftMargin, yAfterLogo);
-  yAfterLogo += 3.5;
-  doc.text('Mediciones Eléctricas - Gestoria ANDE - Asesoria Energética', leftMargin, yAfterLogo);
-  yAfterLogo += 8;
+  // Separator line
+  const sepY = Math.max(yUnderStart + 6, yTop + LOGO_HEIGHT_MM + 10);
+  doc.setLineWidth(0.2);
+  doc.line(leftMargin, sepY, pageWidth - rightMargin, sepY);
 
-  return yAfterLogo;
+  return sepY + 6;
 }
 
 function formatPresupuestoCode(codigo: string): string {
