@@ -25,6 +25,42 @@ export class HDMPDFGenerator {
     });
   }
 
+  private static async loadImageAsBase64WithSize(url: string): Promise<{ dataUrl: string; width: number; height: number }> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Failed to get canvas context'));
+        ctx.drawImage(img, 0, 0);
+        resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.width, height: img.height });
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = url;
+    });
+  }
+
+  private static async loadImageAsBase64WithSize(url: string): Promise<{ dataUrl: string; width: number; height: number }> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Failed to get canvas context'));
+        ctx.drawImage(img, 0, 0);
+        resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.width, height: img.height });
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = url;
+    });
+  }
+
   private static async renderHeader(
     doc: jsPDF,
     pageWidth: number,
@@ -33,71 +69,67 @@ export class HDMPDFGenerator {
     yTop: number,
     presupuesto: Presupuesto
   ): Promise<number> {
-    // ---- CONFIG ----
-    const LOGO_W = 85;              // ancho del logo
-    const LOGO_H = 22;              // alto proporcionado al ancho
-    const UNDER_LOGO_GAP = 8;       // espacio entre logo y textos inferiores
-    const LINE_HEIGHT = 4;          // interlineado general
-    const SEPARATOR_GAP = 6;        // espacio antes de la línea separadora
 
-    // ---- LOGO (izquierda) ----
-    const logoTop = yTop;  // ancla superior del encabezado
+    // --- Layout constants (A4 in mm) ---
+    const leftColumnX = leftMargin;
+    const leftColumnWidth = 95;     // << ancho objetivo para logo y bloque de servicios
+    const headerTopY = yTop - 12;   // sube un poquito el header
+    const lineGap = 4;              // interlineado de 4mm
+
+    // --- RIGHT column (100% alineado a derecha) ---
+    const contactX = pageWidth - rightMargin;
+    let rightY = headerTopY;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Dirección: Profesor Almada C/21 de setiembre', contactX, rightY, { align: 'right' }); rightY += lineGap;
+    doc.text('Luque - Paraguay',                                  contactX, rightY, { align: 'right' }); rightY += lineGap;
+    doc.text(`Email: hmino@hdm.com.py`,                           contactX, rightY, { align: 'right' }); rightY += lineGap;
+    doc.text(`Cel: +595981795669`,                                contactX, rightY, { align: 'right' }); rightY += lineGap;
+    doc.text(`RUC: 80122639-2`,                                   contactX, rightY, { align: 'right' });
+
+    // --- LEFT column: LOGO (misma ANCHURA que servicios, SIN deformar) ---
+    let currentY = headerTopY;
     try {
-      const logoBase64 = await this.loadImageAsBase64('/hdm-logo.png');
-      doc.addImage(logoBase64, 'PNG', leftMargin, logoTop, LOGO_W, LOGO_H);
+      const logo = await this.loadImageAsBase64WithSize('/hdm-logo.png');
+      const aspect = logo.height / logo.width;
+      const logoW = leftColumnWidth;           // ancho fijo
+      const logoH = logoW * aspect;            // alto proporcional
+      doc.addImage(logo.dataUrl, 'PNG', leftColumnX, currentY, logoW, logoH);
+      currentY += logoH + 6;                   // espacio debajo del logo
     } catch (e) {
-      console.error('No se pudo cargar el logo:', e);
+      console.error('Logo error:', e);
+      currentY += 12; // fallback spacing
     }
 
-    // ---- BLOQUE CONTACTO (derecha, totalmente alineado a la derecha) ----
-    const contactX = pageWidth - rightMargin;
-    let cy = logoTop + 1; // arranca a nivel del logo
-    doc.setFontSize(8);
+    // --- LEFT column: BLOQUE "servicios" (negrita, wrap al MISMO ancho del logo) ---
     doc.setFont('helvetica', 'bold');
-    doc.text('Dirección: Profesor Almada C/21 de setiembre', contactX, cy, { align: 'right' });
-    cy += LINE_HEIGHT;
-    doc.text('Luque - Paraguay', contactX, cy, { align: 'right' });
-    cy += LINE_HEIGHT;
-    doc.text('Email: hmino@hdm.com.py', contactX, cy, { align: 'right' });
-    cy += LINE_HEIGHT;
-    doc.text('Cel: +595981795669', contactX, cy, { align: 'right' });
-    cy += LINE_HEIGHT;
-    doc.text('RUC: 80122639-2', contactX, cy, { align: 'right' });
-    const contactBottom = cy;
+    doc.setFontSize(8);
 
-    // ---- BLOQUE DE SERVICIOS (debajo del logo; en bold y sin superposición) ----
-    let sy = logoTop + LOGO_H + UNDER_LOGO_GAP; // asegura que no pise el logo
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
     const servicesLines = [
       'Sistemas eléctricos de potencia – Obras civiles – Metalúrgica',
       'Domótica – Electrónica de Potencia – Media Tensión 23kV',
-      'Mediciones Eléctricas – Gestoría ANDE – Asesoría Energética'
+      'Mediciones Eléctricas – Gestoría ANDE – Asesoría Energética',
     ];
+
+    const wrapped: string[] = [];
     for (const line of servicesLines) {
-      doc.text(line, leftMargin + 2, sy);
-      sy += LINE_HEIGHT;
+      const parts = doc.splitTextToSize(line, leftColumnWidth);
+      wrapped.push(...parts);
     }
-    const servicesBottom = sy;
 
-    // ---- BLOQUE TÍTULO/CÓDIGO (centro, debajo de servicios) ----
-    const centerX = (pageWidth - rightMargin + leftMargin) / 2;
-    let ty = servicesBottom + 2; // pequeño margen
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PRESUPUESTO', centerX, ty, { align: 'center' });
-    ty += 6;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Código: ${presupuesto.codigo}`, centerX, ty, { align: 'center' });
+    wrapped.forEach((ln, i) => {
+      doc.text(ln, leftColumnX, currentY + i * lineGap);
+    });
 
-    // ---- SEPARADOR (debajo del mayor elemento) ----
-    const maxBottom = Math.max(contactBottom, ty);
-    const sepY = maxBottom + SEPARATOR_GAP;
+    const servicesBottomY = wrapped.length ? currentY + (wrapped.length - 1) * lineGap : currentY;
+    const sepY = servicesBottomY + 8; // separador después del bloque
+
+    // --- Línea separadora fina de todo el header ---
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.2);
     doc.line(leftMargin, sepY, pageWidth - rightMargin, sepY);
 
+    // Devolver la siguiente Y disponible
     return sepY + 6;
   }
   static async generatePresupuestoPDF(
