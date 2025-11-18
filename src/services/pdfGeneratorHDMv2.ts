@@ -45,14 +45,24 @@ export class HDMPDFGeneratorV2 {
     // Logo a la izquierda
     try {
       const logoBase64 = await this.loadImageAsBase64('/hdm-logo.png');
-      doc.addImage(logoBase64, 'PNG', leftMargin, yTop - 12, LOGO_WIDTH_MM, LOGO_HEIGHT_MM);
+      
+      // Bigger logo with preserved aspect ratio
+      const props = (doc as any).getImageProperties
+        ? (doc as any).getImageProperties(logoBase64)
+        : { width: 580, height: 150 }; // fallback to ~3.87:1
+      
+      const LOGO_WIDTH_MM = 85; // target width
+      const LOGO_HEIGHT_MM = (props.height / props.width) * LOGO_WIDTH_MM;
+      
+      const LOGO_Y = (yTop ?? 20) - 14; // slightly lower for spacing
+      doc.addImage(logoBase64, 'PNG', leftMargin, LOGO_Y, LOGO_WIDTH_MM, LOGO_HEIGHT_MM);
     } catch (e) {
       console.error('No se pudo cargar el logo:', e);
     }
 
     // Contacto a la derecha
     const contactX = pageWidth - rightMargin;
-    let y = yTop - 12;
+    let y = yTop - 14;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.text('Dirección: Profesor Almada c/ 21 de setiembre', contactX, y, { align: 'right' });

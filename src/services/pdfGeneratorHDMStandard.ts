@@ -242,14 +242,24 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     });
 
     const logoData = reader.result as string;
-    doc.addImage(logoData, 'PNG', leftMargin, yTop, LOGO_WIDTH_MM, LOGO_HEIGHT_MM);
+    
+    // Bigger logo with preserved aspect ratio
+    const props = (doc as any).getImageProperties
+      ? (doc as any).getImageProperties(logoData)
+      : { width: 580, height: 150 }; // fallback to ~3.87:1
+    
+    const LOGO_WIDTH_MM = 85; // target width
+    const LOGO_HEIGHT_MM = (props.height / props.width) * LOGO_WIDTH_MM;
+    
+    const LOGO_Y = (yTop ?? 20) - 14; // slightly lower for spacing
+    doc.addImage(logoData, 'PNG', leftMargin, LOGO_Y, LOGO_WIDTH_MM, LOGO_HEIGHT_MM);
   } catch (error) {
     console.warn('Logo no disponible', error);
   }
 
   // Información de contacto (derecha)
   const contactX = pageWidth - margin - 80;
-  let yContact = yTop;
+  let yContact = yTop - 14;
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.text('Direccion: Profesor Almada C21 de', contactX, yContact);
@@ -274,12 +284,6 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   doc.text('Domotica - Electrónica de Potencia - Media Tensión 23kV', leftMargin, yAfterLogo);
   yAfterLogo += 3.5;
   doc.text('Mediciones Eléctricas - Gestoria ANDE - Asesoria Energética', leftMargin, yAfterLogo);
-  yAfterLogo += 5;
-
-  // Logo MECARPA (pequeño)
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.text('MECARPA', leftMargin + 5, yAfterLogo);
   yAfterLogo += 8;
 
   return yAfterLogo;
