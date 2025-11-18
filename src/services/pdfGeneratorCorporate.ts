@@ -83,24 +83,48 @@ export class CorporatePDFGenerator {
     presupuesto: Presupuesto
   ): Promise<number> {
     // ---- CONFIG ----
-    const LOGO_W = 85;              // ancho del logo
-    const LOGO_H = 22;              // alto proporcionado al ancho
-    const UNDER_LOGO_GAP = 8;       // espacio entre logo y textos inferiores
     const LINE_HEIGHT = 4;          // interlineado general
     const SEPARATOR_GAP = 6;        // espacio antes de la línea separadora
 
-    // ---- LOGO (izquierda) ----
-    const logoTop = yTop;  // ancla superior del encabezado
+    // ---- LOGO (izquierda, mantener aspecto) ----
+    const MAX_W = 85;          // límite de ancho
+    const TARGET_H = 28;       // altura deseada (más alto)
+    const LIFT_UP = 4;         // mover un poco hacia arriba
+
+    let logoY = yTop - LIFT_UP;
+    let scaledW = 60;
+    let scaledH = 20;
     try {
       const logoBase64 = await this.loadImageAsBase64('/hdm-logo.png');
-      doc.addImage(logoBase64, 'PNG', leftMargin, logoTop, LOGO_W, LOGO_H);
+
+      // cargar dimensiones reales desde el DataURL para respetar el aspecto
+      const tmpImg: HTMLImageElement = await new Promise((resolve, reject) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = () => reject(new Error('No se pudo leer dimensiones del logo'));
+        i.src = logoBase64;
+      });
+
+      const natW = tmpImg.width || 1;
+      const natH = tmpImg.height || 1;
+      const aspect = natW / natH;
+
+      // escalar por altura objetivo y luego limitar por ancho máximo (sin deformar)
+      scaledH = TARGET_H;
+      scaledW = TARGET_H * aspect;
+      if (scaledW > MAX_W) {
+        scaledW = MAX_W;
+        scaledH = MAX_W / aspect;
+      }
+
+      doc.addImage(logoBase64, 'PNG', leftMargin, logoY, scaledW, scaledH);
     } catch (e) {
       console.error('No se pudo cargar el logo:', e);
     }
 
     // ---- BLOQUE CONTACTO (derecha, totalmente alineado a la derecha) ----
     const contactX = pageWidth - rightMargin;
-    let cy = logoTop + 1; // arranca a nivel del logo
+    let cy = logoY + 1; // arranca a nivel del logo
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.text('Dirección: Profesor Almada C/21 de setiembre', contactX, cy, { align: 'right' });
@@ -114,8 +138,9 @@ export class CorporatePDFGenerator {
     doc.text('RUC: 80122639-2', contactX, cy, { align: 'right' });
     const contactBottom = cy;
 
-    // ---- BLOQUE DE SERVICIOS (debajo del logo; en bold y sin superposición) ----
-    let sy = logoTop + LOGO_H + UNDER_LOGO_GAP; // asegura que no pise el logo
+    // ---- BLOQUE DE SERVICIOS (debajo del logo; usa la altura real escalada) ----
+    const UNDER_LOGO_GAP = 8;   // separación segura
+    let sy = logoY + scaledH + UNDER_LOGO_GAP; // asegura que no pise el logo
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     const servicesLines = [
