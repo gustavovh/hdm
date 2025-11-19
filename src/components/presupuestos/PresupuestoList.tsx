@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Search, Filter, Copy, ArrowRight } from 'lucide-react';
+import { FileText, Plus, Search, RefreshCw, Download, Copy, RotateCw, Receipt } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Select } from '../ui/Select';
 import { Badge } from '../ui/Badge';
 import { Presupuesto } from '../../types/database.types';
 import { PresupuestoService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { PresupuestoStatusManager } from './PresupuestoStatusManager';
+import { supabase } from '../../lib/supabase';
+import { CambiarEstadoModal } from './CambiarEstadoModal';
+import { FacturacionModal } from './FacturacionModal';
+import { HDMPDFGeneratorV2 } from '../../services/pdfGeneratorHDMv2';
 
 interface PresupuestoListProps {
   onSelectPresupuesto: (id: string) => void;
@@ -15,39 +17,26 @@ interface PresupuestoListProps {
 }
 
 export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: PresupuestoListProps) {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showCambiarEstado, setShowCambiarEstado] = useState(false);
+  const [selectedPresupuestoForEstado, setSelectedPresupuestoForEstado] = useState<Presupuesto | null>(null);
+  const [showFacturacion, setShowFacturacion] = useState(false);
+  const [selectedPresupuestoForFacturacion, setSelectedPresupuestoForFacturacion] = useState<Presupuesto | null>(null);
 
   useEffect(() => {
     loadPresupuestos();
   }, []);
 
-  const handleClone = async (e: React.MouseEvent, presupuestoId: string) => {
-    e.stopPropagation();
-    if (!user) return;
-
-    if (!confirm('¿Deseas clonar este presupuesto? Se creará una copia en estado Clonado.')) {
-      return;
-    }
-
-    try {
-      await PresupuestoService.clone(presupuestoId, user.id);
-      await loadPresupuestos();
-      alert('Presupuesto clonado exitosamente');
-    } catch (error) {
-      console.error('Error clonando presupuesto:', error);
-      alert('Error al clonar el presupuesto');
-    }
-  };
-
   const loadPresupuestos = async () => {
     try {
       setLoading(true);
       const data = await PresupuestoService.getAll();
-      setPresupuestos(data || []);
+      const myPresupuestos = data.filter(p => p.vendedor_id === user?.id && !p.deleted_at);
+      setPresupuestos(myPresupuestos || []);
     } catch (error) {
       console.error('Error loading presupuestos:', error);
       setPresupuestos([]);
@@ -56,8 +45,93 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
     }
   };
 
-  const getStatusColor = (status: Presupuesto['estado']) => {
-    const colors: Record<string, string> = {
+  const handleClonePresupuesto = async (presupuesto: Presupuesto) => {
+    if (!confirm(`¿Deseas clonar el presupuesto ${presupuesto.codigo}? Se creará un nuevo presupuesto en estado CLONADO que podrás editar.`)) return;
+
+    try {
+      const newPresupuestoData = {
+        cliente_nombre: presupuesto.cliente_nombre,
+        cliente_email: presupuesto.cliente_email,
+        cliente_telefono: presupuesto.cliente_telefono,
+        cliente_documento: presupuesto.cliente_documento,
+        vendedor_id: presupuesto.vendedor_id,
+        moneda: presupuesto.moneda,
+        tipo_cambio: presupuesto.tipo_cambio,
+        total_bruto: presupuesto.total_bruto,
+        total_descuento: presupuesto.total_descuento,
+        total_neto: presupuesto.total_neto,
+        total_impuestos: presupuesto.total_impuestos,
+        total_comisiones: presupuesto.total_comisiones,
+        tasa_impuesto: presupuesto.tasa_impuesto,
+        tasa_comision: presupuesto.tasa_comision,
+        estado: 'CLONADO' as const,
+        observaciones: `Clonado de ${presupuesto.codigo}${presupuesto.observaciones ? ' - ' + presupuesto.observaciones : ''}`,
+        concepto: presupuesto.concepto,
+        condicion_pago: presupuesto.condicion_pago,
+        medio_pago: presupuesto.medio_pago,
+        image_urls: presupuesto.image_urls,
+      };
+
+      const { data: newPresupuesto, error } = await supabase
+        .from('presupuestos')
+        .insert(newPresupuestoData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const { data: items, error: itemsError } = await supabase
+        .from('presupuesto_items')
+        .select('*')
+        .eq('presupuesto_id', presupuesto.id);
+
+      if (itemsError) {
+        console.error('Error fetching items:', itemsError);
+      } else if (items && items.length > 0) {
+        const newItems = items.map(item => ({
+          presupuesto_id: newPresupuesto.id,
+          descripcion: item.descripcion,
+          cantidad: item.cantidad,
+          precio_unitario: item.precio_unitario,
+          subtotal: item.subtotal,
+          descuento_aplicado: item.descuento_aplicado,
+          orden: item.orden,
+        }));
+
+        const { error: insertItemsError } = await supabase
+          .from('presupuesto_items')
+          .insert(newItems);
+
+        if (insertItemsError) {
+          console.error('Error cloning items:', insertItemsError);
+        }
+      }
+
+      alert(`Presupuesto clonado exitosamente: ${newPresupuesto.codigo}`);
+      loadPresupuestos();
+    } catch (error: any) {
+      console.error('Error cloning presupuesto:', error);
+      alert(`Error al clonar el presupuesto: ${error.message || 'Error desconocido'}`);
+    }
+  };
+
+  const handleDownloadPresupuesto = async (presupuesto: Presupuesto) => {
+    try {
+      const { data: vendedorData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', presupuesto.vendedor_id)
+        .maybeSingle();
+
+      await HDMPDFGeneratorV2.downloadPresupuestoPDF(presupuesto, vendedorData || undefined);
+    } catch (error) {
+      console.error('Error downloading presupuesto:', error);
+      alert('Error al descargar el presupuesto');
+    }
+  };
+
+  const getStatusColor = (status: Presupuesto['estado']): 'green' | 'yellow' | 'red' | 'blue' | 'gray' => {
+    const colors: Record<Presupuesto['estado'], 'green' | 'yellow' | 'red' | 'blue' | 'gray'> = {
       CLONADO: 'gray',
       ABIERTO: 'gray',
       PRESENTADO: 'blue',
@@ -72,11 +146,11 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
   };
 
   const getStatusLabel = (status: Presupuesto['estado']) => {
-    const labels: Record<string, string> = {
+    const labels = {
       CLONADO: 'Clonado',
       ABIERTO: 'Abierto',
       PRESENTADO: 'Presentado',
-      ACEPTADO: 'Aceptado',
+      ACEPTADO: 'Aprobado',
       EN_EJECUCION: 'En Ejecución',
       FACTURADO: 'Facturado',
       RECHAZADO: 'Rechazado',
@@ -86,33 +160,52 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
     return labels[status] || status;
   };
 
-  const filteredPresupuestos = (presupuestos || []).filter((p) => {
-    const matchesSearch =
-      p.cliente_nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.cliente_documento?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || p.estado === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const formatCurrency = (amount: number, currency: string) => {
+  const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-PY', {
       style: 'currency',
-      currency: currency === 'PYG' ? 'PYG' : 'USD',
+      currency: 'PYG',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
   };
 
+  const formatDateWithTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('es-PY', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  };
+
+  const getDaysElapsed = (dateString: string) => {
+    const created = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - created.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const filteredPresupuestos = presupuestos.filter((p) => {
+    const matchesSearch =
+      p.cliente_nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.cliente_documento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.concepto?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || p.estado === statusFilter;
+    const notClonado = p.estado !== 'CLONADO';
+    return matchesSearch && matchesStatus && notClonado;
+  });
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-6">
-        <div className="animate-pulse space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          ))}
+        <div className="text-center py-12">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto text-gray-400" />
+          <p className="text-gray-600 mt-4">Cargando presupuestos...</p>
         </div>
       </div>
     );
@@ -134,31 +227,35 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
           </Button>
         </div>
 
-        <div className="flex gap-4">
-          <div className="flex-1">
+        <div className="bg-white rounded-lg shadow p-4 space-y-4">
+          <div className="flex gap-4">
             <Input
-              placeholder="Buscar por cliente o documento..."
+              placeholder="Buscar por código, cliente, documento o referencia..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1"
               icon={<Search className="w-4 h-4" />}
             />
-          </div>
-          <div className="w-48">
-            <Select
+            <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
             >
               <option value="all">Todos los estados</option>
-              <option value="CLONADO">Clonado</option>
               <option value="ABIERTO">Abierto</option>
               <option value="PRESENTADO">Presentado</option>
               <option value="ACEPTADO">Aceptado</option>
-              <option value="EN_EJECUCION">En Ejecución</option>
               <option value="FACTURADO">Facturado</option>
-              <option value="RECHAZADO">Rechazado</option>
-              <option value="CANCELADO">Cancelado</option>
-              {isAdmin && <option value="ANULADO">Anulado</option>}
-            </Select>
+              <option value="ANULADO">Anulado</option>
+            </select>
+            <button
+              onClick={loadPresupuestos}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={loading}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Actualizar
+            </button>
           </div>
         </div>
       </div>
@@ -184,73 +281,150 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
           )}
         </div>
       ) : (
-        <div className="space-y-4">
-          {filteredPresupuestos.map((presupuesto) => (
-            <div
-              key={presupuesto.id}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => onSelectPresupuesto(presupuesto.id)}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {presupuesto.cliente_nombre}
-                    </h3>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Número
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Cliente
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Referencia
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Fecha y Hora
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Días Trans.
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Monto
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Estado
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredPresupuestos.map((presupuesto) => (
+                <tr
+                  key={presupuesto.id}
+                  className="hover:bg-gray-50 transition-colors"
+                >
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {presupuesto.codigo}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900">
+                    {presupuesto.cliente_nombre}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-700">
+                    {presupuesto.concepto || '-'}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                    {formatDateWithTime(presupuesto.created_at)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-center text-sm text-gray-700">
+                    <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-medium ${
+                      getDaysElapsed(presupuesto.created_at) > 30
+                        ? 'bg-red-100 text-red-800'
+                        : getDaysElapsed(presupuesto.created_at) > 15
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {getDaysElapsed(presupuesto.created_at)} días
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">
+                    {formatCurrency(presupuesto.total_neto + presupuesto.total_impuestos + presupuesto.total_comisiones)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-center">
                     <Badge color={getStatusColor(presupuesto.estado)}>
                       {getStatusLabel(presupuesto.estado)}
                     </Badge>
-                  </div>
-                  {presupuesto.concepto && (
-                    <p className="text-sm font-medium text-gray-700 mb-1">
-                      {presupuesto.concepto}
-                    </p>
-                  )}
-                  {presupuesto.cliente_documento && (
-                    <p className="text-sm text-gray-600 mb-2">
-                      Documento: {presupuesto.cliente_documento}
-                    </p>
-                  )}
-                  <p className="text-sm text-gray-500">
-                    {presupuesto.observaciones || 'Sin observaciones'}
-                  </p>
-                </div>
-                <div className="flex flex-col items-end gap-3">
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-gray-900">
-                      {formatCurrency(
-                        presupuesto.total_neto + presupuesto.total_impuestos + presupuesto.total_comisiones,
-                        presupuesto.moneda
-                      )}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Neto: {formatCurrency(presupuesto.total_neto, presupuesto.moneda)}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Creado: {new Date(presupuesto.created_at).toLocaleDateString('es-PY')}
-                    </p>
-                  </div>
-                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                    <PresupuestoStatusManager
-                      presupuesto={presupuesto}
-                      onUpdate={loadPresupuestos}
-                      isAdmin={isAdmin}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => handleClone(e, presupuesto.id)}
-                      title="Clonar presupuesto"
-                    >
-                      <Copy className="w-4 h-4 mr-2" />
-                      Clonar
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-center">
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadPresupuesto(presupuesto);
+                        }}
+                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                        title="Descargar PDF"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleClonePresupuesto(presupuesto);
+                        }}
+                        className="text-gray-600 hover:text-gray-800 transition-colors"
+                        title="Clonar presupuesto"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPresupuestoForEstado(presupuesto);
+                          setShowCambiarEstado(true);
+                        }}
+                        className="text-green-600 hover:text-green-800 transition-colors"
+                        title="Cambiar estado"
+                      >
+                        <RotateCw className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPresupuestoForFacturacion(presupuesto);
+                          setShowFacturacion(true);
+                        }}
+                        className="text-purple-600 hover:text-purple-800 transition-colors"
+                        title="Datos de facturación"
+                      >
+                        <Receipt className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      )}
+
+      {showCambiarEstado && selectedPresupuestoForEstado && (
+        <CambiarEstadoModal
+          isOpen={showCambiarEstado}
+          onClose={() => {
+            setShowCambiarEstado(false);
+            setSelectedPresupuestoForEstado(null);
+          }}
+          presupuestoId={selectedPresupuestoForEstado.id}
+          presupuestoCodigo={selectedPresupuestoForEstado.codigo}
+          estadoActual={selectedPresupuestoForEstado.estado}
+          onEstadoCambiado={loadPresupuestos}
+        />
+      )}
+
+      {showFacturacion && selectedPresupuestoForFacturacion && (
+        <FacturacionModal
+          isOpen={showFacturacion}
+          onClose={() => {
+            setShowFacturacion(false);
+            setSelectedPresupuestoForFacturacion(null);
+          }}
+          presupuesto={selectedPresupuestoForFacturacion}
+          onSuccess={loadPresupuestos}
+        />
       )}
     </div>
   );
