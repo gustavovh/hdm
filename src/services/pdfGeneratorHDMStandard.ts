@@ -381,13 +381,27 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuest
 
   doc.setFont('times', 'normal');
   const concepto = (presupuesto.concepto || 'PRESUPUESTO DE SERVICIOS').toUpperCase();
-  const conceptoLines = concepto.split('\n');
 
-  conceptoLines.forEach((line, index) => {
-    doc.text(line, margin + labelWidth, yPosition + (index * 7));
-  });
+  // Calcular el ancho del label para la sangría
+  const refLabelWidth = doc.getTextWidth(refLabel);
+  const firstLineX = margin + refLabelWidth + 2; // 2mm de espacio después del label
+  const maxWidth = (doc.internal.pageSize.getWidth() - margin * 2) - refLabelWidth - 2;
 
-  yPosition += (conceptoLines.length * 7);
+  // Dividir el texto en líneas que quepan en el ancho disponible
+  const conceptoLines = doc.splitTextToSize(concepto, maxWidth);
+
+  // Primera línea va después de los dos puntos
+  doc.text(conceptoLines[0], firstLineX, yPosition);
+
+  // Líneas siguientes alineadas con la primera palabra de la referencia
+  if (conceptoLines.length > 1) {
+    for (let i = 1; i < conceptoLines.length; i++) {
+      yPosition += 5;
+      doc.text(conceptoLines[i], firstLineX, yPosition);
+    }
+  }
+
+  yPosition += 5;
 
   return yPosition;
 }
