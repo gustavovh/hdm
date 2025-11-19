@@ -30,7 +30,7 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   yPosition += 10;
 
-  yPosition = addClientInfo(doc, margin, yPosition, presupuesto);
+  yPosition = addClientInfo(doc, margin, yPosition, pageWidth, presupuesto);
 
   yPosition += 8;
 
@@ -344,66 +344,50 @@ function addPresupuestoNumber(doc: jsPDF, pageWidth: number, margin: number, yPo
   return yPosition;
 }
 
-function addClientInfo(doc: jsPDF, margin: number, yPosition: number, presupuesto: Presupuesto): number {
-  doc.setFont('times', 'bold');
-  doc.setFontSize(13);
-
-  const labelWidth = 60;
-
-  doc.text('Fecha:', margin, yPosition);
-  doc.setFont('times', 'normal');
+function addClientInfo(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): number {
   const fecha = new Date(presupuesto.created_at).toLocaleDateString('es-PY', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
   });
-  doc.text(fecha, margin + labelWidth, yPosition);
-
-  yPosition += 8;
-
-  doc.setFont('times', 'bold');
-  doc.text('Señores:', margin, yPosition);
-  doc.setFont('times', 'normal');
   const clienteNombre = presupuesto.cliente_nombre.toUpperCase();
-  const clienteLines = clienteNombre.split('\n');
-
-  clienteLines.forEach((line, index) => {
-    doc.text(line, margin + labelWidth, yPosition + (index * 7));
-  });
-
-  yPosition += (clienteLines.length * 7);
-
-  yPosition += 2;
-
-  doc.setFont('times', 'bold');
-  const refLabel = 'Referencia de presupuesto:';
-  doc.text(refLabel, margin, yPosition);
-
-  doc.setFont('times', 'normal');
   const concepto = (presupuesto.concepto || 'PRESUPUESTO DE SERVICIOS').toUpperCase();
 
-  // Calcular el ancho del label para la sangría
-  const refLabelWidth = doc.getTextWidth(refLabel);
-  const firstLineX = margin + refLabelWidth + 2; // 2mm de espacio después del label
-  const maxWidth = (doc.internal.pageSize.getWidth() - margin * 2) - refLabelWidth - 2;
+  // Crear tabla de 2 columnas para Fecha/Señores/Referencia
+  autoTable(doc, {
+    startY: yPosition,
+    body: [
+      ['Fecha:', fecha],
+      ['Señores:', clienteNombre],
+      ['Referencia de presupuesto:', concepto]
+    ],
+    theme: 'plain',
+    styles: {
+      font: 'times',
+      fontSize: 13,
+      cellPadding: 1,
+      overflow: 'linebreak',
+      lineWidth: 0,
+    },
+    columnStyles: {
+      0: {
+        cellWidth: 40, // 4cm aprox
+        fontStyle: 'bold',
+        halign: 'left',
+        valign: 'top'
+      },
+      1: {
+        cellWidth: 'auto',
+        fontStyle: 'normal',
+        halign: 'left',
+        valign: 'top'
+      }
+    },
+    margin: { left: margin, right: margin },
+  });
 
-  // Dividir el texto en líneas que quepan en el ancho disponible
-  const conceptoLines = doc.splitTextToSize(concepto, maxWidth);
-
-  // Primera línea va después de los dos puntos
-  doc.text(conceptoLines[0], firstLineX, yPosition);
-
-  // Líneas siguientes alineadas con la primera palabra de la referencia
-  if (conceptoLines.length > 1) {
-    for (let i = 1; i < conceptoLines.length; i++) {
-      yPosition += 5;
-      doc.text(conceptoLines[i], firstLineX, yPosition);
-    }
-  }
-
-  yPosition += 5;
-
-  return yPosition;
+  const finalY = (doc as any).lastAutoTable.finalY;
+  return finalY + 5;
 }
 
 function addIntroText(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): number {
@@ -423,6 +407,7 @@ function addTrabajosTitle(doc: jsPDF, margin: number, yPosition: number): number
 }
 
 async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): Promise<number> {
+  // Preparar datos de la tabla
   const tableData = presupuesto.items?.map((item, index) => [
     (index + 1).toString(),
     item.item_grupo || (index + 1).toString(),
@@ -432,6 +417,18 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     formatCurrency(item.precio_unitario),
     formatCurrency(item.subtotal)
   ]) || [];
+
+  // Agregar fila de totales al final de los datos
+  const totalBruto = presupuesto.total_neto;
+  tableData.push([
+    '',
+    '',
+    '',
+    '',
+    '',
+    'TOTAL Gs.:',
+    formatCurrency(totalBruto)
+  ]);
 
   autoTable(doc, {
     startY: yPosition,
@@ -488,42 +485,15 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
         const headerEndY = await addHeader(doc, margin, margin, pageWidth);
         addPresupuestoNumber(doc, pageWidth, margin, headerEndY + 5, presupuesto);
       }
-      // NO agregar footer aquí, se agregará al final para todas las páginas
     },
-  });
-
-  const finalY = (doc as any).lastAutoTable.finalY;
-
-  const totalBruto = presupuesto.total_neto;
-
-  autoTable(doc, {
-    startY: finalY,
-    body: [[
-      '',
-      '',
-      '',
-      '',
-      '',
-      'TOTAL Gs.:',
-      formatCurrency(totalBruto)
-    ]],
-    theme: 'plain',
-    styles: {
-      font: 'times',
-      fontSize: 11,
-      fontStyle: 'bold',
-      cellPadding: 2,
-    },
-    columnStyles: {
-      0: { cellWidth: 10 },
-      1: { cellWidth: 15 },
-      2: { cellWidth: 70 },
-      3: { cellWidth: 15 },
-      4: { cellWidth: 18 },
-      5: { halign: 'right', cellWidth: 25 },
-      6: { halign: 'right', cellWidth: 27 },
-    },
-    margin: { left: margin, right: margin },
+    // Aplicar estilo especial a la última fila (totales)
+    didParseCell: (data) => {
+      if (data.section === 'body' && data.row.index === tableData.length - 1) {
+        data.cell.styles.fontStyle = 'bold';
+        data.cell.styles.fontSize = 11;
+        data.cell.styles.fillColor = [240, 240, 240];
+      }
+    }
   });
 
   return (doc as any).lastAutoTable.finalY;
