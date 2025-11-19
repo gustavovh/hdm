@@ -247,7 +247,12 @@ function AuthenticatedApp() {
               }}
             />
           ) : (
-            <VendedorDashboard />
+            <VendedorDashboard
+              onSelectPresupuesto={(id) => {
+                setSelectedPresupuestoId(id);
+                setCurrentView('presupuesto');
+              }}
+            />
           )
         )}
         {currentView === 'reports' && <ReportsDashboard />}

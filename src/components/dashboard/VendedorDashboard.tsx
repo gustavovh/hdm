@@ -45,7 +45,11 @@ interface DashboardStats {
   montoPromedio: number;
 }
 
-export function VendedorDashboard() {
+interface VendedorDashboardProps {
+  onSelectPresupuesto?: (id: string) => void;
+}
+
+export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProps = {}) {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     total: 0,
@@ -649,7 +653,8 @@ export function VendedorDashboard() {
                   {filteredPresupuestos.map((presupuesto) => (
                     <tr
                       key={presupuesto.id}
-                      className="hover:bg-gray-50 transition-colors"
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => onSelectPresupuesto && onSelectPresupuesto(presupuesto.id)}
                     >
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                         {presupuesto.codigo}
@@ -685,21 +690,28 @@ export function VendedorDashboard() {
                       <td className="px-4 py-3 whitespace-nowrap text-center">
                         <div className="flex justify-center gap-2">
                           <button
-                            onClick={() => handleDownloadPresupuesto(presupuesto)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadPresupuesto(presupuesto);
+                            }}
                             className="text-blue-600 hover:text-blue-800 transition-colors"
                             title="Descargar PDF"
                           >
                             <Download className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleClonePresupuesto(presupuesto)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleClonePresupuesto(presupuesto);
+                            }}
                             className="text-gray-600 hover:text-gray-800 transition-colors"
                             title="Clonar presupuesto"
                           >
                             <Copy className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setSelectedPresupuestoForEstado(presupuesto);
                               setShowCambiarEstado(true);
                             }}
@@ -709,7 +721,8 @@ export function VendedorDashboard() {
                             <RotateCw className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setSelectedPresupuestoForFacturacion(presupuesto);
                               setShowFacturacion(true);
                             }}

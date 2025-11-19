@@ -315,7 +315,8 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
               {filteredPresupuestos.map((presupuesto) => (
                 <tr
                   key={presupuesto.id}
-                  className="hover:bg-gray-50 transition-colors"
+                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => onSelectPresupuesto(presupuesto.id)}
                 >
                   <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                     {presupuesto.codigo}
