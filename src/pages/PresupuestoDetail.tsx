@@ -51,6 +51,9 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
     setLoading(true);
     try {
       const data = await PresupuestoService.getById(presupuestoId);
+      console.log('📊 Presupuesto cargado:', data);
+      console.log('📦 Items del presupuesto:', data?.items);
+      console.log('🔢 Cantidad de items:', data?.items?.length || 0);
       setPresupuesto(data);
     } catch (error) {
       console.error('Error loading presupuesto:', error);
@@ -409,42 +412,50 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {presupuesto.items?.map((item) => (
-                        <tr key={item.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {item.descripcion}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-center text-gray-700">
-                            {item.cantidad}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-right text-gray-700">
-                            {BudgetCalculator.formatCurrency(
-                              item.precio_unitario,
-                              presupuesto.moneda
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-right text-gray-700">
-                            {BudgetCalculator.formatCurrency(
-                              item.subtotal,
-                              presupuesto.moneda
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-right text-red-600">
-                            {item.descuento_aplicado > 0
-                              ? `- ${BudgetCalculator.formatCurrency(
-                                  item.descuento_aplicado,
-                                  presupuesto.moneda
-                                )}`
-                              : '-'}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
-                            {BudgetCalculator.formatCurrency(
-                              item.subtotal - item.descuento_aplicado,
-                              presupuesto.moneda
-                            )}
+                      {!presupuesto.items || presupuesto.items.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                            No hay ítems en este presupuesto
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        presupuesto.items.map((item) => (
+                          <tr key={item.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {item.descripcion}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center text-gray-700">
+                              {item.cantidad}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-right text-gray-700">
+                              {BudgetCalculator.formatCurrency(
+                                item.precio_unitario,
+                                presupuesto.moneda
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-right text-gray-700">
+                              {BudgetCalculator.formatCurrency(
+                                item.subtotal,
+                                presupuesto.moneda
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-right text-red-600">
+                              {item.descuento_aplicado > 0
+                                ? `- ${BudgetCalculator.formatCurrency(
+                                    item.descuento_aplicado,
+                                    presupuesto.moneda
+                                  )}`
+                                : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                              {BudgetCalculator.formatCurrency(
+                                item.subtotal - item.descuento_aplicado,
+                                presupuesto.moneda
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
