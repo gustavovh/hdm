@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificador de Caché - HDM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .check-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ddd;
+        }
+
+        .check-item.success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .check-item.error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .check-item.warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .check-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .check-detail {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .icon {
+            font-size: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #results {
+            margin-top: 30px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+
+        .summary {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .summary h3 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Verificador de Configuración de Caché</h1>
+        <p class="subtitle">Esta herramienta verifica que tu servidor esté configurado correctamente para evitar problemas de caché.</p>
+
+        <button onclick="runChecks()">🚀 Ejecutar Verificación</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function runChecks() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">⏳ Ejecutando verificaciones...</div>';
+
+            const checks = [];
+
+            // Check 1: HTML Cache Headers
+            try {
+                const response = await fetch('/', { cache: 'no-store' });
+                const cacheControl = response.headers.get('cache-control');
+                const pragma = response.headers.get('pragma');
+                const expires = response.headers.get('expires');
+
+                if (cacheControl && cacheControl.includes('no-cache')) {
+                    checks.push({
+                        type: 'success',
+                        title: '✅ Headers de HTML correctos',
+                        detail: `Cache-Control: ${cacheControl}`
+                    });
+                } else {
+                    checks.push({
+                        type: 'error',
+                        title: '❌ Headers de HTML incorrectos',
+                        detail: `Cache-Control: ${cacheControl || 'No configurado'}. Debe ser: no-cache, no-store, must-revalidate`
+                    });
+                }
+            } catch (error) {
+                checks.push({
+                    type: 'error',
+                    title: '❌ Error al verificar headers',
+                    detail: error.message
+                });
+            }
+
+            // Check 2: version.json exists and is not cached
+            try {
+                const response = await fetch('/version.json', { cache: 'no-store' });
+                if (response.ok) {
+                    const data = await response.json();
+                    checks.push({
+                        type: 'success',
+                        title: '✅ version.json existe',
+                        detail: `Versión actual: ${data.version} (Build: ${new Date(data.buildTime).toLocaleString()})`
+                    });
+
+                    const cacheControl = response.headers.get('cache-control');
+                    if (cacheControl && cacheControl.includes('no-cache')) {
+                        checks.push({
+                            type: 'success',
+                            title: '✅ version.json no se cachea',
+                            detail: `Cache-Control: ${cacheControl}`
+                        });
+                    } else {
+                        checks.push({
+                            type: 'warning',
+                            title: '⚠️ version.json podría cachearse',
+                            detail: `Cache-Control: ${cacheControl || 'No configurado'}`
+                        });
+                    }
+                } else {
+                    checks.push({
+                        type: 'error',
+                        title: '❌ version.json no encontrado',
+                        detail: 'El archivo version.json no existe o no es accesible'
+                    });
+                }
+            } catch (error) {
+                checks.push({
+                    type: 'error',
+                    title: '❌ Error al verificar version.json',
+                    detail: error.message
+                });
+            }
+
+            // Check 3: Assets with hash
+            try {
+                const scripts = document.querySelectorAll('script[src*="/assets/"]');
+                if (scripts.length > 0) {
+                    const src = scripts[0].src;
+                    const hasHash = /assets\/[^\/]+-[a-zA-Z0-9]{8,}\.js/.test(src);
+                    if (hasHash) {
+                        checks.push({
+                            type: 'success',
+                            title: '✅ Assets tienen hash en el nombre',
+                            detail: 'Los archivos JS/CSS incluyen hash para prevenir caché'
+                        });
+                    } else {
+                        checks.push({
+                            type: 'warning',
+                            title: '⚠️ Assets sin hash detectado',
+                            detail: 'Los archivos podrían no tener hash en el nombre'
+                        });
+                    }
+                }
+            } catch (error) {
+                checks.push({
+                    type: 'warning',
+                    title: '⚠️ No se pudo verificar assets',
+                    detail: error.message
+                });
+            }
+
+            // Check 4: Version checker is running
+            if (window.versionChecker) {
+                checks.push({
+                    type: 'success',
+                    title: '✅ Sistema de detección de versión activo',
+                    detail: 'El sistema verificará automáticamente nuevas versiones cada 5 minutos'
+                });
+            } else {
+                checks.push({
+                    type: 'warning',
+                    title: '⚠️ Sistema de detección no encontrado',
+                    detail: 'El version checker podría no estar inicializado aún'
+                });
+            }
+
+            // Check 5: App version
+            if (window.APP_VERSION) {
+                checks.push({
+                    type: 'success',
+                    title: '✅ Versión de la aplicación detectada',
+                    detail: `Versión: ${window.APP_VERSION}`
+                });
+            } else {
+                checks.push({
+                    type: 'error',
+                    title: '❌ Versión no detectada',
+                    detail: 'La variable window.APP_VERSION no está definida'
+                });
+            }
+
+            // Generate summary
+            const successCount = checks.filter(c => c.type === 'success').length;
+            const errorCount = checks.filter(c => c.type === 'error').length;
+            const warningCount = checks.filter(c => c.type === 'warning').length;
+
+            let summaryHTML = '<div class="summary">';
+            summaryHTML += '<h3>📊 Resumen</h3>';
+            summaryHTML += `<p>✅ Exitosas: ${successCount} | `;
+            summaryHTML += `⚠️ Advertencias: ${warningCount} | `;
+            summaryHTML += `❌ Errores: ${errorCount}</p>`;
+
+            if (errorCount === 0 && warningCount === 0) {
+                summaryHTML += '<p style="margin-top: 10px; color: #28a745; font-weight: 600;">¡Todo está configurado correctamente! 🎉</p>';
+            } else if (errorCount > 0) {
+                summaryHTML += '<p style="margin-top: 10px; color: #dc3545; font-weight: 600;">Se encontraron errores que deben corregirse.</p>';
+            } else {
+                summaryHTML += '<p style="margin-top: 10px; color: #ffc107; font-weight: 600;">Hay algunas advertencias pero el sistema debería funcionar.</p>';
+            }
+            summaryHTML += '</div>';
+
+            // Generate checks HTML
+            let checksHTML = '';
+            checks.forEach(check => {
+                checksHTML += `
+                    <div class="check-item ${check.type}">
+                        <div class="check-title">${check.title}</div>
+                        <div class="check-detail">${check.detail}</div>
+                    </div>
+                `;
+            });
+
+            resultsDiv.innerHTML = summaryHTML + checksHTML;
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            setTimeout(runChecks, 500);
+        });
+    </script>
+</body>
+</html>
