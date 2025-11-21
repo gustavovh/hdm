@@ -22,7 +22,6 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   yPosition = await addHeader(doc, margin, yPosition, pageWidth);
 
   // Eliminado el +5 extra para "subir" el cuerpo del documento
-  const presupuestoNumberY = yPosition;
   yPosition = addPresupuestoNumber(doc, pageWidth, margin, yPosition, presupuesto);
 
   // Reducimos espacios para aprovechar la página
