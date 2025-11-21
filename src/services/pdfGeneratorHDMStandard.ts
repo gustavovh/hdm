@@ -649,11 +649,7 @@ function addSignatureDetails(doc: jsPDF, x: number, y: number, width: number, ve
     return;
   }
 
-  // Línea superior
-  doc.setLineWidth(0.5);
-  doc.setDrawColor(0, 0, 0);
-  doc.line(x, y, x + width, y);
-
+  // Removed line above signature details as per user request
   let textY = y + 5;
 
   doc.setFont('times', 'bold');
