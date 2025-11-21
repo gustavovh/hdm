@@ -113,8 +113,15 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
 function addFooter(doc: jsPDF, pageWidth: number, pageHeight: number, pageNumber: number, totalPages: number) {
   const margin = 20;
   const footerY = pageHeight - 10; // 10mm from bottom
+  const lineY = footerY - 3; // Line 3mm above footer text
   
   doc.saveGraphicsState();
+  
+  // Draw horizontal line above footer
+  doc.setLineWidth(0.5);
+  doc.setDrawColor(0, 0, 0);
+  doc.line(margin, lineY, pageWidth - margin, lineY);
+  
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(0, 0, 0);
