@@ -6,6 +6,44 @@ import { supabase } from '../lib/supabase';
 const LOGO_WIDTH_MM = 50;
 const LOGO_HEIGHT_MM = 13;
 
+/**
+ * Carga una imagen como base64 incluyendo sus dimensiones en píxeles
+ */
+async function loadImageAsBase64WithSize(url: string): Promise<{ dataUrl: string; width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    console.debug('[HDMStandardPDF] Loading image with size:', url);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.error('[HDMStandardPDF] Failed to get canvas context for:', url);
+        return reject(new Error('Failed to get canvas context'));
+      }
+      ctx.drawImage(img, 0, 0);
+      console.debug('[HDMStandardPDF] Image loaded successfully. Dimensions:', img.width, 'x', img.height, 'px');
+      resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.width, height: img.height });
+    };
+    img.onerror = () => {
+      console.error('[HDMStandardPDF] Failed to load image:', url);
+      reject(new Error('Failed to load image'));
+    };
+    img.src = url;
+  });
+}
+
+/**
+ * Calcula la altura en mm a partir de un ancho objetivo en mm,
+ * preservando el aspect ratio de la imagen.
+ */
+function calcHeightMmFromWidthMm(widthPx: number, heightPx: number, targetWidthMm: number): number {
+  const aspectRatio = heightPx / widthPx;
+  return targetWidthMm * aspectRatio;
+}
+
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -235,36 +273,17 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   const SEPARATOR_GAP = 6;        // espacio antes de la línea separadora
 
   // ---- LOGO (izquierda, mantener aspecto) ----
-  const MAX_W = 85;          // límite de ancho
-  const TARGET_H = 28;       // altura deseada (más alto)
+  const MAX_W = 85;          // límite de ancho en mm
+  const TARGET_H = 28;       // altura deseada en mm
   const LIFT_UP = 4;         // mover un poco hacia arriba
 
   let logoY = yTop - LIFT_UP;
   let scaledW = 60;
   let scaledH = 20;
   try {
-    const response = await fetch('/hdm-logo.png');
-    const blob = await response.blob();
-    const reader = new FileReader();
-
-    await new Promise((resolve, reject) => {
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-
-    const logoData = reader.result as string;
-
-    // cargar dimensiones reales desde el DataURL para respetar el aspecto
-    const tmpImg: HTMLImageElement = await new Promise((resolve, reject) => {
-      const i = new Image();
-      i.onload = () => resolve(i);
-      i.onerror = () => reject(new Error('No se pudo leer dimensiones del logo'));
-      i.src = logoData;
-    });
-
-    const natW = tmpImg.width || 1;
-    const natH = tmpImg.height || 1;
+    const logo = await loadImageAsBase64WithSize('/hdm-logo.png');
+    const natW = logo.width;
+    const natH = logo.height;
     const aspect = natW / natH;
 
     // escalar por altura objetivo y luego limitar por ancho máximo (sin deformar)
@@ -272,12 +291,13 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     scaledW = TARGET_H * aspect;
     if (scaledW > MAX_W) {
       scaledW = MAX_W;
-      scaledH = MAX_W / aspect;
+      scaledH = calcHeightMmFromWidthMm(natW, natH, MAX_W);
     }
 
-    doc.addImage(logoData, 'PNG', leftMargin, logoY, scaledW, scaledH);
+    console.debug('[HDMStandardPDF] Logo dimensions - Width:', scaledW, 'mm, Height:', scaledH, 'mm');
+    doc.addImage(logo.dataUrl, 'PNG', leftMargin, logoY, scaledW, scaledH);
   } catch (error) {
-    console.warn('Logo no disponible', error);
+    console.error('[HDMStandardPDF] Logo error:', error);
   }
 
   // ---- BLOQUE CONTACTO (derecha, totalmente alineado a la derecha) ----
@@ -562,32 +582,32 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
 
       // Obtener propiedades de la imagen desde jsPDF
       const imgProps = doc.getImageProperties(signatureUrl);
-      console.log('Propiedades de imagen:', imgProps);
+      console.debug('[HDMStandardPDF] Signature image properties:', imgProps);
 
       const imgRatio = imgProps.width / imgProps.height;
 
-      // Calcular dimensiones manteniendo aspect ratio
-      let signatureWidth = maxWidth;
-      let signatureHeight = maxWidth / imgRatio;
+      // Calcular dimensiones manteniendo aspect ratio en mm
+      let signatureWidthMm = maxWidth;
+      let signatureHeightMm = calcHeightMmFromWidthMm(imgProps.width, imgProps.height, maxWidth);
 
       // Si la altura calculada excede el máximo, ajustar por altura
-      if (signatureHeight > maxHeight) {
-        signatureHeight = maxHeight;
-        signatureWidth = maxHeight * imgRatio;
+      if (signatureHeightMm > maxHeight) {
+        signatureHeightMm = maxHeight;
+        signatureWidthMm = maxHeight * imgRatio;
       }
 
-      console.log(`Agregando imagen: ${signatureWidth}x${signatureHeight} en (${signatureX}, ${signatureY})`);
+      console.debug(`[HDMStandardPDF] Signature dimensions - Width: ${signatureWidthMm}mm, Height: ${signatureHeightMm}mm at (${signatureX}, ${signatureY})`);
 
       // Agregar imagen con proporciones correctas y tipo detectado
-      doc.addImage(signatureUrl, imageType, signatureX, signatureY, signatureWidth, signatureHeight);
+      doc.addImage(signatureUrl, imageType, signatureX, signatureY, signatureWidthMm, signatureHeightMm);
 
       // Línea debajo de la firma
       doc.setLineWidth(0.5);
       doc.setDrawColor(0, 0, 0);
-      doc.line(signatureX, signatureY + signatureHeight + 2, signatureX + signatureWidth, signatureY + signatureHeight + 2);
+      doc.line(signatureX, signatureY + signatureHeightMm + 2, signatureX + signatureWidthMm, signatureY + signatureHeightMm + 2);
 
       // Agregar detalles de la firma debajo
-      let textY = signatureY + signatureHeight + 7;
+      let textY = signatureY + signatureHeightMm + 7;
 
       doc.setFont('times', 'bold');
       doc.setFontSize(10);
@@ -597,24 +617,24 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
       if (!isAdministrativo) {
         // Nombre del vendedor (solo si existe)
         if (vendedorName) {
-          doc.text(vendedorName.toUpperCase(), signatureX + (signatureWidth / 2), textY, { align: 'center' });
+          doc.text(vendedorName.toUpperCase(), signatureX + (signatureWidthMm / 2), textY, { align: 'center' });
           textY += 5;
         }
 
         // Departamento
         doc.setFont('times', 'normal');
         doc.setFontSize(9);
-        doc.text('DEPARTAMENTO COMERCIAL', signatureX + (signatureWidth / 2), textY, { align: 'center' });
+        doc.text('DEPARTAMENTO COMERCIAL', signatureX + (signatureWidthMm / 2), textY, { align: 'center' });
         textY += 5;
 
         // Empresa
-        doc.text('HDM INGENIERIA S.A.', signatureX + (signatureWidth / 2), textY, { align: 'center' });
+        doc.text('HDM INGENIERIA S.A.', signatureX + (signatureWidthMm / 2), textY, { align: 'center' });
       }
 
-      console.log('Firma agregada exitosamente');
+      console.debug('[HDMStandardPDF] Signature added successfully');
     } catch (error) {
-      console.error('Error añadiendo firma:', error);
-      console.error('URL de firma (primeros 100 chars):', signatureUrl?.substring(0, 100));
+      console.error('[HDMStandardPDF] Error adding signature:', error);
+      console.error('[HDMStandardPDF] Signature URL (first 100 chars):', signatureUrl?.substring(0, 100));
       // Si hay error con la imagen, al menos mostrar los detalles
       addSignatureDetails(doc, signatureX, signatureY, maxWidth, vendedorName, isAdministrativo);
     }
@@ -734,29 +754,32 @@ async function addAnexoPages(doc: jsPDF, presupuestoId: string, pageWidth: numbe
     yPosition += 15;
 
     try {
-      // Calcular dimensiones de la imagen manteniendo aspect ratio
+      // Calcular dimensiones de la imagen manteniendo aspect ratio en mm
       const imgProps = doc.getImageProperties(images[i]);
-      const imgRatio = imgProps.width / imgProps.height;
+      console.debug('[HDMStandardPDF] Anexo image', i, 'properties:', imgProps);
 
       // Área disponible para la imagen (reservar espacio para pie de página)
-      const maxWidth = pageWidth - (margin * 2);
-      const maxHeight = pageHeight - yPosition - margin - 20; // 20mm para el pie de página
+      const maxWidthMm = pageWidth - (margin * 2);
+      const maxHeightMm = pageHeight - yPosition - margin - 20; // 20mm para el pie de página
 
-      let imgWidth = maxWidth;
-      let imgHeight = maxWidth / imgRatio;
+      let imgWidthMm = maxWidthMm;
+      let imgHeightMm = calcHeightMmFromWidthMm(imgProps.width, imgProps.height, maxWidthMm);
 
       // Si la altura calculada excede el máximo, ajustar por altura
-      if (imgHeight > maxHeight) {
-        imgHeight = maxHeight;
-        imgWidth = maxHeight * imgRatio;
+      if (imgHeightMm > maxHeightMm) {
+        imgHeightMm = maxHeightMm;
+        const imgRatio = imgProps.width / imgProps.height;
+        imgWidthMm = maxHeightMm * imgRatio;
       }
 
-      const imgX = (pageWidth - imgWidth) / 2;
+      console.debug('[HDMStandardPDF] Anexo image', i, 'dimensions - Width:', imgWidthMm, 'mm, Height:', imgHeightMm, 'mm');
+
+      const imgX = (pageWidth - imgWidthMm) / 2;
 
       // Agregar imagen centrada
-      doc.addImage(images[i], 'JPEG', imgX, yPosition, imgWidth, imgHeight);
+      doc.addImage(images[i], 'JPEG', imgX, yPosition, imgWidthMm, imgHeightMm);
     } catch (error) {
-      console.warn('Error adding image to PDF:', error);
+      console.error('[HDMStandardPDF] Error adding anexo image to PDF:', error);
       doc.setFont('times', 'normal');
       doc.setFontSize(10);
       doc.text('Error al cargar la imagen', pageWidth / 2, yPosition, { align: 'center' });
