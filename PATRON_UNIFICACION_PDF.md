@@ -6,9 +6,9 @@ Garantizar que la vista previa y la descarga de PDFs generen exactamente el mism
 
 ## Archivos ya actualizados (este PR)
 
-- ✅ `src/services/pdfGenerator.ts`
-- ✅ `src/services/pdfGeneratorHDM.ts`
-- ✅ `src/services/pdfGeneratorHDMStandard.ts`
+- ✅ `src/services/pdfGenerator.ts` - Agregado calcHeightMmFromWidthMm y descarga via blob
+- ✅ `src/services/pdfGeneratorHDM.ts` - Agregado calcHeightMmFromWidthMm y descarga via blob
+- ✅ `src/services/pdfGeneratorHDMStandard.ts` - Ya devuelve Blob y usa aspect ratio correcto inline
 
 ## Archivos pendientes (PRs futuros)
 

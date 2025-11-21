@@ -6,34 +6,6 @@ import { supabase } from '../lib/supabase';
 const LOGO_WIDTH_MM = 50;
 const LOGO_HEIGHT_MM = 13;
 
-// Helper functions for image handling with proper aspect ratio
-async function loadImageAsBase64WithSize(url: string): Promise<{ dataUrl: string; width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return reject(new Error('Failed to get canvas context'));
-      ctx.drawImage(img, 0, 0);
-      console.debug(`[HDMStandardPDF] Image loaded: ${url}, dimensions: ${img.width}x${img.height}px`);
-      resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.width, height: img.height });
-    };
-    img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = url;
-  });
-}
-
-function calcHeightMmFromWidthMm(imgWidthPx: number, imgHeightPx: number, targetWidthMm: number): number {
-  const aspectRatio = imgHeightPx / imgWidthPx;
-  const calculatedHeightMm = targetWidthMm * aspectRatio;
-  console.debug(`[HDMStandardPDF] Calc dimensions: ${imgWidthPx}x${imgHeightPx}px -> ${targetWidthMm}x${calculatedHeightMm.toFixed(2)}mm`);
-  return calculatedHeightMm;
-}
-
-
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
   const doc = new jsPDF({
     orientation: 'portrait',
