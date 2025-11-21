@@ -6,6 +6,55 @@ import { supabase } from '../lib/supabase';
 const LOGO_WIDTH_MM = 50;
 const LOGO_HEIGHT_MM = 13;
 
+/**
+ * Carga una imagen y devuelve su dataUrl con dimensiones en píxeles
+ */
+async function loadImageAsBase64WithSize(url: string): Promise<{ dataUrl: string; width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    console.debug(`[HDMStandard] Loading image: ${url}`);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          console.error('[HDMStandard] Failed to get canvas context');
+          return reject(new Error('Failed to get canvas context'));
+        }
+        ctx.drawImage(img, 0, 0);
+        const dataUrl = canvas.toDataURL('image/png');
+        console.debug(`[HDMStandard] Image loaded successfully: ${img.width}x${img.height}px`);
+        resolve({ dataUrl, width: img.width, height: img.height });
+      } catch (error) {
+        console.error('[HDMStandard] Error processing image:', error);
+        reject(error);
+      }
+    };
+    img.onerror = (error) => {
+      console.error('[HDMStandard] Failed to load image:', url, error);
+      reject(new Error(`Failed to load image: ${url}`));
+    };
+    img.src = url;
+  });
+}
+
+/**
+ * Calcula la altura en mm a partir de un ancho objetivo en mm, preservando el aspect ratio
+ */
+function calcHeightMmFromWidthMm(
+  widthPx: number,
+  heightPx: number,
+  targetWidthMm: number
+): number {
+  const aspectRatio = heightPx / widthPx;
+  const heightMm = targetWidthMm * aspectRatio;
+  console.debug(`[HDMStandard] Calculated dimensions: ${targetWidthMm}mm x ${heightMm.toFixed(2)}mm (aspect ratio: ${aspectRatio.toFixed(3)})`);
+  return heightMm;
+}
+
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -243,41 +292,19 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   let scaledW = 60;
   let scaledH = 20;
   try {
-    const response = await fetch('/hdm-logo.png');
-    const blob = await response.blob();
-    const reader = new FileReader();
-
-    await new Promise((resolve, reject) => {
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-
-    const logoData = reader.result as string;
-
-    // cargar dimensiones reales desde el DataURL para respetar el aspecto
-    const tmpImg: HTMLImageElement = await new Promise((resolve, reject) => {
-      const i = new Image();
-      i.onload = () => resolve(i);
-      i.onerror = () => reject(new Error('No se pudo leer dimensiones del logo'));
-      i.src = logoData;
-    });
-
-    const natW = tmpImg.width || 1;
-    const natH = tmpImg.height || 1;
-    const aspect = natW / natH;
-
+    const logo = await loadImageAsBase64WithSize('/hdm-logo.png');
+    
     // escalar por altura objetivo y luego limitar por ancho máximo (sin deformar)
     scaledH = TARGET_H;
-    scaledW = TARGET_H * aspect;
+    scaledW = calcHeightMmFromWidthMm(logo.height, logo.width, TARGET_H); // invertido para calcular ancho desde altura
     if (scaledW > MAX_W) {
       scaledW = MAX_W;
-      scaledH = MAX_W / aspect;
+      scaledH = calcHeightMmFromWidthMm(logo.width, logo.height, MAX_W);
     }
 
-    doc.addImage(logoData, 'PNG', leftMargin, logoY, scaledW, scaledH);
+    doc.addImage(logo.dataUrl, 'PNG', leftMargin, logoY, scaledW, scaledH);
   } catch (error) {
-    console.warn('Logo no disponible', error);
+    console.warn('[HDMStandard] Logo no disponible', error);
   }
 
   // ---- BLOQUE CONTACTO (derecha, totalmente alineado a la derecha) ----
