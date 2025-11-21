@@ -333,7 +333,7 @@ function formatPresupuestoCode(codigo: string): string {
 
 function addPresupuestoNumber(doc: jsPDF, pageWidth: number, margin: number, yPosition: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(14);
+  doc.setFontSize(12);  // Slightly larger than body text
 
   const rightMargin = pageWidth - margin;
   const formattedCode = formatPresupuestoCode(presupuesto.codigo);
@@ -364,7 +364,7 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, pageWidth:
     theme: 'plain',
     styles: {
       font: 'times',
-      fontSize: 13,
+      fontSize: 11,  // Body text size ~11pt
       cellPadding: 1,
       overflow: 'linebreak',
       lineWidth: 0,
@@ -392,16 +392,16 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, pageWidth:
 
 function addIntroText(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): number {
   doc.setFont('times', 'normal');
-  doc.setFontSize(13);
+  doc.setFontSize(11);  // Body text size ~11pt
   const introText = 'Tengo el agrado de dirigirme a Ud. a fin de presentar la oferta económica por el trabajo de referencia a ser realizado.';
   const lines = doc.splitTextToSize(introText, pageWidth - (margin * 2));
   doc.text(lines, margin, yPosition);
-  return yPosition + (lines.length * 7);
+  return yPosition + (lines.length * 6);  // Adjusted line height
 }
 
 function addTrabajosTitle(doc: jsPDF, margin: number, yPosition: number): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(13);
+  doc.setFontSize(12);  // Title size, slightly larger
   doc.text('Trabajos a ser Realizados:', margin, yPosition);
   return yPosition;
 }
@@ -434,18 +434,18 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     startY: yPosition,
     head: [[
       '#',
-      'Item',
-      'Descripción',
-      'Cant.',
-      'Unidad',
-      'P.Unit.',
-      'Sub Total'
+      'ITEM',
+      'DESCRIPCION',
+      'CANT.',
+      'UNIDAD',
+      'P.UNIT.',
+      'SUB TOTAL'
     ]],
     body: tableData,
     theme: 'grid',
     styles: {
       font: 'times',
-      fontSize: 9,
+      fontSize: 10,  // Adjusted for better readability
       cellPadding: 2,
       lineWidth: 0.1,
       lineColor: [0, 0, 0],
@@ -456,7 +456,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
       fillColor: [255, 255, 255],
       textColor: [0, 0, 0],
       fontStyle: 'bold',
-      fontSize: 9,
+      fontSize: 10,  // Consistent with body
       halign: 'center',
       valign: 'middle',
       minCellHeight: 8,
@@ -464,7 +464,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     bodyStyles: {
       textColor: [0, 0, 0],
       minCellHeight: 8,
-      fontSize: 9,
+      fontSize: 10,  // Consistent size
     },
     columnStyles: {
       0: { halign: 'center', cellWidth: 10 },
@@ -501,13 +501,14 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
 
 function addFormaPago(doc: jsPDF, margin: number, yPosition: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(13);
+  doc.setFontSize(12);  // Title size
 
   const labelText = 'Forma de pago:';
   doc.text(labelText, margin, yPosition);
 
   const formaPago = presupuesto.observaciones?.match(/forma de pago:?\s*([^\n]+)/i)?.[1] || '30 DIAS';
   doc.setFont('times', 'normal');
+  doc.setFontSize(11);  // Body text
   doc.text(formaPago.toUpperCase(), margin + 45, yPosition);
 
   return yPosition;
@@ -515,12 +516,12 @@ function addFormaPago(doc: jsPDF, margin: number, yPosition: number, presupuesto
 
 function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(13);
+  doc.setFontSize(12);  // Title size
   doc.text('Observación(es):', margin, yPosition);
   yPosition += 7;
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(12);
+  doc.setFontSize(11);  // Body text size
 
   const observaciones = presupuesto.observaciones ||
     'PRUEBAS DE DESCRIPCION';
@@ -530,6 +531,7 @@ function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWid
   yPosition += (obsLines.length * 6) + 5;
 
   doc.setFont('times', 'normal');
+  doc.setFontSize(11);
   doc.text('* Los precios incluyen IVA.', margin, yPosition);
   yPosition += 6;
 
