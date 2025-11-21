@@ -27,6 +27,7 @@ export class HDMPDFGenerator {
 
   private static async loadImageAsBase64WithSize(url: string): Promise<{ dataUrl: string; width: number; height: number }> {
     return new Promise((resolve, reject) => {
+      console.debug('[HDMPDFGenerator] Loading image with size:', url);
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
@@ -34,31 +35,33 @@ export class HDMPDFGenerator {
         canvas.width = img.width;
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('Failed to get canvas context'));
+        if (!ctx) {
+          console.error('[HDMPDFGenerator] Failed to get canvas context for:', url);
+          return reject(new Error('Failed to get canvas context'));
+        }
         ctx.drawImage(img, 0, 0);
+        console.debug('[HDMPDFGenerator] Image loaded successfully. Dimensions:', img.width, 'x', img.height, 'px');
         resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.width, height: img.height });
       };
-      img.onerror = () => reject(new Error('Failed to load image'));
+      img.onerror = () => {
+        console.error('[HDMPDFGenerator] Failed to load image:', url);
+        reject(new Error('Failed to load image'));
+      };
       img.src = url;
     });
   }
 
-  private static async loadImageAsBase64WithSize(url: string): Promise<{ dataUrl: string; width: number; height: number }> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('Failed to get canvas context'));
-        ctx.drawImage(img, 0, 0);
-        resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.width, height: img.height });
-      };
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = url;
-    });
+  /**
+   * Calcula la altura en mm a partir de un ancho objetivo en mm,
+   * preservando el aspect ratio de la imagen.
+   * @param widthPx - Ancho de la imagen en píxeles
+   * @param heightPx - Alto de la imagen en píxeles
+   * @param targetWidthMm - Ancho objetivo en mm
+   * @returns Altura calculada en mm
+   */
+  private static calcHeightMmFromWidthMm(widthPx: number, heightPx: number, targetWidthMm: number): number {
+    const aspectRatio = heightPx / widthPx;
+    return targetWidthMm * aspectRatio;
   }
 
   private static async renderHeader(
@@ -95,13 +98,13 @@ export class HDMPDFGenerator {
     let currentY = headerTopY;
     try {
       const logo = await this.loadImageAsBase64WithSize('/hdm-logo.png');
-      const aspect = logo.height / logo.width;
-      const logoW = leftColumnWidth;           // ancho fijo
-      const logoH = logoW * aspect;            // alto proporcional
+      const logoW = leftColumnWidth;           // ancho fijo en mm
+      const logoH = this.calcHeightMmFromWidthMm(logo.width, logo.height, logoW); // alto proporcional en mm
+      console.debug('[HDMPDFGenerator] Logo dimensions - Width:', logoW, 'mm, Height:', logoH, 'mm');
       doc.addImage(logo.dataUrl, 'PNG', leftColumnX, currentY, logoW, logoH);
       currentY += logoH + 6;                   // espacio debajo del logo
     } catch (e) {
-      console.error('Logo error:', e);
+      console.error('[HDMPDFGenerator] Logo error:', e);
       currentY += 12; // fallback spacing
     }
 
@@ -311,30 +314,31 @@ export class HDMPDFGenerator {
       doc.text('Imágenes de Referencia:', leftMargin, yPosition);
       yPosition += 6;
 
-      const imgWidth = 80;
-      const imgHeight = 60;
+      const imgWidthMm = 80; // ancho objetivo en mm
       const imgsPerRow = 2;
       const spacing = 10;
 
       for (let i = 0; i < imagenes.length; i++) {
         try {
-          const imgBase64 = await this.loadImageAsBase64(imagenes[i].url);
+          const img = await this.loadImageAsBase64WithSize(imagenes[i].url);
+          const imgHeightMm = this.calcHeightMmFromWidthMm(img.width, img.height, imgWidthMm);
+          console.debug('[HDMPDFGenerator] Anexo image', i, 'dimensions - Width:', imgWidthMm, 'mm, Height:', imgHeightMm, 'mm');
 
           const col = i % imgsPerRow;
           const row = Math.floor(i / imgsPerRow);
 
-          const xPos = leftMargin + col * (imgWidth + spacing);
-          const yPos = yPosition + row * (imgHeight + spacing);
+          const xPos = leftMargin + col * (imgWidthMm + spacing);
+          const yPos = yPosition + row * (imgHeightMm + spacing);
 
           // Verificar si necesitamos nueva página
-          if (yPos + imgHeight > pageHeight - 20) {
+          if (yPos + imgHeightMm > pageHeight - 20) {
             doc.addPage();
             yPosition = topMargin;
             const newRow = 0;
-            const newYPos = yPosition + newRow * (imgHeight + spacing);
-            doc.addImage(imgBase64, 'JPEG', xPos, newYPos, imgWidth, imgHeight);
+            const newYPos = yPosition + newRow * (imgHeightMm + spacing);
+            doc.addImage(img.dataUrl, 'JPEG', xPos, newYPos, imgWidthMm, imgHeightMm);
           } else {
-            doc.addImage(imgBase64, 'JPEG', xPos, yPos, imgWidth, imgHeight);
+            doc.addImage(img.dataUrl, 'JPEG', xPos, yPos, imgWidthMm, imgHeightMm);
           }
 
           // Agregar descripción si existe
@@ -343,19 +347,20 @@ export class HDMPDFGenerator {
             doc.setFont('helvetica', 'normal');
             doc.text(
               imagenes[i].descripcion!,
-              xPos + imgWidth / 2,
-              yPos + imgHeight + 3,
-              { align: 'center', maxWidth: imgWidth }
+              xPos + imgWidthMm / 2,
+              yPos + imgHeightMm + 3,
+              { align: 'center', maxWidth: imgWidthMm }
             );
           }
         } catch (error) {
-          console.error(`Error loading image ${i}:`, error);
+          console.error(`[HDMPDFGenerator] Error loading image ${i}:`, error);
         }
       }
 
-      // Calcular espacio usado por imágenes
+      // Calcular espacio usado por imágenes (estimación conservadora)
       const totalRows = Math.ceil(imagenes.length / imgsPerRow);
-      yPosition += totalRows * (imgHeight + spacing) + 10;
+      const estimatedRowHeight = imgWidthMm * 0.75 + spacing; // estimar 4:3 aspect ratio
+      yPosition += totalRows * estimatedRowHeight + 10;
     }
 
     doc.setFontSize(55);
@@ -382,15 +387,16 @@ export class HDMPDFGenerator {
 
     if (signatureUrl) {
       try {
-        const signatureBase64 = await this.loadImageAsBase64(signatureUrl);
-        const signatureWidth = 40;
-        const signatureHeight = 20;
+        const signature = await this.loadImageAsBase64WithSize(signatureUrl);
+        const signatureWidthMm = 40; // ancho objetivo en mm
+        const signatureHeightMm = this.calcHeightMmFromWidthMm(signature.width, signature.height, signatureWidthMm);
         const xPos = pageWidth - rightMargin - 45;
 
-        doc.addImage(signatureBase64, 'PNG', xPos, yPosition, signatureWidth, signatureHeight);
-        yPosition += signatureHeight + 2;
+        console.debug('[HDMPDFGenerator] Signature dimensions - Width:', signatureWidthMm, 'mm, Height:', signatureHeightMm, 'mm');
+        doc.addImage(signature.dataUrl, 'PNG', xPos, yPosition, signatureWidthMm, signatureHeightMm);
+        yPosition += signatureHeightMm + 2;
       } catch (error) {
-        console.error('Error loading signature:', error);
+        console.error('[HDMPDFGenerator] Error loading signature:', error);
         yPosition += 2;
       }
     } else {
@@ -414,7 +420,16 @@ export class HDMPDFGenerator {
     imagenes: PresupuestoImagen[] = []
   ): Promise<void> {
     const doc = await this.generatePresupuestoPDF(presupuesto, imagenes);
-    doc.save(`presupuesto-${presupuesto.codigo}.pdf`);
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `presupuesto-${presupuesto.codigo}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    console.debug('[HDMPDFGenerator] PDF downloaded:', `presupuesto-${presupuesto.codigo}.pdf`);
   }
 
   static async previewPresupuestoPDF(

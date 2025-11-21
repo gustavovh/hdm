@@ -30,6 +30,7 @@ export class PDFGenerator {
 
   private static async loadImageAsBase64WithSize(url: string): Promise<{ dataUrl: string; width: number; height: number }> {
     return new Promise((resolve, reject) => {
+      console.debug('[PDFGenerator] Loading image with size:', url);
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
@@ -37,13 +38,33 @@ export class PDFGenerator {
         canvas.width = img.width;
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('Failed to get canvas context'));
+        if (!ctx) {
+          console.error('[PDFGenerator] Failed to get canvas context for:', url);
+          return reject(new Error('Failed to get canvas context'));
+        }
         ctx.drawImage(img, 0, 0);
+        console.debug('[PDFGenerator] Image loaded successfully. Dimensions:', img.width, 'x', img.height, 'px');
         resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.width, height: img.height });
       };
-      img.onerror = () => reject(new Error('Failed to load image'));
+      img.onerror = () => {
+        console.error('[PDFGenerator] Failed to load image:', url);
+        reject(new Error('Failed to load image'));
+      };
       img.src = url;
     });
+  }
+
+  /**
+   * Calcula la altura en mm a partir de un ancho objetivo en mm,
+   * preservando el aspect ratio de la imagen.
+   * @param widthPx - Ancho de la imagen en píxeles
+   * @param heightPx - Alto de la imagen en píxeles
+   * @param targetWidthMm - Ancho objetivo en mm
+   * @returns Altura calculada en mm
+   */
+  private static calcHeightMmFromWidthMm(widthPx: number, heightPx: number, targetWidthMm: number): number {
+    const aspectRatio = heightPx / widthPx;
+    return targetWidthMm * aspectRatio;
   }
 
   private static async renderHeader(
@@ -80,13 +101,13 @@ export class PDFGenerator {
     let currentY = headerTopY;
     try {
       const logo = await this.loadImageAsBase64WithSize('/hdm-logo.png');
-      const aspect = logo.height / logo.width;
-      const logoW = leftColumnWidth;           // ancho fijo
-      const logoH = logoW * aspect;            // alto proporcional
+      const logoW = leftColumnWidth;           // ancho fijo en mm
+      const logoH = this.calcHeightMmFromWidthMm(logo.width, logo.height, logoW); // alto proporcional en mm
+      console.debug('[PDFGenerator] Logo dimensions - Width:', logoW, 'mm, Height:', logoH, 'mm');
       doc.addImage(logo.dataUrl, 'PNG', leftColumnX, currentY, logoW, logoH);
       currentY += logoH + 6;                   // espacio debajo del logo
     } catch (e) {
-      console.error('Logo error:', e);
+      console.error('[PDFGenerator] Logo error:', e);
       currentY += 12; // fallback spacing
     }
 
@@ -341,15 +362,16 @@ export class PDFGenerator {
 
     if (signatureUrl) {
       try {
-        const signatureBase64 = await this.loadImageAsBase64(signatureUrl);
-        const signatureWidth = 40;
-        const signatureHeight = 20;
+        const signature = await this.loadImageAsBase64WithSize(signatureUrl);
+        const signatureWidthMm = 40; // ancho objetivo en mm
+        const signatureHeightMm = this.calcHeightMmFromWidthMm(signature.width, signature.height, signatureWidthMm);
         const xPos = summaryX;
 
-        doc.addImage(signatureBase64, 'PNG', xPos, signatureY, signatureWidth, signatureHeight);
-        signatureY += signatureHeight + 2;
+        console.debug('[PDFGenerator] Signature dimensions - Width:', signatureWidthMm, 'mm, Height:', signatureHeightMm, 'mm');
+        doc.addImage(signature.dataUrl, 'PNG', xPos, signatureY, signatureWidthMm, signatureHeightMm);
+        signatureY += signatureHeightMm + 2;
       } catch (error) {
-        console.error('Error loading signature:', error);
+        console.error('[PDFGenerator] Error loading signature:', error);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0, 0, 0);
@@ -397,7 +419,16 @@ export class PDFGenerator {
     solicitudAprobada?: SolicitudDescuento
   ): Promise<void> {
     const doc = await this.generatePresupuestoPDF(presupuesto, solicitudAprobada);
-    doc.save(`presupuesto-${presupuesto.codigo}.pdf`);
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `presupuesto-${presupuesto.codigo}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    console.debug('[PDFGenerator] PDF downloaded:', `presupuesto-${presupuesto.codigo}.pdf`);
   }
 
   static async previewPresupuestoPDF(
