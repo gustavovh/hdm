@@ -21,14 +21,13 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   let yPosition = margin;
 
-  yPosition = await addHeader(doc, margin, yPosition, pageWidth);
+  const { headerEndY, servicesBottomY } = await addHeader(doc, margin, yPosition, pageWidth);
 
-  yPosition += 5;
+  // Align presupuesto number with the last services line
+  addPresupuestoNumber(doc, pageWidth, margin, servicesBottomY, presupuesto);
 
-  const presupuestoNumberY = yPosition;
-  yPosition = addPresupuestoNumber(doc, pageWidth, margin, yPosition, presupuesto);
-
-  yPosition += 10;
+  // Continue from the header end position
+  yPosition = headerEndY + 5;
 
   yPosition = addClientInfo(doc, margin, yPosition, pageWidth, presupuesto);
 
@@ -64,10 +63,9 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   if (yPosition + signatureHeight > bottomLimit) {
     // No hay espacio suficiente, crear nueva página
     doc.addPage();
-    yPosition = await addHeader(doc, margin, margin, pageWidth);
-    yPosition += 5;
-    addPresupuestoNumber(doc, pageWidth, margin, yPosition, presupuesto);
-    yPosition += 30;
+    const { headerEndY, servicesBottomY } = await addHeader(doc, margin, margin, pageWidth);
+    addPresupuestoNumber(doc, pageWidth, margin, servicesBottomY, presupuesto);
+    yPosition = headerEndY + 30;
   }
 
   // Agregar firma en la posición actual
@@ -225,14 +223,13 @@ async function loadVendedorSignature(vendedorId: string): Promise<string | null>
 }
 
 
-async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<number> {
+async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): Promise<{ headerEndY: number; servicesBottomY: number }> {
   const leftMargin = margin;
   const rightMargin = margin;
   const yTop = yPosition;
   
   // ---- CONFIG ----
   const LINE_HEIGHT = 4;          // interlineado general
-  const SEPARATOR_GAP = 6;        // espacio antes de la línea separadora
 
   // ---- LOGO (izquierda, mantener aspecto) ----
   const MAX_W = 85;          // límite de ancho
@@ -310,16 +307,13 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     doc.text(line, leftMargin + 2, sy);
     sy += LINE_HEIGHT;
   }
-  const servicesBottom = sy;
+  const servicesBottom = sy - LINE_HEIGHT; // Last line position (subtract the last increment)
 
-  // ---- SEPARADOR (debajo del mayor elemento) ----
+  // ---- No separator line - removed as per requirements ----
   const maxBottom = Math.max(contactBottom, servicesBottom);
-  const sepY = maxBottom + SEPARATOR_GAP;
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.2);
-  doc.line(leftMargin, sepY, pageWidth - rightMargin, sepY);
-
-  return sepY + 6;
+  
+  // Return both the header end position and services bottom for alignment
+  return { headerEndY: maxBottom + 6, servicesBottomY: servicesBottom };
 }
 
 function formatPresupuestoCode(codigo: string): string {
@@ -482,8 +476,8 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
 
       // Si no es la primera página, agregar encabezado
       if (currentPage > 1) {
-        const headerEndY = await addHeader(doc, margin, margin, pageWidth);
-        addPresupuestoNumber(doc, pageWidth, margin, headerEndY + 5, presupuesto);
+        const { headerEndY, servicesBottomY } = await addHeader(doc, margin, margin, pageWidth);
+        addPresupuestoNumber(doc, pageWidth, margin, servicesBottomY, presupuesto);
       }
     },
     // Aplicar estilo especial a la última fila (totales)
@@ -720,8 +714,8 @@ async function addAnexoPages(doc: jsPDF, presupuestoId: string, pageWidth: numbe
     let yPosition = margin;
 
     // Agregar encabezado
-    yPosition = await addHeader(doc, margin, yPosition, pageWidth);
-    yPosition += 10;
+    const { headerEndY } = await addHeader(doc, margin, yPosition, pageWidth);
+    yPosition = headerEndY + 10;
 
     // Agregar título ANEXO
     doc.setFont('times', 'bold');
