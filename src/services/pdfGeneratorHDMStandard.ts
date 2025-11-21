@@ -79,6 +79,7 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     addWatermark(doc, pageWidth, pageHeight);
+    addFooter(doc, pageWidth, pageHeight, i, totalPages);
   }
 
   return doc.output('blob');
@@ -106,6 +107,27 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
     angle: angle
   });
 
+  doc.restoreGraphicsState();
+}
+
+function addFooter(doc: jsPDF, pageWidth: number, pageHeight: number, pageNumber: number, totalPages: number) {
+  const margin = 20;
+  const footerY = pageHeight - 10; // 10mm from bottom
+  
+  doc.saveGraphicsState();
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(0, 0, 0);
+  
+  // Left: Company name
+  doc.text('HDM Ingeniería S.A.', margin, footerY, { align: 'left' });
+  
+  // Center: "Presupuesto"
+  doc.text('Presupuesto', pageWidth / 2, footerY, { align: 'center' });
+  
+  // Right: Page number
+  doc.text(`Página ${pageNumber} de ${totalPages}`, pageWidth - margin, footerY, { align: 'right' });
+  
   doc.restoreGraphicsState();
 }
 
@@ -286,7 +308,12 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   cy += LINE_HEIGHT;
   doc.text('Luque - Paraguay', contactX, cy, { align: 'right' });
   cy += LINE_HEIGHT;
+  
+  // Email in blue color as per reference design
+  doc.setTextColor(0, 0, 255);  // Blue color for email
   doc.text('Email: hmino@hdm.com.py', contactX, cy, { align: 'right' });
+  doc.setTextColor(0, 0, 0);  // Reset to black
+  
   cy += LINE_HEIGHT;
   doc.text('Cel: +595981795669', contactX, cy, { align: 'right' });
   cy += LINE_HEIGHT;
