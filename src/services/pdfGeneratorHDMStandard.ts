@@ -604,11 +604,6 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
       // Agregar imagen con proporciones correctas y tipo detectado
       doc.addImage(signatureUrl, imageType, signatureX, signatureY, signatureWidth, signatureHeight);
 
-      // Línea debajo de la firma
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 0, 0);
-      doc.line(signatureX, signatureY + signatureHeight + 2, signatureX + signatureWidth, signatureY + signatureHeight + 2);
-
       // Agregar detalles de la firma debajo
       let textY = signatureY + signatureHeight + 7;
 
