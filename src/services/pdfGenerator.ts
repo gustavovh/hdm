@@ -39,11 +39,19 @@ export class PDFGenerator {
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('Failed to get canvas context'));
         ctx.drawImage(img, 0, 0);
+        console.debug(`[PDFGenerator] Image loaded: ${url}, dimensions: ${img.width}x${img.height}px`);
         resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.width, height: img.height });
       };
       img.onerror = () => reject(new Error('Failed to load image'));
       img.src = url;
     });
+  }
+
+  private static calcHeightMmFromWidthMm(imgWidthPx: number, imgHeightPx: number, targetWidthMm: number): number {
+    const aspectRatio = imgHeightPx / imgWidthPx;
+    const calculatedHeightMm = targetWidthMm * aspectRatio;
+    console.debug(`[PDFGenerator] Calc dimensions: ${imgWidthPx}x${imgHeightPx}px -> ${targetWidthMm}x${calculatedHeightMm.toFixed(2)}mm`);
+    return calculatedHeightMm;
   }
 
   private static async renderHeader(
@@ -341,13 +349,13 @@ export class PDFGenerator {
 
     if (signatureUrl) {
       try {
-        const signatureBase64 = await this.loadImageAsBase64(signatureUrl);
-        const signatureWidth = 40;
-        const signatureHeight = 20;
+        const signature = await this.loadImageAsBase64WithSize(signatureUrl);
+        const signatureWidthMm = 40;
+        const signatureHeightMm = this.calcHeightMmFromWidthMm(signature.width, signature.height, signatureWidthMm);
         const xPos = summaryX;
 
-        doc.addImage(signatureBase64, 'PNG', xPos, signatureY, signatureWidth, signatureHeight);
-        signatureY += signatureHeight + 2;
+        doc.addImage(signature.dataUrl, 'PNG', xPos, signatureY, signatureWidthMm, signatureHeightMm);
+        signatureY += signatureHeightMm + 2;
       } catch (error) {
         console.error('Error loading signature:', error);
         doc.setFontSize(8);
@@ -397,7 +405,20 @@ export class PDFGenerator {
     solicitudAprobada?: SolicitudDescuento
   ): Promise<void> {
     const doc = await this.generatePresupuestoPDF(presupuesto, solicitudAprobada);
-    doc.save(`presupuesto-${presupuesto.codigo}.pdf`);
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    
+    // Create a temporary anchor element and trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `presupuesto-${presupuesto.codigo}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    console.debug(`[PDFGenerator] PDF downloaded: presupuesto-${presupuesto.codigo}.pdf`);
   }
 
   static async previewPresupuestoPDF(
