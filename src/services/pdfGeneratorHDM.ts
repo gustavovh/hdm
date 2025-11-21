@@ -326,15 +326,14 @@ export class HDMPDFGenerator {
           
           // Ajustar si la altura calculada excede el límite
           const finalImgHeight = Math.min(imgHeightMm, imgHeight);
-          const finalImgWidth = finalImgHeight === imgHeightMm ? imgWidthMm : 
-            (imgHeight * imagen.width / imagen.height);
+          const finalImgWidth = finalImgHeight < imgHeightMm ? 
+            (finalImgHeight * imagen.width / imagen.height) : imgWidthMm;
 
           // Verificar si necesitamos nueva página
           if (yPos + finalImgHeight > pageHeight - 20) {
             doc.addPage();
             yPosition = topMargin;
-            const newRow = 0;
-            const newYPos = yPosition + newRow * (imgHeight + spacing);
+            const newYPos = yPosition; // nueva posición Y en la página nueva
             doc.addImage(imagen.dataUrl, 'JPEG', xPos, newYPos, finalImgWidth, finalImgHeight);
           } else {
             doc.addImage(imagen.dataUrl, 'JPEG', xPos, yPos, finalImgWidth, finalImgHeight);
@@ -344,10 +343,11 @@ export class HDMPDFGenerator {
           if (imagenes[i].descripcion) {
             doc.setFontSize(7);
             doc.setFont('helvetica', 'normal');
+            const currentYPos = yPos + finalImgHeight > pageHeight - 20 ? yPosition : yPos;
             doc.text(
               imagenes[i].descripcion!,
               xPos + finalImgWidth / 2,
-              yPos + finalImgHeight + 3,
+              currentYPos + finalImgHeight + 3,
               { align: 'center', maxWidth: finalImgWidth }
             );
           }

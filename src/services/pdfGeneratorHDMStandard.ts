@@ -296,7 +296,7 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     
     // escalar por altura objetivo y luego limitar por ancho máximo (sin deformar)
     scaledH = TARGET_H;
-    scaledW = calcHeightMmFromWidthMm(logo.height, logo.width, TARGET_H); // invertido para calcular ancho desde altura
+    scaledW = TARGET_H * (logo.width / logo.height); // calcular ancho desde altura
     if (scaledW > MAX_W) {
       scaledW = MAX_W;
       scaledH = calcHeightMmFromWidthMm(logo.width, logo.height, MAX_W);
