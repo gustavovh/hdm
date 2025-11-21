@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Actualización del Sistema - HDM</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 50px 40px;
+            text-align: center;
+        }
+        .icon { font-size: 80px; margin-bottom: 20px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        h1 { color: #333; font-size: 32px; margin-bottom: 15px; }
+        p { color: #666; font-size: 18px; line-height: 1.6; margin-bottom: 30px; }
+        .countdown { font-size: 60px; font-weight: bold; color: #667eea; margin: 30px 0; }
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .button:hover { transform: translateY(-3px); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🔄</div>
+        <h1>Actualizando Sistema</h1>
+        <p>Limpiando caché y recargando...</p>
+        <div class="countdown" id="countdown">3</div>
+        <p id="message">Por favor espera...</p>
+    </div>
+    <script>
+        (async () => {
+            let count = 3;
+            const interval = setInterval(() => {
+                count--;
+                document.getElementById('countdown').textContent = count;
+                if (count === 0) {
+                    clearInterval(interval);
+                    clean();
+                }
+            }, 1000);
+
+            async function clean() {
+                try {
+                    if ('caches' in window) {
+                        const names = await caches.keys();
+                        await Promise.all(names.map(n => caches.delete(n)));
+                    }
+                    localStorage.clear();
+                    sessionStorage.clear();
+                } catch (e) {}
+
+                await new Promise(r => setTimeout(r, 500));
+                window.location.href = '/?nocache=' + Date.now();
+            }
+        })();
+    </script>
+</body>
+</html>
