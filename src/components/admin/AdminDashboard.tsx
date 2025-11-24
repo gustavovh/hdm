@@ -17,7 +17,7 @@ import { exportService } from '../../services/exportService';
 import { Filter, RefreshCw, FileText, Trash2, Search, Target, TrendingUp, DollarSign, Users, Download, Calendar, Eye, RotateCw, Receipt, Copy } from 'lucide-react';
 import { CambiarEstadoModal } from '../presupuestos/CambiarEstadoModal';
 import { FacturacionModal } from '../presupuestos/FacturacionModal';
-import { HDMPDFGeneratorV2 } from '../../services/pdfGeneratorHDMv2';
+import { generateHDMStandardPDF } from '../../services/pdfGeneratorHDMStandard';
 
 interface GeneralStats {
   totalPresupuestos: number;
@@ -298,13 +298,15 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
 
   const handleDownloadPresupuesto = async (presupuesto: Presupuesto) => {
     try {
-      const { data: vendedorData } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', presupuesto.vendedor_id)
-        .maybeSingle();
-
-      await HDMPDFGeneratorV2.downloadPresupuestoPDF(presupuesto, vendedorData || undefined);
+      const blob = await generateHDMStandardPDF(presupuesto);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Presupuesto_${presupuesto.codigo}_${presupuesto.cliente_nombre?.replace(/\s+/g, '_') || 'cliente'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
     } catch (error) {
       console.error('Error downloading presupuesto:', error);
       alert('Error al descargar el presupuesto');

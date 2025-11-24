@@ -27,7 +27,7 @@ import { Input } from '../ui/Input';
 import { supabase } from '../../lib/supabase';
 import { CambiarEstadoModal } from '../presupuestos/CambiarEstadoModal';
 import { FacturacionModal } from '../presupuestos/FacturacionModal';
-import { HDMPDFGeneratorV2 } from '../../services/pdfGeneratorHDMv2';
+import { generateHDMStandardPDF } from '../../services/pdfGeneratorHDMStandard';
 
 interface DashboardStats {
   total: number;
@@ -290,13 +290,15 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
 
   const handleDownloadPresupuesto = async (presupuesto: Presupuesto) => {
     try {
-      const { data: vendedorData } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', presupuesto.vendedor_id)
-        .maybeSingle();
-
-      await HDMPDFGeneratorV2.downloadPresupuestoPDF(presupuesto, vendedorData || undefined);
+      const blob = await generateHDMStandardPDF(presupuesto);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Presupuesto_${presupuesto.codigo}_${presupuesto.cliente_nombre?.replace(/\s+/g, '_') || 'cliente'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
     } catch (error) {
       console.error('Error downloading presupuesto:', error);
       alert('Error al descargar el presupuesto');
