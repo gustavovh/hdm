@@ -82,12 +82,12 @@ export class HDMPDFGeneratorV2 {
     doc.text(`Cel: +595981795669`,                                contactX, rightY, { align: 'right' }); rightY += lineGap;
     doc.text(`RUC: 80122639-2`,                                   contactX, rightY, { align: 'right' });
 
-    // --- LEFT column: LOGO (misma ANCHURA que servicios, SIN deformar) ---
+    // --- LEFT column: LOGO (tamaño fijo, sin deformar) ---
     let currentY = headerTopY;
     try {
       const logo = await this.loadImageAsBase64WithSize('/hdm-logo.png');
       const aspect = logo.height / logo.width;
-      const logoW = leftColumnWidth;           // ancho fijo
+      const logoW = LOGO_WIDTH_MM;             // usar constante de tamaño fijo
       const logoH = logoW * aspect;            // alto proporcional
       doc.addImage(logo.dataUrl, 'PNG', leftColumnX, currentY, logoW, logoH);
       currentY += logoH + 6;                   // espacio debajo del logo
@@ -96,7 +96,7 @@ export class HDMPDFGeneratorV2 {
       currentY += 12; // fallback spacing
     }
 
-    // --- LEFT column: BLOQUE "servicios" (negrita, wrap al MISMO ancho del logo) ---
+    // --- LEFT column: BLOQUE "servicios" (negrita, wrap al mismo ancho del logo) ---
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
 
@@ -108,7 +108,7 @@ export class HDMPDFGeneratorV2 {
 
     const wrapped: string[] = [];
     for (const line of servicesLines) {
-      wrapped.push(...doc.splitTextToSize(line, leftColumnWidth));
+      wrapped.push(...doc.splitTextToSize(line, LOGO_WIDTH_MM));
     }
 
     wrapped.forEach((ln, i) => {
