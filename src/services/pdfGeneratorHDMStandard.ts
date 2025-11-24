@@ -7,6 +7,7 @@ const LOGO_WIDTH_MM = 50;
 const LOGO_HEIGHT_MM = 13;
 
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
+  console.log('🎯 USANDO GENERADOR HDMSTANDARD - VERSIÓN CORRECTA 2024-11-24');
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
