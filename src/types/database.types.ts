@@ -76,6 +76,7 @@ export interface Presupuesto {
   codigo: string;
   concepto: string;
   cliente_nombre: string;
+  nombre_fantasia?: string;
   cliente_email?: string;
   cliente_telefono?: string;
   cliente_documento?: string;

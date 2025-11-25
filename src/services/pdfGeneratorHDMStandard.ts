@@ -379,17 +379,30 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, pageWidth:
     month: '2-digit',
     year: 'numeric'
   });
-  const clienteNombre = presupuesto.cliente_nombre.toUpperCase();
+
+  // Si hay nombre de fantasía, mostrarlo; si no, usar el nombre del cliente
+  const clienteNombre = presupuesto.nombre_fantasia
+    ? presupuesto.nombre_fantasia.toUpperCase()
+    : presupuesto.cliente_nombre.toUpperCase();
+
   const concepto = (presupuesto.concepto || 'PRESUPUESTO DE SERVICIOS').toUpperCase();
 
   // Crear tabla de 2 columnas para Fecha/Señores/Referencia
+  const bodyRows = [
+    ['Fecha:', fecha],
+    ['Señores:', clienteNombre],
+  ];
+
+  // Si hay nombre de fantasía, agregar la razón social como línea adicional
+  if (presupuesto.nombre_fantasia) {
+    bodyRows.push(['Razón Social:', presupuesto.cliente_nombre.toUpperCase()]);
+  }
+
+  bodyRows.push(['Referencia de presupuesto:', concepto]);
+
   autoTable(doc, {
     startY: yPosition,
-    body: [
-      ['Fecha:', fecha],
-      ['Señores:', clienteNombre],
-      ['Referencia de presupuesto:', concepto]
-    ],
+    body: bodyRows,
     theme: 'plain',
     styles: {
       font: 'times',

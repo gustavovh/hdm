@@ -38,6 +38,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
   const [formData, setFormData] = useState({
     concepto: '',
     cliente_nombre: '',
+    nombre_fantasia: '',
     cliente_documento: '',
     cliente_telefono: '',
     cliente_email: '',
@@ -75,6 +76,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       setFormData({
         concepto: presupuesto.concepto || '',
         cliente_nombre: presupuesto.cliente_nombre,
+        nombre_fantasia: presupuesto.nombre_fantasia || '',
         cliente_documento: presupuesto.cliente_documento || '',
         cliente_telefono: presupuesto.cliente_telefono || '',
         cliente_email: presupuesto.cliente_email || '',
@@ -317,6 +319,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       const presupuestoData: any = {
         concepto: formData.concepto,
         cliente_nombre: formData.cliente_nombre,
+        nombre_fantasia: formData.nombre_fantasia || null,
         cliente_documento: formData.cliente_documento || null,
         cliente_telefono: formData.cliente_telefono || null,
         cliente_email: formData.cliente_email || null,
@@ -512,12 +515,20 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Nombre del Cliente *"
+                label="Nombre del Cliente (Razón Social) *"
                 value={formData.cliente_nombre}
                 onChange={(e) =>
                   setFormData({ ...formData, cliente_nombre: e.target.value })
                 }
                 required
+              />
+              <Input
+                label="Nombre de Fantasía"
+                value={formData.nombre_fantasia}
+                onChange={(e) =>
+                  setFormData({ ...formData, nombre_fantasia: e.target.value })
+                }
+                placeholder="Nombre comercial del cliente (opcional)"
               />
               <Input
                 label="RUC/CI"
