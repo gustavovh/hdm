@@ -702,14 +702,14 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                           {getStatusLabel(presupuesto.estado)}
                         </Badge>
                       </td>
-                      <td className="px-2 py-3 text-center" style={{ width: '220px', minWidth: '220px' }}>
-                        <div className="flex gap-1 justify-center flex-nowrap">
+                      <td className="px-2 py-3 text-center relative overflow-visible" style={{ width: '220px', minWidth: '220px' }}>
+                        <div className="flex gap-1 justify-end flex-nowrap z-20">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDownloadPresupuesto(presupuesto);
                             }}
-                            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors z-30 bg-white"
                             title="Descargar PDF"
                           >
                             <Download className="w-5 h-5" />
@@ -719,7 +719,7 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                               e.stopPropagation();
                               handleClonePresupuesto(presupuesto);
                             }}
-                            className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors"
+                            className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors z-30 bg-white"
                             title="Clonar presupuesto"
                           >
                             <Copy className="w-5 h-5" />
@@ -730,7 +730,7 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                               setSelectedPresupuestoForEstado(presupuesto);
                               setShowCambiarEstado(true);
                             }}
-                            className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+                            className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors z-30 bg-white"
                             title="Cambiar estado"
                           >
                             <RotateCw className="w-5 h-5" />
@@ -741,7 +741,7 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                               setSelectedPresupuestoForFacturacion(presupuesto);
                               setShowFacturacion(true);
                             }}
-                            className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors"
+                            className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors z-30 bg-white"
                             title="Datos de facturación"
                           >
                             <Receipt className="w-5 h-5" />
