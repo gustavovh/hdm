@@ -72,14 +72,22 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   // Agregar firma en la posición actual
   addSignature(doc, yPosition, pageWidth, signatureUrl, vendedorName, presupuesto, isAdministrativo);
 
+  // Guardar número de páginas antes de agregar anexo (para aplicar marca de agua solo a estas)
+  const pagesBeforeAnexo = doc.getNumberOfPages();
+
   // Agregar páginas de ANEXO con imágenes si existen
   await addAnexoPages(doc, presupuesto.id, pageWidth, pageHeight, margin);
 
-  // Agregar marca de agua en TODAS las páginas al final
+  // Agregar marca de agua SOLO a las páginas principales (no al anexo)
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    addWatermark(doc, pageWidth, pageHeight);
+
+    // Solo agregar marca de agua a páginas antes del anexo
+    if (i <= pagesBeforeAnexo) {
+      addWatermark(doc, pageWidth, pageHeight);
+    }
+
     addFooter(doc, pageWidth, pageHeight, i, totalPages);
   }
 
