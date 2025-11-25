@@ -367,7 +367,8 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
       p.cliente_nombre.toLowerCase().includes(presupuestoSearch.toLowerCase()) ||
       p.codigo.toLowerCase().includes(presupuestoSearch.toLowerCase()) ||
       p.cliente_documento?.toLowerCase().includes(presupuestoSearch.toLowerCase()) ||
-      p.concepto?.toLowerCase().includes(presupuestoSearch.toLowerCase());
+      p.concepto?.toLowerCase().includes(presupuestoSearch.toLowerCase()) ||
+      p.nombre_fantasia?.toLowerCase().includes(presupuestoSearch.toLowerCase());
     const matchesStatus = presupuestoStatusFilter === 'all' || p.estado === presupuestoStatusFilter;
     return matchesSearch && matchesStatus && !p.deleted_at;
   });
@@ -638,6 +639,9 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                       Cliente
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Nombre Fantasía
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Referencia
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -669,6 +673,9 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">
                         {presupuesto.cliente_nombre}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {presupuesto.nombre_fantasia || '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-700">
                         {presupuesto.concepto || '-'}
