@@ -926,7 +926,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'auto' }}>
+                <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -953,7 +953,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Estado
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '300px', width: '300px' }}>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-80">
                         Acciones
                       </th>
                     </tr>
@@ -999,8 +999,8 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                             {getStatusLabel(presupuesto.estado)}
                           </Badge>
                         </td>
-                        <td className="px-2 py-3 whitespace-nowrap text-center" style={{ minWidth: '300px', width: '300px' }}>
-                          <div className="flex justify-center gap-2 items-center flex-nowrap">
+                        <td className="px-2 py-3 whitespace-nowrap text-center w-80">
+                          <div className="flex justify-center gap-2 items-center">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
