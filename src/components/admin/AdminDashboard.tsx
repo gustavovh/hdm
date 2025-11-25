@@ -953,7 +953,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Estado
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '280px', minWidth: '280px' }}>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider relative" style={{ width: '280px', minWidth: '280px', overflow: 'visible' }}>
                         Acciones
                       </th>
                     </tr>
@@ -999,14 +999,15 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                             {getStatusLabel(presupuesto.estado)}
                           </Badge>
                         </td>
-                        <td className="px-2 py-3 text-center" style={{ width: '280px', minWidth: '280px' }}>
-                          <div className="flex gap-1 justify-center flex-nowrap">
+                        <td className="px-2 py-3 text-center relative" style={{ width: '280px', minWidth: '280px', overflow: 'visible' }}>
+                          {/* TODO: Remove bg-white from buttons if not needed after visual verification */}
+                          <div className="flex gap-1 justify-center flex-nowrap z-20">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onSelectPresupuesto && onSelectPresupuesto(presupuesto.id);
                               }}
-                              className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                              className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors z-30 bg-white"
                               title="Ver detalle"
                             >
                               <Eye className="w-5 h-5" />
@@ -1016,7 +1017,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                                 e.stopPropagation();
                                 handleDownloadPresupuesto(presupuesto);
                               }}
-                              className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                              className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors z-30 bg-white"
                               title="Descargar PDF"
                             >
                               <Download className="w-5 h-5" />
@@ -1026,7 +1027,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                                 e.stopPropagation();
                                 handleClonePresupuesto(presupuesto);
                               }}
-                              className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors"
+                              className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors z-30 bg-white"
                               title="Clonar presupuesto"
                             >
                               <Copy className="w-5 h-5" />
@@ -1037,7 +1038,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                                 setSelectedPresupuestoForEstado(presupuesto);
                                 setShowCambiarEstado(true);
                               }}
-                              className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+                              className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors z-30 bg-white"
                               title="Cambiar estado"
                             >
                               <RotateCw className="w-5 h-5" />
@@ -1048,7 +1049,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                                 setSelectedPresupuestoForFacturacion(presupuesto);
                                 setShowFacturacion(true);
                               }}
-                              className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors"
+                              className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors z-30 bg-white"
                               title="Datos de facturación"
                             >
                               <Receipt className="w-5 h-5" />
@@ -1058,7 +1059,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                                 e.stopPropagation();
                                 handleDeletePresupuesto(presupuesto.id);
                               }}
-                              className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                              className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors z-30 bg-white"
                               title="Eliminar"
                             >
                               <Trash2 className="w-5 h-5" />
