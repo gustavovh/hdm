@@ -925,7 +925,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                 <p className="text-gray-600">Intenta cambiar los filtros de búsqueda</p>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -953,7 +953,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Estado
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-56">
                         Acciones
                       </th>
                     </tr>
@@ -1000,7 +1000,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                           </Badge>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-center">
-                          <div className="flex justify-center gap-2">
+                          <div className="flex justify-center gap-1.5 items-center">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
