@@ -79,8 +79,7 @@ export class BudgetCalculator {
         );
       }
 
-      updatedPresupuesto.total_descuento =
-        (updatedPresupuesto.total_descuento || 0) + discountAmount;
+      updatedPresupuesto.total_descuento = discountAmount;
     }
 
     return this.recalculateTotals(updatedPresupuesto);

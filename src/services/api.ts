@@ -499,6 +499,20 @@ export class DiscountRequestService {
       solicitud.item_id || undefined
     );
 
+    if (solicitud.aplica_a === 'ITEM' && solicitud.item_id && updatedPresupuesto.items) {
+      const updatedItem = updatedPresupuesto.items.find(
+        (item) => item.id === solicitud.item_id
+      );
+      if (updatedItem) {
+        await supabase
+          .from('presupuesto_items')
+          .update({
+            descuento_aplicado: updatedItem.descuento_aplicado,
+          })
+          .eq('id', solicitud.item_id);
+      }
+    }
+
     await PresupuestoService.update(presupuesto.id, {
       total_bruto: updatedPresupuesto.total_bruto,
       total_descuento: updatedPresupuesto.total_descuento,
@@ -590,6 +604,20 @@ export class DiscountRequestService {
       solicitud.aplica_a,
       solicitud.item_id || undefined
     );
+
+    if (solicitud.aplica_a === 'ITEM' && solicitud.item_id && updatedPresupuesto.items) {
+      const updatedItem = updatedPresupuesto.items.find(
+        (item) => item.id === solicitud.item_id
+      );
+      if (updatedItem) {
+        await supabase
+          .from('presupuesto_items')
+          .update({
+            descuento_aplicado: updatedItem.descuento_aplicado,
+          })
+          .eq('id', solicitud.item_id);
+      }
+    }
 
     await PresupuestoService.update(presupuesto.id, {
       total_bruto: updatedPresupuesto.total_bruto,
