@@ -495,12 +495,24 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
   );
 }
 
-function ResetPasswordForm({ onSuccess }: { onSuccess: () => void }) {
+function ResetPasswordForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [hasValidSession, setHasValidSession] = useState(true);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setHasValidSession(false);
+        setError('No hay una sesión de recuperación válida. Por favor, solicita un nuevo enlace de recuperación.');
+      }
+    };
+    checkSession();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -527,7 +539,13 @@ function ResetPasswordForm({ onSuccess }: { onSuccess: () => void }) {
 
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cambiar la contraseña');
+      const errorMessage = err instanceof Error ? err.message : 'Error al cambiar la contraseña';
+      if (errorMessage.includes('session')) {
+        setError('Tu sesión de recuperación ha expirado. Por favor, solicita un nuevo enlace de recuperación.');
+        setHasValidSession(false);
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -586,9 +604,25 @@ function ResetPasswordForm({ onSuccess }: { onSuccess: () => void }) {
             </div>
           )}
 
-          <Button type="submit" fullWidth loading={loading}>
+          <Button
+            type="submit"
+            fullWidth
+            loading={loading}
+            disabled={!hasValidSession}
+          >
             Cambiar Contraseña
           </Button>
+
+          {!hasValidSession && (
+            <Button
+              type="button"
+              variant="ghost"
+              fullWidth
+              onClick={onCancel}
+            >
+              Volver al inicio de sesión
+            </Button>
+          )}
         </form>
       </div>
     </div>
@@ -625,6 +659,11 @@ function AppContent() {
           setPasswordResetSuccess(true);
           setIsResettingPassword(false);
           window.location.hash = '';
+        }}
+        onCancel={() => {
+          setIsResettingPassword(false);
+          window.location.hash = '';
+          window.location.reload();
         }}
       />
     );
