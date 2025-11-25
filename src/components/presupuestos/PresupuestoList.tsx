@@ -203,7 +203,8 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
       p.cliente_nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.cliente_documento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.concepto?.toLowerCase().includes(searchTerm.toLowerCase());
+      p.concepto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.nombre_fantasia?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || p.estado === statusFilter;
     const notClonado = p.estado !== 'CLONADO';
     return matchesSearch && matchesStatus && notClonado;
@@ -239,7 +240,7 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
         <div className="bg-white rounded-lg shadow p-4 space-y-4">
           <div className="flex gap-4">
             <Input
-              placeholder="Buscar por código, cliente, documento o referencia..."
+              placeholder="Buscar por código, cliente, nombre de fantasía, documento o referencia..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1"
@@ -301,6 +302,9 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
                   Cliente
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Nombre Fantasía
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Referencia
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -332,6 +336,9 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">
                     {presupuesto.cliente_nombre}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-700">
+                    {presupuesto.nombre_fantasia || '-'}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-700">
                     {presupuesto.concepto || '-'}
