@@ -1,52 +1,52 @@
-import { useState, useEffect } from 'react';
-import {
-  TrendingUp,
-  FileText,
-  CheckCircle,
-  DollarSign,
-  AlertCircle,
-  Clock,
-  Target,
-  Award,
-  Eye,
-  Download,
-  Copy,
-  RotateCw,
-  Receipt,
-  Trash2,
-  Search,
-  RefreshCw
-} from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { PresupuestoService } from '../../services/api';
-import { CommissionsService } from '../../services/commissionsService';
-import { salesTargetsService } from '../../services/salesTargetsService';
-import { Presupuesto, SalesTarget } from '../../types/database.types';
-import { Badge } from '../ui/Badge';
-import { Input } from '../ui/Input';
-import { supabase } from '../../lib/supabase';
-import { CambiarEstadoModal } from '../presupuestos/CambiarEstadoModal';
-import { FacturacionModal } from '../presupuestos/FacturacionModal';
-import { generateHDMStandardPDF } from '../../services/pdfGeneratorHDMStandard';
-
-interface DashboardStats {
-  total: number;
-  clonado: number;
-  presentado: number;
-  aceptado: number;
-  facturado: number;
-  anulado: number;
-  montoTotal: number;
-  montoClonado: number;
-  montoPresentado: number;
-  montoAceptado: number;
-  montoFacturado: number;
-  tasaAceptacion: number;
-  montoPromedio: number;
-}
-
-interface VendedorDashboardProps {
-  onSelectPresupuesto?: (id: string) => void;
+<td
+  className="px-2 py-3 text-center relative"
+  style={{ width: '220px', minWidth: '220px', overflow: 'visible' }}
+>
+  <div className="flex gap-1 justify-end items-center flex-nowrap z-20">
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        handleDownloadPresupuesto(presupuesto);
+      }}
+      className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors z-30 bg-white" // TODO: quitar bg-white si no es necesario tras verificación
+      title="Descargar PDF"
+    >
+      <Download className="w-5 h-5" />
+    </button>
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        handleClonePresupuesto(presupuesto);
+      }}
+      className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors z-30 bg-white" // TODO: quitar bg-white si no es necesario tras verificación
+      title="Clonar presupuesto"
+    >
+      <Copy className="w-5 h-5" />
+    </button>
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        setSelectedPresupuestoForEstado(presupuesto);
+        setShowCambiarEstado(true);
+      }}
+      className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors z-30 bg-white" // TODO: quitar bg-white si no es necesario tras verificación
+      title="Cambiar estado"
+    >
+      <RotateCw className="w-5 h-5" />
+    </button>
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        setSelectedPresupuestoForFacturacion(presupuesto);
+        setShowFacturacion(true);
+      }}
+      className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors z-30 bg-white" // TODO: quitar bg-white si no es necesario tras verificación
+      title="Datos de facturación"
+    >
+      <Receipt className="w-5 h-5" />
+    </button>
+  </div>
+</td>
 }
 
 export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProps = {}) {
