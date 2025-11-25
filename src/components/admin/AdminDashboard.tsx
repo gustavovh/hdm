@@ -953,7 +953,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Estado
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '280px', minWidth: '280px' }}>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider relative" style={{ width: '280px', minWidth: '280px', overflow: 'visible' }}>
                         Acciones
                       </th>
                     </tr>
@@ -999,8 +999,8 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                             {getStatusLabel(presupuesto.estado)}
                           </Badge>
                         </td>
-                        <td className="px-2 py-3 text-center" style={{ width: '280px', minWidth: '280px' }}>
-                          <div className="flex gap-1 justify-center flex-nowrap">
+                        <td className="px-2 py-3 text-center relative" style={{ width: '280px', minWidth: '280px', overflow: 'visible' }}>
+                          <div className="flex gap-1 justify-center flex-nowrap" style={{ position: 'relative', zIndex: 10 }}>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
