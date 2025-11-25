@@ -26,6 +26,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('🔍 Initial session check:', session);
+
+      // Check if this is a password recovery session
+      const isRecovery = window.location.hash.includes('type=recovery');
+
+      if (isRecovery) {
+        console.log('🔐 Recovery mode detected - not loading user profile');
+        setAuthUser(session?.user || null);
+        setLoading(false);
+        return;
+      }
+
       setAuthUser(session?.user || null);
       if (session?.user) {
         loadUserProfile(session.user.id);
@@ -35,8 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        console.log('🔄 Auth state change:', event, session);
+
         (async () => {
+          // Don't load profile for password recovery events
+          if (event === 'PASSWORD_RECOVERY') {
+            console.log('🔐 Password recovery event - skipping profile load');
+            setAuthUser(session?.user || null);
+            setLoading(false);
+            return;
+          }
+
           setAuthUser(session?.user || null);
           if (session?.user) {
             await loadUserProfile(session.user.id);

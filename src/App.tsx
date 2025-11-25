@@ -507,6 +507,28 @@ function ResetPasswordForm({ onSuccess, onCancel }: { onSuccess: () => void; onC
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // First check if we have the recovery hash in the URL
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const isRecoveryType = hashParams.get('type') === 'recovery';
+        const hasAccessToken = hashParams.has('access_token');
+
+        console.log('🔍 URL hash check:', {
+          isRecoveryType,
+          hasAccessToken,
+          fullHash: window.location.hash
+        });
+
+        if (!isRecoveryType || !hasAccessToken) {
+          console.log('❌ Missing recovery parameters in URL');
+          setHasValidSession(false);
+          setError('El enlace de recuperación ha expirado o no es válido. Por favor, solicita un nuevo enlace desde la pantalla de login.');
+          setCheckingSession(false);
+          return;
+        }
+
+        // Give Supabase a moment to process the hash
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         const { data: { session } } = await supabase.auth.getSession();
         console.log('🔍 Checking recovery session:', session);
 
