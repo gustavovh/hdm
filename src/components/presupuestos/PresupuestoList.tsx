@@ -206,8 +206,7 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
       p.concepto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.nombre_fantasia?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || p.estado === statusFilter;
-    const notClonado = p.estado !== 'CLONADO';
-    return matchesSearch && matchesStatus && notClonado;
+    return matchesSearch && matchesStatus;
   });
 
   if (loading) {

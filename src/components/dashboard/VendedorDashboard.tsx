@@ -369,8 +369,7 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
       p.cliente_documento?.toLowerCase().includes(presupuestoSearch.toLowerCase()) ||
       p.concepto?.toLowerCase().includes(presupuestoSearch.toLowerCase());
     const matchesStatus = presupuestoStatusFilter === 'all' || p.estado === presupuestoStatusFilter;
-    const notClonado = p.estado !== 'CLONADO';
-    return matchesSearch && matchesStatus && notClonado && !p.deleted_at;
+    return matchesSearch && matchesStatus && !p.deleted_at;
   });
 
   if (loading) {

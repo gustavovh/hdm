@@ -168,7 +168,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
       }
 
       const matchesVendedor = selectedVendedor === 'all' || p.vendedor_id === selectedVendedor;
-      const notClonado = p.estado !== 'CLONADO';
+      const notClonado = isAdmin ? p.estado !== 'CLONADO' : true;
       return matchesDate && matchesVendedor && notClonado && !p.deleted_at;
     });
 
@@ -364,7 +364,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
       p.nombre_fantasia?.toLowerCase().includes(presupuestoSearch.toLowerCase());
     const matchesStatus = presupuestoStatusFilter === 'all' || p.estado === presupuestoStatusFilter;
     const matchesVendedor = selectedVendedor === 'all' || p.vendedor_id === selectedVendedor;
-    const notClonado = p.estado !== 'CLONADO';
+    const notClonado = isAdmin ? p.estado !== 'CLONADO' : true;
     return matchesSearch && matchesStatus && matchesVendedor && notClonado && !p.deleted_at;
   });
 
@@ -482,7 +482,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
       }
 
       const matchesVendedor = selectedVendedor === 'all' || p.vendedor_id === selectedVendedor;
-      const notClonado = p.estado !== 'CLONADO';
+      const notClonado = isAdmin ? p.estado !== 'CLONADO' : true;
       return matchesDate && matchesVendedor && notClonado && !p.deleted_at;
     });
   };
