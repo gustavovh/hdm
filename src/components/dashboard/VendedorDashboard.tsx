@@ -656,7 +656,7 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Estado
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-56">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '280px' }}>
                       Acciones
                     </th>
                   </tr>
@@ -702,27 +702,27 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                           {getStatusLabel(presupuesto.estado)}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-center">
-                        <div className="flex justify-center gap-1.5 items-center">
+                      <td className="px-2 py-3 whitespace-nowrap text-center" style={{ minWidth: '280px' }}>
+                        <div className="flex justify-center gap-2 items-center flex-nowrap">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDownloadPresupuesto(presupuesto);
                             }}
-                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
                             title="Descargar PDF"
                           >
-                            <Download className="w-4 h-4" />
+                            <Download className="w-5 h-5" />
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleClonePresupuesto(presupuesto);
                             }}
-                            className="text-gray-600 hover:text-gray-800 transition-colors"
+                            className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors"
                             title="Clonar presupuesto"
                           >
-                            <Copy className="w-4 h-4" />
+                            <Copy className="w-5 h-5" />
                           </button>
                           <button
                             onClick={(e) => {
@@ -730,10 +730,10 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                               setSelectedPresupuestoForEstado(presupuesto);
                               setShowCambiarEstado(true);
                             }}
-                            className="text-green-600 hover:text-green-800 transition-colors"
+                            className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
                             title="Cambiar estado"
                           >
-                            <RotateCw className="w-4 h-4" />
+                            <RotateCw className="w-5 h-5" />
                           </button>
                           <button
                             onClick={(e) => {
@@ -741,10 +741,10 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                               setSelectedPresupuestoForFacturacion(presupuesto);
                               setShowFacturacion(true);
                             }}
-                            className="text-purple-600 hover:text-purple-800 transition-colors"
+                            className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors"
                             title="Datos de facturación"
                           >
-                            <Receipt className="w-4 h-4" />
+                            <Receipt className="w-5 h-5" />
                           </button>
                         </div>
                       </td>
