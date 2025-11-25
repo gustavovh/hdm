@@ -501,14 +501,29 @@ function ResetPasswordForm({ onSuccess, onCancel }: { onSuccess: () => void; onC
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [hasValidSession, setHasValidSession] = useState(true);
+  const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('🔍 Checking recovery session:', session);
+
+        if (!session) {
+          console.log('❌ No recovery session found');
+          setHasValidSession(false);
+          setError('El enlace de recuperación ha expirado o no es válido. Por favor, solicita un nuevo enlace desde la pantalla de login.');
+        } else {
+          console.log('✅ Valid recovery session found');
+          setHasValidSession(true);
+        }
+      } catch (err) {
+        console.error('❌ Error checking session:', err);
         setHasValidSession(false);
-        setError('No hay una sesión de recuperación válida. Por favor, solicita un nuevo enlace de recuperación.');
+        setError('Error al verificar la sesión. Por favor, solicita un nuevo enlace de recuperación.');
+      } finally {
+        setCheckingSession(false);
       }
     };
     checkSession();
@@ -550,6 +565,57 @@ function ResetPasswordForm({ onSuccess, onCancel }: { onSuccess: () => void; onC
       setLoading(false);
     }
   };
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-6">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-8 text-center">
+          <div className="animate-pulse">
+            <FileText className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600">Verificando enlace de recuperación...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasValidSession === false) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-6">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-8">
+          <div className="text-center mb-8">
+            <img
+              src="/hdm-logo.png"
+              alt="HDM Ingeniería"
+              className="h-16 w-auto mx-auto mb-4 object-contain"
+            />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Enlace Expirado
+            </h1>
+          </div>
+
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-6">
+            <p className="text-sm text-amber-800 text-center">
+              {error}
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Button
+              type="button"
+              fullWidth
+              onClick={onCancel}
+            >
+              Volver al inicio de sesión
+            </Button>
+            <p className="text-xs text-gray-500 text-center">
+              Desde el inicio de sesión, haz clic en "¿Olvidaste tu contraseña?" para recibir un nuevo enlace.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-6">
@@ -608,21 +674,9 @@ function ResetPasswordForm({ onSuccess, onCancel }: { onSuccess: () => void; onC
             type="submit"
             fullWidth
             loading={loading}
-            disabled={!hasValidSession}
           >
             Cambiar Contraseña
           </Button>
-
-          {!hasValidSession && (
-            <Button
-              type="button"
-              variant="ghost"
-              fullWidth
-              onClick={onCancel}
-            >
-              Volver al inicio de sesión
-            </Button>
-          )}
         </form>
       </div>
     </div>
