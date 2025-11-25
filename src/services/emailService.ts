@@ -134,7 +134,7 @@ export class EmailService {
 
       <p>Por favor, revisa y aprueba esta solicitud lo antes posible.</p>
 
-      <a href="${Deno.env.get('VITE_APP_URL') || 'http://localhost:5173'}" class="button">
+      <a href="${window.location.origin}" class="button">
         Ver Solicitud
       </a>
     `;
@@ -172,7 +172,7 @@ export class EmailService {
 
       <p>El descuento ha sido aplicado automáticamente al presupuesto.</p>
 
-      <a href="${Deno.env.get('VITE_APP_URL') || 'http://localhost:5173'}" class="button">
+      <a href="${window.location.origin}" class="button">
         Ver Presupuesto
       </a>
     `;
@@ -209,7 +209,7 @@ export class EmailService {
 
       <p>El descuento modificado ha sido aplicado al presupuesto.</p>
 
-      <a href="${Deno.env.get('VITE_APP_URL') || 'http://localhost:5173'}" class="button">
+      <a href="${window.location.origin}" class="button">
         Ver Presupuesto
       </a>
     `;
@@ -282,7 +282,7 @@ export class EmailService {
 
       <p>Por favor, revisa estas solicitudes para mantener un flujo de trabajo eficiente.</p>
 
-      <a href="${Deno.env.get('VITE_APP_URL') || 'http://localhost:5173'}" class="button">
+      <a href="${window.location.origin}" class="button">
         Ver Solicitudes Pendientes
       </a>
     `;
@@ -325,7 +325,7 @@ export class EmailService {
         ${presupuesto.observaciones ? `<p><strong>Observaciones:</strong> ${presupuesto.observaciones}</p>` : ''}
       </div>
 
-      <a href="${Deno.env.get('VITE_APP_URL') || 'http://localhost:5173'}" class="button">
+      <a href="${window.location.origin}" class="button">
         Ver Presupuesto
       </a>
     `;
