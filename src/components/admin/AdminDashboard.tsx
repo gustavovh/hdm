@@ -9,7 +9,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { PresupuestoService } from '../../services/api';
-import { DiscountRequestService } from '../../services/discountRequestService';
+import { DiscountRequestService } from '../../services/api';
 import { userService } from '../../services/userService';
 import { salesTargetsService } from '../../services/salesTargetsService';
 import { exportService } from '../../services/exportService';
