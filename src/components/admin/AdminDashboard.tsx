@@ -999,8 +999,8 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                             {getStatusLabel(presupuesto.estado)}
                           </Badge>
                         </td>
-                        <td className="px-2 py-3 whitespace-nowrap text-center">
-                          <div className="inline-flex gap-2 items-center">
+                        <td className="px-2 py-3 text-center">
+                          <div className="flex gap-1 justify-center">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
