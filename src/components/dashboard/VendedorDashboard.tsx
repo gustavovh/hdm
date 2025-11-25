@@ -290,7 +290,14 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
 
   const handleDownloadPresupuesto = async (presupuesto: Presupuesto) => {
     try {
-      const blob = await generateHDMStandardPDF(presupuesto);
+      // Cargar el presupuesto completo con items
+      const presupuestoCompleto = await PresupuestoService.getById(presupuesto.id);
+      if (!presupuestoCompleto) {
+        alert('No se pudo cargar el presupuesto');
+        return;
+      }
+
+      const blob = await generateHDMStandardPDF(presupuestoCompleto);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
