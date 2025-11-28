@@ -305,8 +305,11 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   const LIFT_UP = 2;              // reducido para mejor alineación con logo más grande
 
   const logoY = yTop - LIFT_UP;
-  let scaledW = 90;               // default width scaled up
-  let scaledH = 30;               // default height scaled up
+  // Default scaled dimensions based on 1.5× scaling factor (60mm * 1.5 = 90mm, 20mm * 1.5 = 30mm)
+  const LOGO_DEFAULT_WIDTH_SCALED = 60 * LOGO_SCALE_FACTOR;  // 90mm
+  const LOGO_DEFAULT_HEIGHT_SCALED = 20 * LOGO_SCALE_FACTOR; // 30mm
+  let scaledW = LOGO_DEFAULT_WIDTH_SCALED;
+  let scaledH = LOGO_DEFAULT_HEIGHT_SCALED;
   try {
     const response = await fetch('/hdm-logo.png');
     const blob = await response.blob();
