@@ -65,6 +65,7 @@ export class UserService {
   }
 
   static async update(id: string, updates: UpdateUserDTO): Promise<User> {
+    // Change password first if needed
     if (updates.password) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa');
@@ -90,27 +91,22 @@ export class UserService {
       }
     }
 
-    const userUpdates: { full_name?: string; role?: 'admin' | 'vendedor' | 'administrativo' } = {};
-    if (updates.full_name !== undefined) userUpdates.full_name = updates.full_name;
-    if (updates.role !== undefined) userUpdates.role = updates.role;
+    // Update user data (full_name, role) using SECURITY DEFINER function
+    const hasDataUpdates = updates.full_name !== undefined || updates.role !== undefined;
 
-    if (Object.keys(userUpdates).length > 0) {
-      const { data, error } = await supabase
-        .from('users')
-        .update(userUpdates)
-        .eq('id', id)
-        .select()
-        .maybeSingle();
+    if (hasDataUpdates) {
+      const { data, error } = await supabase.rpc('update_user_as_admin', {
+        target_user_id: id,
+        new_full_name: updates.full_name,
+        new_role: updates.role,
+      });
 
       if (error) throw error;
-      if (!data) throw new Error('Usuario no encontrado');
       return data;
     }
 
-    // Si solo se actualizó la contraseña, obtener los datos del usuario
-    // Usar la función get_all_users para evitar problemas de RLS
+    // If only password was changed, get the user data
     const { data: allUsers, error } = await supabase.rpc('get_all_users');
-
     if (error) throw error;
 
     const user = allUsers?.find((u: User) => u.id === id);
