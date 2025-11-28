@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User as AuthUser } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { User } from '../types/database.types';
-import { UserService } from '../services/api';
+import { getAuthTokens } from '../lib/authUtils';
 
 
 interface AuthContextType {
@@ -28,8 +28,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('🔍 Initial session check:', session);
 
-      // Check if this is a password recovery session
-      const isRecovery = window.location.hash.includes('type=recovery');
+      // Check if this is a password recovery session using robust parsing
+      const tokens = getAuthTokens();
+      const isRecovery = tokens.type === 'recovery';
 
       if (isRecovery) {
         console.log('🔐 Recovery mode detected - not loading user profile');
