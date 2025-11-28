@@ -254,11 +254,28 @@ export class HDMPDFGeneratorV2 {
 
     yPosition = (doc as any).lastAutoTable.finalY + 5;
 
-    // Total
+    // Totales section with SUB TOTAL, DESCUENTO, and TOTAL GS
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    const totalText = `TOTAL Gs.: ${this.formatNumber(presupuesto.total_neto + presupuesto.total_impuestos)}`;
-    doc.text(totalText, pageWidth - rightMargin, yPosition, { align: 'right' });
+
+    const totalConDescuento = presupuesto.total_neto + presupuesto.total_impuestos;
+    const subtotal = totalConDescuento + presupuesto.total_descuento;
+
+    // SUB TOTAL
+    doc.text('SUB TOTAL', pageWidth - rightMargin - 60, yPosition, { align: 'left' });
+    doc.text(`₲ ${this.formatNumber(subtotal)}`, pageWidth - rightMargin, yPosition, { align: 'right' });
+    yPosition += 5;
+
+    // DESCUENTO (solo mostrar si hay descuento)
+    if (presupuesto.total_descuento > 0) {
+      doc.text('DESCUENTO', pageWidth - rightMargin - 60, yPosition, { align: 'left' });
+      doc.text(`₲ ${this.formatNumber(presupuesto.total_descuento)}`, pageWidth - rightMargin, yPosition, { align: 'right' });
+      yPosition += 5;
+    }
+
+    // TOTAL GS.
+    doc.text('TOTAL GS.', pageWidth - rightMargin - 60, yPosition, { align: 'left' });
+    doc.text(`₲ ${this.formatNumber(totalConDescuento)}`, pageWidth - rightMargin, yPosition, { align: 'right' });
     yPosition += 8;
 
     // Forma de pago

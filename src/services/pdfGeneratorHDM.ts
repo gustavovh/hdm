@@ -241,22 +241,53 @@ export class HDMPDFGenerator {
     yPosition = (doc as any).lastAutoTable.finalY + 4;
 
     const currencySymbol = presupuesto.moneda === 'USD' ? '' : 'Gs.:';
+    const totalConDescuento = presupuesto.total_neto + presupuesto.total_impuestos;
+    const subtotal = totalConDescuento + presupuesto.total_descuento;
+
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.3);
-    const totalBoxX = pageWidth - rightMargin - 50;
-    doc.rect(totalBoxX, yPosition, 50, 8);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    doc.text(`TOTAL ${currencySymbol}`, totalBoxX + 2, yPosition + 5);
+
+    const totalBoxX = pageWidth - rightMargin - 50;
+    let currentY = yPosition;
+
+    // SUB TOTAL
+    doc.rect(totalBoxX, currentY, 50, 8);
+    doc.text(`SUB TOTAL`, totalBoxX + 2, currentY + 5);
     doc.text(
-      BudgetCalculator.formatCurrency(presupuesto.total_neto, presupuesto.moneda).replace('$', '').replace('₲', '').trim(),
+      BudgetCalculator.formatCurrency(subtotal, presupuesto.moneda).replace('$', '').replace('₲', '').trim(),
       pageWidth - rightMargin - 2,
-      yPosition + 5,
+      currentY + 5,
+      { align: 'right' }
+    );
+    currentY += 8;
+
+    // DESCUENTO (solo si hay descuento)
+    if (presupuesto.total_descuento > 0) {
+      doc.rect(totalBoxX, currentY, 50, 8);
+      doc.text(`DESCUENTO`, totalBoxX + 2, currentY + 5);
+      doc.text(
+        BudgetCalculator.formatCurrency(presupuesto.total_descuento, presupuesto.moneda).replace('$', '').replace('₲', '').trim(),
+        pageWidth - rightMargin - 2,
+        currentY + 5,
+        { align: 'right' }
+      );
+      currentY += 8;
+    }
+
+    // TOTAL GS.
+    doc.rect(totalBoxX, currentY, 50, 8);
+    doc.text(`TOTAL ${currencySymbol}`, totalBoxX + 2, currentY + 5);
+    doc.text(
+      BudgetCalculator.formatCurrency(totalConDescuento, presupuesto.moneda).replace('$', '').replace('₲', '').trim(),
+      pageWidth - rightMargin - 2,
+      currentY + 5,
       { align: 'right' }
     );
 
-    yPosition += 16;
+    yPosition = currentY + 16;
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     const diasPago = presupuesto.dias_validez || 30;

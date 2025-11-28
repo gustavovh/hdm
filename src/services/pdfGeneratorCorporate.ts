@@ -349,60 +349,49 @@ export class CorporatePDFGenerator {
     doc.rect(summaryX - 5, summaryStartY - 5, 75, 35, 'F');
 
     doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
 
-    doc.text('Total Bruto:', summaryX, summaryStartY);
+    const totalConDescuento = presupuesto.total_neto + presupuesto.total_impuestos;
+    const subtotalConDescuento = totalConDescuento + presupuesto.total_descuento;
+
+    // SUB TOTAL
+    doc.text('SUB TOTAL', summaryX, summaryStartY);
     doc.text(
-      BudgetCalculator.formatCurrency(presupuesto.total_bruto, presupuesto.moneda),
+      BudgetCalculator.formatCurrency(subtotalConDescuento, presupuesto.moneda),
       pageWidth - 25,
       summaryStartY,
       { align: 'right' }
     );
 
+    let currentYPos = summaryStartY + 5;
+
+    // DESCUENTO (solo si hay descuento)
     if (presupuesto.total_descuento > 0) {
-      doc.text('Descuento:', summaryX, summaryStartY + 5);
-      doc.setTextColor(220, 38, 38);
+      doc.text('DESCUENTO', summaryX, currentYPos);
       doc.text(
-        `- ${BudgetCalculator.formatCurrency(presupuesto.total_descuento, presupuesto.moneda)}`,
+        BudgetCalculator.formatCurrency(presupuesto.total_descuento, presupuesto.moneda),
         pageWidth - 25,
-        summaryStartY + 5,
+        currentYPos,
         { align: 'right' }
       );
-      doc.setTextColor(0, 0, 0);
+      currentYPos += 5;
     }
-
-    doc.text('Subtotal:', summaryX, summaryStartY + 10);
-    doc.text(
-      BudgetCalculator.formatCurrency(presupuesto.total_neto, presupuesto.moneda),
-      pageWidth - 25,
-      summaryStartY + 10,
-      { align: 'right' }
-    );
-
-    doc.text(`IVA (${presupuesto.tasa_impuesto}%):`, summaryX, summaryStartY + 15);
-    doc.text(
-      BudgetCalculator.formatCurrency(presupuesto.total_impuestos, presupuesto.moneda),
-      pageWidth - 25,
-      summaryStartY + 15,
-      { align: 'right' }
-    );
 
     doc.setDrawColor(...primaryColor);
     doc.setLineWidth(0.8);
-    doc.line(summaryX, summaryStartY + 18, pageWidth - 20, summaryStartY + 18);
+    doc.line(summaryX, currentYPos, pageWidth - 20, currentYPos);
+    currentYPos += 7;
 
+    // TOTAL GS.
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(...primaryColor);
-    doc.text('TOTAL:', summaryX, summaryStartY + 25);
+    doc.text('TOTAL GS.', summaryX, currentYPos);
     doc.text(
-      BudgetCalculator.formatCurrency(
-        presupuesto.total_neto + presupuesto.total_impuestos,
-        presupuesto.moneda
-      ),
+      BudgetCalculator.formatCurrency(totalConDescuento, presupuesto.moneda),
       pageWidth - 25,
-      summaryStartY + 25,
+      currentYPos,
       { align: 'right' }
     );
 

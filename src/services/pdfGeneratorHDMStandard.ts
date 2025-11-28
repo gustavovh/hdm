@@ -468,16 +468,43 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     formatCurrency(item.subtotal)
   ]) || [];
 
-  // Agregar fila de totales al final de los datos
-  const totalBruto = presupuesto.total_neto;
+  // Agregar filas de totales al final de los datos
+  const totalConDescuento = presupuesto.total_neto + presupuesto.total_impuestos;
+  const subtotal = totalConDescuento + presupuesto.total_descuento;
+
+  // SUB TOTAL
   tableData.push([
     '',
     '',
     '',
     '',
     '',
-    'TOTAL Gs.:',
-    formatCurrency(totalBruto)
+    'SUB TOTAL',
+    formatCurrency(subtotal)
+  ]);
+
+  // DESCUENTO (solo si hay descuento)
+  if (presupuesto.total_descuento > 0) {
+    tableData.push([
+      '',
+      '',
+      '',
+      '',
+      '',
+      'DESCUENTO',
+      formatCurrency(presupuesto.total_descuento)
+    ]);
+  }
+
+  // TOTAL GS.
+  tableData.push([
+    '',
+    '',
+    '',
+    '',
+    '',
+    'TOTAL GS.',
+    formatCurrency(totalConDescuento)
   ]);
 
   autoTable(doc, {
