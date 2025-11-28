@@ -30,11 +30,8 @@ export function normalizeHash(hash: string): string {
   // Remove leading # if present
   let normalized = hash.startsWith('#') ? hash.substring(1) : hash;
   
-  // Remove leading slashes and combinations like '/', '//', '#/', etc.
+  // Remove leading slashes and combinations like '/', '//', etc.
   normalized = normalized.replace(/^\/+/, '');
-  
-  // Handle cases like '#/' or '#//' at the beginning
-  normalized = normalized.replace(/^#\/+/, '');
   
   return normalized;
 }
