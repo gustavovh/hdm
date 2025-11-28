@@ -307,7 +307,7 @@ export class HDMPDFGeneratorV2 {
     // Texto de cierre
     doc.setFontSize(9);
     doc.text('Estamos a su disposición ante cualquier consulta.', leftMargin, yPosition);
-    yPosition += 15; // 3 líneas de espacio
+    yPosition += 25; // Espacio adicional antes de la firma para evitar superposición con el pie de página
 
     // Firma del vendedor que creó el presupuesto - centrada en la página
     // Si el vendedor es administrativo, usa la firma del admin en su lugar
