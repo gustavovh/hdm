@@ -107,15 +107,16 @@ export class UserService {
       return data;
     }
 
-    const { data, error } = await supabase
-      .from('users')
-      .select()
-      .eq('id', id)
-      .maybeSingle();
+    // Si solo se actualizó la contraseña, obtener los datos del usuario
+    // Usar la función get_all_users para evitar problemas de RLS
+    const { data: allUsers, error } = await supabase.rpc('get_all_users');
 
     if (error) throw error;
-    if (!data) throw new Error('Usuario no encontrado');
-    return data;
+
+    const user = allUsers?.find((u: User) => u.id === id);
+    if (!user) throw new Error('Usuario no encontrado');
+
+    return user;
   }
 
   static async toggleActive(id: string, active: boolean): Promise<void> {
