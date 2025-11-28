@@ -3,16 +3,18 @@ import { User } from '../../types/database.types';
 import { UserService } from '../../services/userService';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { UserPlus, Edit, Trash2, Shield, UserX, FileText } from 'lucide-react';
+import { UserPlus, Edit, Shield, UserX, Eye, EyeOff, Key } from 'lucide-react';
 import { UserFormModal } from './UserFormModal';
-import { BillingInfoModal } from './BillingInfoModal';
 
 export function UserList() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [showBillingModal, setShowBillingModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -40,9 +42,11 @@ export function UserList() {
     setShowForm(true);
   };
 
-  const handleBillingInfo = (user: User) => {
+  const handleChangePassword = (user: User) => {
     setSelectedUser(user);
-    setShowBillingModal(true);
+    setNewPassword('');
+    setShowNewPassword(false);
+    setShowPasswordModal(true);
   };
 
   const handleToggleActive = async (user: User) => {
@@ -72,15 +76,43 @@ export function UserList() {
     loadUsers();
   };
 
-  const handleBillingSuccess = () => {
-    setShowBillingModal(false);
-    setSelectedUser(null);
-    loadUsers();
+  const generateRandomPassword = () => {
+    const length = 12;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
   };
 
-  const handleBillingClose = () => {
-    setShowBillingModal(false);
-    setSelectedUser(null);
+  const handleGeneratePassword = () => {
+    const generated = generateRandomPassword();
+    setNewPassword(generated);
+    setShowNewPassword(true);
+  };
+
+  const handleSavePassword = async () => {
+    if (!selectedUser || !newPassword) return;
+
+    if (newPassword.length < 6) {
+      alert('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      await UserService.update(selectedUser.id, { password: newPassword });
+      alert('Contraseña actualizada exitosamente');
+      setShowPasswordModal(false);
+      setSelectedUser(null);
+      setNewPassword('');
+    } catch (error) {
+      console.error('Error updating password:', error);
+      alert('Error al actualizar la contraseña');
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   if (loading) {
@@ -210,10 +242,10 @@ export function UserList() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleBillingInfo(user)}
-                          title="Datos de facturación"
+                          onClick={() => handleChangePassword(user)}
+                          title="Cambiar contraseña"
                         >
-                          <FileText className="w-4 h-4 text-blue-600" />
+                          <Key className="w-4 h-4 text-purple-600" />
                         </Button>
                         <Button
                           size="sm"
@@ -246,13 +278,76 @@ export function UserList() {
         />
       )}
 
-      {showBillingModal && selectedUser && (
-        <BillingInfoModal
-          isOpen={showBillingModal}
-          onClose={handleBillingClose}
-          onSuccess={handleBillingSuccess}
-          user={selectedUser}
-        />
+      {showPasswordModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold mb-4">Cambiar Contraseña</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Usuario: <span className="font-medium">{selectedUser.full_name}</span>
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nueva Contraseña
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10"
+                    placeholder="Ingrese nueva contraseña"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGeneratePassword}
+                className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
+              >
+                Generar Contraseña Aleatoria
+              </button>
+
+              {newPassword && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-800">
+                    <strong>Importante:</strong> Copia esta contraseña antes de guardar.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setSelectedUser(null);
+                  setNewPassword('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                disabled={passwordLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSavePassword}
+                disabled={!newPassword || passwordLoading}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {passwordLoading ? 'Guardando...' : 'Guardar Contraseña'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
