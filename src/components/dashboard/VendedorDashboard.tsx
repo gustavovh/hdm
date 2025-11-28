@@ -637,9 +637,9 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
               <p className="text-gray-600">Intenta cambiar los filtros de búsqueda</p>
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
-              <div className="min-w-max">
-              <table className="w-full divide-y divide-gray-200" style={{ tableLayout: 'auto' }}>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="overflow-x-auto">
+              <table className="w-full divide-y divide-gray-200" style={{ minWidth: '1400px' }}>
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -681,13 +681,13 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                         {presupuesto.codigo}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
+                      <td className="px-4 py-3 text-sm text-gray-900" style={{ minWidth: '200px' }}>
                         {presupuesto.cliente_nombre}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">
+                      <td className="px-4 py-3 text-sm text-gray-700" style={{ minWidth: '150px' }}>
                         {presupuesto.nombre_fantasia || '-'}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">
+                      <td className="px-4 py-3 text-sm text-gray-700" style={{ minWidth: '250px' }}>
                         {presupuesto.concepto || '-'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
