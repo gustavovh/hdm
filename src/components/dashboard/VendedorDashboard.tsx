@@ -612,10 +612,14 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
               >
                 <option value="all">Todos los estados</option>
+                <option value="CLONADO">Clonado</option>
                 <option value="ABIERTO">Abierto</option>
                 <option value="PRESENTADO">Presentado</option>
                 <option value="ACEPTADO">Aceptado</option>
+                <option value="EN_EJECUCION">En Ejecución</option>
                 <option value="FACTURADO">Facturado</option>
+                <option value="RECHAZADO">Rechazado</option>
+                <option value="CANCELADO">Cancelado</option>
                 <option value="ANULADO">Anulado</option>
               </select>
             </div>
@@ -634,6 +638,7 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+              <div className="min-w-max">
               <table className="w-full divide-y divide-gray-200" style={{ tableLayout: 'auto' }}>
                 <thead className="bg-gray-50">
                   <tr>
@@ -757,6 +762,7 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </>

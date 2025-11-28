@@ -256,10 +256,14 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
             >
               <option value="all">Todos los estados</option>
+              <option value="CLONADO">Clonado</option>
               <option value="ABIERTO">Abierto</option>
               <option value="PRESENTADO">Presentado</option>
               <option value="ACEPTADO">Aceptado</option>
+              <option value="EN_EJECUCION">En Ejecución</option>
               <option value="FACTURADO">Facturado</option>
+              <option value="RECHAZADO">Rechazado</option>
+              <option value="CANCELADO">Cancelado</option>
               <option value="ANULADO">Anulado</option>
             </select>
             <button
@@ -295,8 +299,9 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+          <div className="min-w-max">
+          <table className="w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -419,6 +424,7 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

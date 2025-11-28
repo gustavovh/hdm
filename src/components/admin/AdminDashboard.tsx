@@ -910,9 +910,13 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                 >
                   <option value="all">Todos los estados</option>
                   <option value="CLONADO">Clonado</option>
+                  <option value="ABIERTO">Abierto</option>
                   <option value="PRESENTADO">Presentado</option>
                   <option value="ACEPTADO">Aceptado</option>
+                  <option value="EN_EJECUCION">En Ejecución</option>
                   <option value="FACTURADO">Facturado</option>
+                  <option value="RECHAZADO">Rechazado</option>
+                  <option value="CANCELADO">Cancelado</option>
                   <option value="ANULADO">Anulado</option>
                 </Select>
               </div>
@@ -931,6 +935,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+                <div className="min-w-max">
                 <table className="w-full divide-y divide-gray-200" style={{ tableLayout: 'auto' }}>
                   <thead className="bg-gray-50">
                     <tr>
@@ -1074,6 +1079,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
           </>
