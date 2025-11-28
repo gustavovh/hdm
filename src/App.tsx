@@ -11,13 +11,14 @@ import { UserList } from './components/users/UserList';
 import { ReportsDashboard } from './components/reports/ReportsDashboard';
 import { CatalogoPage } from './components/catalogo/CatalogoPage';
 import { UserProfile } from './components/profile/UserProfile';
+import { CommissionsManager } from './components/commissions/CommissionsManager';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
-import { LogOut, FileText, Users, List, BarChart3, UserCog, LayoutDashboard, Package, Eye, EyeOff, UserCircle } from 'lucide-react';
+import { LogOut, FileText, Users, List, BarChart3, UserCog, LayoutDashboard, Package, Eye, EyeOff, UserCircle, DollarSign } from 'lucide-react';
 
 function AuthenticatedApp() {
   const { user, signOut, isAdmin, isAdministrativo } = useAuth();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form' | 'reports' | 'users' | 'catalogo' | 'profile'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form' | 'reports' | 'users' | 'catalogo' | 'profile' | 'commissions'>('dashboard');
   const [selectedPresupuestoId, setSelectedPresupuestoId] = useState<string>('');
 
   if (!user) {
@@ -118,6 +119,17 @@ function AuthenticatedApp() {
                 >
                   <BarChart3 className="w-5 h-5" />
                   Reportes
+                </button>
+                <button
+                  onClick={() => setCurrentView('commissions')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
+                    currentView === 'commissions'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
+                  }`}
+                >
+                  <DollarSign className="w-5 h-5" />
+                  Comisiones
                 </button>
                 <button
                   onClick={() => setCurrentView('catalogo')}
@@ -259,6 +271,7 @@ function AuthenticatedApp() {
           )
         )}
         {currentView === 'reports' && <ReportsDashboard />}
+        {currentView === 'commissions' && <CommissionsManager />}
         {currentView === 'users' && <UserList />}
         {currentView === 'catalogo' && <CatalogoPage />}
         {currentView === 'profile' && <UserProfile />}
