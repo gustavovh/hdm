@@ -307,7 +307,16 @@ export class HDMPDFGeneratorV2 {
     // Texto de cierre
     doc.setFontSize(9);
     doc.text('Estamos a su disposición ante cualquier consulta.', leftMargin, yPosition);
-    yPosition += 25; // Espacio adicional antes de la firma para evitar superposición con el pie de página
+    yPosition += 10;
+
+    // Definir límite máximo para la firma (debe estar por encima del footer)
+    const footerY = pageHeight - 10;
+    const maxSignatureY = footerY - 40; // Reservar 40mm de espacio mínimo sobre el footer
+
+    // Si la posición actual sobrepasa el límite, ajustar
+    if (yPosition > maxSignatureY) {
+      yPosition = maxSignatureY;
+    }
 
     // Firma del vendedor que creó el presupuesto - centrada en la página
     // Si el vendedor es administrativo, usa la firma del admin en su lugar
