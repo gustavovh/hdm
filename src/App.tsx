@@ -365,20 +365,6 @@ function LoginForm() {
             Iniciar Sesión
           </Button>
         </form>
-
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-xs text-blue-800 font-medium mb-2">
-            Usuarios de prueba:
-          </p>
-          <p className="text-xs text-blue-700">
-            Admin: admin@hdm.com
-            <br />
-            Vendedor: vendedor1@hdm.com
-          </p>
-          <p className="text-xs text-blue-600 mt-2">
-            (Configura las contraseñas en Supabase Auth)
-          </p>
-        </div>
       </div>
     </div>
   );
