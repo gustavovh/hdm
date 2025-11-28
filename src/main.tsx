@@ -4,28 +4,45 @@ import App from './App.tsx';
 import './index.css';
 import { versionChecker } from './services/versionChecker';
 import { supabase } from './lib/supabase';
+import { getAuthTokens, normalizeHash } from './lib/authUtils';
 
 // Process URL hash for auth callbacks immediately
+// Handles malformed URLs like //#access_token=... or #/access_token=...
 const processAuthHash = async () => {
-  const hashParams = new URLSearchParams(window.location.hash.substring(1));
-  const accessToken = hashParams.get('access_token');
-  const type = hashParams.get('type');
+  const tokens = getAuthTokens();
 
   console.log('🔐 Processing auth hash on app load:', {
-    type,
-    hasAccessToken: !!accessToken,
-    fullHash: window.location.hash
+    type: tokens.type,
+    hasAccessToken: !!tokens.access_token,
+    hasRefreshToken: !!tokens.refresh_token,
+    fullHash: window.location.hash,
+    normalizedHash: normalizeHash(window.location.hash)
   });
 
-  if (accessToken && type === 'recovery') {
-    console.log('✅ Recovery token detected - Supabase will auto-process');
-    // Supabase will automatically handle this via onAuthStateChange
-    // Just trigger a session refresh to ensure it's processed
+  if (tokens.access_token && tokens.type === 'recovery') {
+    console.log('✅ Recovery token detected - attempting to set session');
+    
     try {
-      await supabase.auth.refreshSession();
-      console.log('✅ Session refreshed');
+      // For Supabase v2, we can try to set the session manually if auto-processing fails
+      if (tokens.refresh_token) {
+        const { error } = await supabase.auth.setSession({
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+        });
+        if (error) {
+          console.error('❌ Error setting session:', error);
+          // Fall back to refreshSession
+          await supabase.auth.refreshSession();
+        } else {
+          console.log('✅ Session set successfully');
+        }
+      } else {
+        // If no refresh token, try refreshSession
+        await supabase.auth.refreshSession();
+        console.log('✅ Session refreshed');
+      }
     } catch (err) {
-      console.error('❌ Error refreshing session:', err);
+      console.error('❌ Error processing recovery token:', err);
     }
   }
 };

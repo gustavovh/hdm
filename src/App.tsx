@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { supabase } from './lib/supabase';
+import { getAuthTokens, clearUrlHash } from './lib/authUtils';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { VendedorDashboard } from './components/dashboard/VendedorDashboard';
 import { PresupuestoDetail } from './pages/PresupuestoDetail';
@@ -713,8 +714,10 @@ function AppContent() {
   const [passwordResetSuccess, setPasswordResetSuccess] = useState(false);
 
   useEffect(() => {
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    if (hashParams.get('type') === 'recovery') {
+    // Use the robust auth token parser that handles malformed URLs
+    const tokens = getAuthTokens();
+    if (tokens.type === 'recovery') {
+      console.log('🔐 Recovery mode detected in AppContent');
       setIsResettingPassword(true);
     }
   }, []);
@@ -736,11 +739,11 @@ function AppContent() {
         onSuccess={() => {
           setPasswordResetSuccess(true);
           setIsResettingPassword(false);
-          window.location.hash = '';
+          clearUrlHash();
         }}
         onCancel={() => {
           setIsResettingPassword(false);
-          window.location.hash = '';
+          clearUrlHash();
           window.location.reload();
         }}
       />
