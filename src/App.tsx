@@ -288,7 +288,6 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -308,10 +307,6 @@ function LoginForm() {
       setLoading(false);
     }
   };
-
-  if (showForgotPassword) {
-    return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-6">
@@ -360,16 +355,6 @@ function LoginForm() {
             </button>
           </div>
 
-          <div className="text-right">
-            <button
-              type="button"
-              onClick={() => setShowForgotPassword(true)}
-              className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
-            >
-              ¿Olvidaste tu contraseña?
-            </button>
-          </div>
-
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600">{error}</p>
@@ -394,99 +379,6 @@ function LoginForm() {
             (Configura las contraseñas en Supabase Auth)
           </p>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      // IMPORTANTE: Esta URL debe estar configurada en Supabase Dashboard
-      // Authentication → URL Configuration → Redirect URLs
-      const redirectUrl = `${window.location.origin}`;
-
-      console.log('🔐 Sending password reset email');
-      console.log('📧 Email:', email);
-      console.log('🔗 Redirect URL:', redirectUrl);
-
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
-      });
-
-      if (error) throw error;
-
-      setSuccess(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al enviar el correo de recuperación');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <img
-            src="/hdm-logo.png"
-            alt="HDM Ingeniería"
-            className="h-16 w-auto mx-auto mb-4 object-contain"
-          />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Recuperar Contraseña
-          </h1>
-          <p className="text-gray-600">
-            Te enviaremos un enlace para restablecer tu contraseña
-          </p>
-        </div>
-
-        {success ? (
-          <div className="space-y-4">
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-800 text-center">
-                ¡Correo enviado! Revisa tu bandeja de entrada para restablecer tu contraseña.
-              </p>
-            </div>
-            <Button type="button" fullWidth onClick={onBack}>
-              Volver al inicio de sesión
-            </Button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="Correo Electrónico"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="usuario@hdm.com"
-              required
-            />
-
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{error}</p>
-              </div>
-            )}
-
-            <Button type="submit" fullWidth loading={loading}>
-              Enviar enlace de recuperación
-            </Button>
-
-            <Button type="button" variant="ghost" fullWidth onClick={onBack}>
-              Volver al inicio de sesión
-            </Button>
-          </form>
-        )}
       </div>
     </div>
   );
@@ -622,7 +514,7 @@ function ResetPasswordForm({ onSuccess, onCancel }: { onSuccess: () => void; onC
               Volver al inicio de sesión
             </Button>
             <p className="text-xs text-gray-500 text-center">
-              Desde el inicio de sesión, haz clic en "¿Olvidaste tu contraseña?" para recibir un nuevo enlace.
+              Contacta al administrador para restablecer tu contraseña.
             </p>
           </div>
         </div>
