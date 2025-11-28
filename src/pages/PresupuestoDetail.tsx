@@ -35,6 +35,8 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
   console.log('🔄 PresupuestoDetail component mounted/updated, presupuestoId:', presupuestoId);
 
   const { user, isVendedor, isAdmin, isAdministrativo } = useAuth();
+
+  console.log('👤 User roles:', { isVendedor, isAdmin, isAdministrativo, userRole: user?.role });
   const [presupuesto, setPresupuesto] = useState<Presupuesto | null>(null);
   const [imagenes, setImagenes] = useState<PresupuestoImagen[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,6 +196,19 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
             )}
             {!editMode && (
               <>
+                {isAdmin && presupuesto.estado !== 'ANULADO' && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      console.log('🎯 Comisión button clicked!', { isAdmin, estado: presupuesto.estado });
+                      setShowComisionModal(true);
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Percent className="w-4 h-4 mr-2" />
+                    Comisión
+                  </Button>
+                )}
                 <PresupuestoStatusManager
                   presupuesto={presupuesto}
                   onUpdate={loadPresupuesto}
@@ -216,16 +231,6 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
                   <Download className="w-4 h-4 mr-2" />
                   Descargar PDF
                 </Button>
-                {isAdmin && presupuesto.estado !== 'ANULADO' && (
-                  <Button
-                    size="sm"
-                    onClick={() => setShowComisionModal(true)}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <Percent className="w-4 h-4 mr-2" />
-                    Comisión
-                  </Button>
-                )}
                 {(isVendedor || isAdministrativo) && presupuesto.estado !== 'ANULADO' && presupuesto.vendedor_id === user?.id && (
                   <Button onClick={() => setShowRequestForm(true)}>
                     <Tag className="w-4 h-4 mr-2" />
