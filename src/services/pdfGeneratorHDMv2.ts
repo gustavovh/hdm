@@ -285,18 +285,43 @@ export class HDMPDFGeneratorV2 {
     doc.text(presupuesto.condicion_pago || 'CONTADO', leftMargin + 35, yPosition);
     yPosition += 8;
 
+    // Constantes para control de espacio
+    const BOTTOM_MARGIN = 30;
+    const SIGNATURE_SPACE = 50;
+    const MIN_SPACE_FOR_CONTENT = 40;
+
     // Observaciones
     if (presupuesto.observaciones) {
+      // Verificar espacio antes de empezar
+      if (yPosition > pageHeight - BOTTOM_MARGIN - SIGNATURE_SPACE - MIN_SPACE_FOR_CONTENT) {
+        doc.addPage();
+        yPosition = topMargin;
+      }
+
       doc.setFont('helvetica', 'bold');
       doc.text('Observación(es):', leftMargin, yPosition);
       yPosition += 5;
       doc.setFont('helvetica', 'normal');
       const obsText = doc.splitTextToSize(presupuesto.observaciones, pageWidth - leftMargin - rightMargin);
-      doc.text(obsText, leftMargin, yPosition);
-      yPosition += obsText.length * 5;
+
+      // Verificar línea por línea
+      for (let i = 0; i < obsText.length; i++) {
+        if (yPosition > pageHeight - BOTTOM_MARGIN - SIGNATURE_SPACE) {
+          doc.addPage();
+          yPosition = topMargin;
+        }
+        doc.text(obsText[i], leftMargin, yPosition);
+        yPosition += 5;
+      }
     }
 
     yPosition += 3;
+
+    // Verificar espacio para notas finales
+    if (yPosition > pageHeight - BOTTOM_MARGIN - SIGNATURE_SPACE - 15) {
+      doc.addPage();
+      yPosition = topMargin;
+    }
 
     // Nota de IVA
     doc.setFontSize(8);

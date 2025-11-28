@@ -592,6 +592,17 @@ function addFormaPago(doc: jsPDF, margin: number, yPosition: number, presupuesto
 }
 
 function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): number {
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const BOTTOM_MARGIN = 30; // Margen inferior reservado para el pie de página
+  const SIGNATURE_SPACE = 50; // Espacio reservado para la firma
+  const MIN_SPACE_FOR_CONTENT = 40; // Espacio mínimo necesario para comenzar observaciones
+
+  // Verificar si hay espacio suficiente para empezar las observaciones
+  if (yPosition > pageHeight - BOTTOM_MARGIN - SIGNATURE_SPACE - MIN_SPACE_FOR_CONTENT) {
+    doc.addPage();
+    yPosition = margin;
+  }
+
   doc.setFont('times', 'bold');
   doc.setFontSize(12);  // Title size
   doc.text('Observación(es):', margin, yPosition);
@@ -604,8 +615,24 @@ function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWid
     'PRUEBAS DE DESCRIPCION';
 
   const obsLines = doc.splitTextToSize(observaciones.toUpperCase(), pageWidth - (margin * 2));
-  doc.text(obsLines, margin, yPosition);
-  yPosition += (obsLines.length * 6) + 5;
+
+  // Verificar línea por línea si hay espacio
+  for (let i = 0; i < obsLines.length; i++) {
+    if (yPosition > pageHeight - BOTTOM_MARGIN - SIGNATURE_SPACE) {
+      doc.addPage();
+      yPosition = margin;
+    }
+    doc.text(obsLines[i], margin, yPosition);
+    yPosition += 6;
+  }
+
+  yPosition += 5;
+
+  // Verificar espacio para las notas finales
+  if (yPosition > pageHeight - BOTTOM_MARGIN - SIGNATURE_SPACE - 15) {
+    doc.addPage();
+    yPosition = margin;
+  }
 
   doc.setFont('times', 'normal');
   doc.setFontSize(11);
@@ -613,6 +640,7 @@ function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWid
   yPosition += 6;
 
   doc.text('Estamos a su disposición ante cualquier consulta.', margin, yPosition);
+  yPosition += 6;
 
   return yPosition;
 }

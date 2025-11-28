@@ -293,7 +293,19 @@ export class HDMPDFGenerator {
     const diasPago = presupuesto.dias_validez || 30;
     doc.text(`Forma de pago: ${diasPago} DIAS`, leftMargin, yPosition);
 
+    // Constantes para control de espacio
+    const BOTTOM_MARGIN = 30;
+    const SIGNATURE_SPACE = 50;
+    const MIN_SPACE_FOR_CONTENT = 40;
+
     yPosition += 10;
+
+    // Verificar espacio antes de empezar observaciones
+    if (yPosition > pageHeight - BOTTOM_MARGIN - SIGNATURE_SPACE - MIN_SPACE_FOR_CONTENT) {
+      doc.addPage();
+      yPosition = topMargin;
+    }
+
     doc.setFont('helvetica', 'bold');
     doc.text('Observación(es):', leftMargin, yPosition);
     yPosition += 5;
@@ -305,12 +317,24 @@ export class HDMPDFGenerator {
       'PRESUPUESTO NO INCLUYE EL DESMONTAJE Y MONTAJE DE BARANDAS',
     ];
 
+    // Verificar línea por línea
     observaciones.forEach(obs => {
+      if (yPosition > pageHeight - BOTTOM_MARGIN - SIGNATURE_SPACE) {
+        doc.addPage();
+        yPosition = topMargin;
+      }
       doc.text(obs, leftMargin, yPosition);
       yPosition += 4;
     });
 
     yPosition += 3;
+
+    // Verificar espacio para notas finales
+    if (yPosition > pageHeight - BOTTOM_MARGIN - SIGNATURE_SPACE - 15) {
+      doc.addPage();
+      yPosition = topMargin;
+    }
+
     doc.setFont('helvetica', 'normal');
     doc.text('* Los precios incluyen IVA.', leftMargin, yPosition);
 
