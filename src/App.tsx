@@ -515,53 +515,89 @@ function ResetPasswordForm({ onSuccess, onCancel }: { onSuccess: () => void; onC
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // First check if we have the recovery hash in the URL
+        // Check both hash and query params for recovery token
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const isRecoveryType = hashParams.get('type') === 'recovery';
+        const queryParams = new URLSearchParams(window.location.search);
+
+        const isRecoveryType = hashParams.get('type') === 'recovery' || queryParams.get('type') === 'recovery';
+        const tokenHash = queryParams.get('token_hash') || queryParams.get('token');
         const accessToken = hashParams.get('access_token');
 
-        console.log('🔍 URL hash check:', {
+        console.log('🔍 URL check:', {
           isRecoveryType,
+          hasTokenHash: !!tokenHash,
           hasAccessToken: !!accessToken,
-          fullHash: window.location.hash
+          fullHash: window.location.hash,
+          fullQuery: window.location.search
         });
 
-        if (!isRecoveryType || !accessToken) {
-          console.log('❌ Missing recovery parameters in URL');
-          setHasValidSession(false);
-          setError('El enlace de recuperación ha expirado o no es válido. Por favor, solicita un nuevo enlace desde la pantalla de login.');
+        // Case 1: We have token_hash in query params (Supabase's default format)
+        if (isRecoveryType && tokenHash) {
+          console.log('🔐 Verifying OTP with token_hash...');
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'recovery'
+          });
+
+          if (error) {
+            console.error('❌ Error verifying OTP:', error);
+            setHasValidSession(false);
+            setError('El enlace de recuperación ha expirado o no es válido. Por favor, solicita un nuevo enlace desde la pantalla de login.');
+            setCheckingSession(false);
+            return;
+          }
+
+          if (data.session) {
+            console.log('✅ Valid recovery session established via OTP');
+            setHasValidSession(true);
+            // Clear the URL params
+            window.history.replaceState({}, '', window.location.pathname + '#recovery');
+          } else {
+            console.log('❌ No session after verifyOtp');
+            setHasValidSession(false);
+            setError('Error al establecer la sesión. Por favor, solicita un nuevo enlace de recuperación.');
+          }
           setCheckingSession(false);
           return;
         }
 
-        // Manually set the session using the access token
-        console.log('🔐 Setting session with access token...');
-        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: hashParams.get('refresh_token') || ''
-        });
+        // Case 2: We have access_token in hash (custom format)
+        if (isRecoveryType && accessToken) {
+          console.log('🔐 Setting session with access token...');
+          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: hashParams.get('refresh_token') || ''
+          });
 
-        if (sessionError) {
-          console.error('❌ Error setting session:', sessionError);
-          setHasValidSession(false);
-          setError('El enlace de recuperación ha expirado o no es válido. Por favor, solicita un nuevo enlace desde la pantalla de login.');
+          if (sessionError) {
+            console.error('❌ Error setting session:', sessionError);
+            setHasValidSession(false);
+            setError('El enlace de recuperación ha expirado o no es válido. Por favor, solicita un nuevo enlace desde la pantalla de login.');
+            setCheckingSession(false);
+            return;
+          }
+
+          if (sessionData.session) {
+            console.log('✅ Valid recovery session established via access token');
+            setHasValidSession(true);
+          } else {
+            console.log('❌ No session after setSession');
+            setHasValidSession(false);
+            setError('Error al establecer la sesión. Por favor, solicita un nuevo enlace de recuperación.');
+          }
           setCheckingSession(false);
           return;
         }
 
-        if (sessionData.session) {
-          console.log('✅ Valid recovery session established');
-          setHasValidSession(true);
-        } else {
-          console.log('❌ No session after setSession');
-          setHasValidSession(false);
-          setError('Error al establecer la sesión. Por favor, solicita un nuevo enlace de recuperación.');
-        }
+        // No recovery parameters found
+        console.log('❌ Missing recovery parameters in URL');
+        setHasValidSession(false);
+        setError('El enlace de recuperación ha expirado o no es válido. Por favor, solicita un nuevo enlace desde la pantalla de login.');
+        setCheckingSession(false);
       } catch (err) {
         console.error('❌ Error checking session:', err);
         setHasValidSession(false);
         setError('Error al verificar la sesión. Por favor, solicita un nuevo enlace de recuperación.');
-      } finally {
         setCheckingSession(false);
       }
     };
