@@ -300,19 +300,26 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          {/* Scroll bar superior */}
-          <div
-            className="overflow-x-auto border-b border-gray-200"
-            style={{ overflowY: 'hidden' }}
-            onScroll={(e) => {
-              const target = e.target as HTMLDivElement;
-              const tableContainer = target.parentElement?.querySelector('.table-scroll-container') as HTMLDivElement;
-              if (tableContainer) {
-                tableContainer.scrollLeft = target.scrollLeft;
-              }
-            }}
-          >
-            <div style={{ height: '12px', width: '1400px' }}></div>
+          {/* Scroll bar superior visible */}
+          <div className="bg-gray-50 p-2 border-b border-gray-200">
+            <div
+              className="overflow-x-auto"
+              style={{
+                overflowY: 'hidden',
+                height: '20px',
+                background: 'linear-gradient(to right, #e5e7eb 0%, #e5e7eb 100%)',
+                borderRadius: '4px'
+              }}
+              onScroll={(e) => {
+                const target = e.target as HTMLDivElement;
+                const tableContainer = target.parentElement?.parentElement?.querySelector('.table-scroll-container') as HTMLDivElement;
+                if (tableContainer) {
+                  tableContainer.scrollLeft = target.scrollLeft;
+                }
+              }}
+            >
+              <div style={{ height: '1px', width: '1400px' }}></div>
+            </div>
           </div>
 
           {/* Tabla con scroll */}
