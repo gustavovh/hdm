@@ -518,15 +518,15 @@ function ResetPasswordForm({ onSuccess, onCancel }: { onSuccess: () => void; onC
         // First check if we have the recovery hash in the URL
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const isRecoveryType = hashParams.get('type') === 'recovery';
-        const hasAccessToken = hashParams.has('access_token');
+        const accessToken = hashParams.get('access_token');
 
         console.log('🔍 URL hash check:', {
           isRecoveryType,
-          hasAccessToken,
+          hasAccessToken: !!accessToken,
           fullHash: window.location.hash
         });
 
-        if (!isRecoveryType || !hasAccessToken) {
+        if (!isRecoveryType || !accessToken) {
           console.log('❌ Missing recovery parameters in URL');
           setHasValidSession(false);
           setError('El enlace de recuperación ha expirado o no es válido. Por favor, solicita un nuevo enlace desde la pantalla de login.');
@@ -534,41 +534,28 @@ function ResetPasswordForm({ onSuccess, onCancel }: { onSuccess: () => void; onC
           return;
         }
 
-        // Give Supabase more time to process the hash and establish session
-        console.log('⏳ Waiting for Supabase to process recovery token...');
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Manually set the session using the access token
+        console.log('🔐 Setting session with access token...');
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: hashParams.get('refresh_token') || ''
+        });
 
-        // Try multiple times to get the session
-        let session = null;
-        let attempts = 0;
-        const maxAttempts = 5;
-
-        while (!session && attempts < maxAttempts) {
-          attempts++;
-          console.log(`🔄 Attempt ${attempts}/${maxAttempts} to get session...`);
-
-          const { data: { session: currentSession } } = await supabase.auth.getSession();
-
-          if (currentSession) {
-            session = currentSession;
-            break;
-          }
-
-          // Wait between attempts
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        }
-
-        console.log('🔍 Final session check:', session);
-
-        if (!session) {
-          console.log('❌ No recovery session found after all attempts');
+        if (sessionError) {
+          console.error('❌ Error setting session:', sessionError);
           setHasValidSession(false);
           setError('El enlace de recuperación ha expirado o no es válido. Por favor, solicita un nuevo enlace desde la pantalla de login.');
-        } else {
-          console.log('✅ Valid recovery session found');
+          setCheckingSession(false);
+          return;
+        }
+
+        if (sessionData.session) {
+          console.log('✅ Valid recovery session established');
           setHasValidSession(true);
+        } else {
+          console.log('❌ No session after setSession');
+          setHasValidSession(false);
+          setError('Error al establecer la sesión. Por favor, solicita un nuevo enlace de recuperación.');
         }
       } catch (err) {
         console.error('❌ Error checking session:', err);
