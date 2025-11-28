@@ -3,8 +3,35 @@ import autoTable from 'jspdf-autotable';
 import { Presupuesto } from '../types/database.types';
 import { supabase } from '../lib/supabase';
 
-const LOGO_WIDTH_MM = 50;
-const LOGO_HEIGHT_MM = 13;
+/**
+ * ============================================================================
+ * PDF FONT CONFIGURATION
+ * ============================================================================
+ * This generator uses the following fonts consistently:
+ * - Body text: 'times' font, 11pt
+ * - Table text: 'times' font, 10pt
+ * - Titles/headings: 'times' bold, 12pt
+ * - Header contact info: 'helvetica' bold, 8pt (company info block)
+ * - Footer: 'helvetica' normal, 8pt
+ * 
+ * These values were detected from the existing implementation and should be
+ * maintained for consistency. If a change is needed, confirm with client.
+ * ============================================================================
+ */
+
+/**
+ * ============================================================================
+ * LAYOUT CONSTANTS
+ * ============================================================================
+ * Logo dimensions: scaled to 1.5× from original (28mm -> 42mm height target)
+ * Footer height: 13mm (10mm footer Y position + 3mm line above)
+ * Signature area: ~47mm (30mm image + 17mm text details below)
+ * ============================================================================
+ */
+// Note: LOGO_SCALE_FACTOR is documented here and applied in addHeader function
+// Original logo height was 28mm, scaled to 42mm (28 × 1.5)
+const FOOTER_HEIGHT_MM = 13;   // Reserved space for footer (line + text)
+const SIGNATURE_TOTAL_HEIGHT_MM = 47; // Signature image (30) + text details (17)
 
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
   console.log('🎯 USANDO GENERADOR HDMSTANDARD - VERSIÓN CORRECTA 2024-11-24');
@@ -54,15 +81,24 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   yPosition += 15;
 
-  // Verificar si hay espacio suficiente para la firma
-  // Espacio necesario para firma completa: 40mm es suficiente
-  const signatureHeight = 40;
-  const bottomMargin = 20; // Margen inferior aumentado
-  const bottomLimit = pageHeight - bottomMargin;
+  /**
+   * SIGNATURE/FOOTER OVERLAP PREVENTION
+   * ====================================
+   * Footer occupies: FOOTER_HEIGHT_MM (13mm) from the bottom
+   * Signature needs: SIGNATURE_TOTAL_HEIGHT_MM (47mm) including text below
+   * We calculate the safe limit and force a page break if signature would overlap.
+   * 
+   * Formula: bottomLimit = pageHeight - footerHeight - safetyMargin
+   * If currentY + signatureHeight > bottomLimit -> add new page
+   */
+  const signatureHeight = SIGNATURE_TOTAL_HEIGHT_MM; // Use constant for total signature area
+  const safetyMargin = 5; // Extra safety margin to prevent any overlap
+  const bottomLimit = pageHeight - FOOTER_HEIGHT_MM - safetyMargin;
 
-  // Verificar si la firma cabe en la página actual
+  // Verificar si la firma cabe en la página actual sin superponerse al footer
   if (yPosition + signatureHeight > bottomLimit) {
     // No hay espacio suficiente, crear nueva página
+    console.log(`📄 Page break triggered: yPosition=${yPosition}, signatureHeight=${signatureHeight}, bottomLimit=${bottomLimit}`);
     doc.addPage();
     const { headerEndY, servicesBottomY } = await addHeader(doc, margin, margin, pageWidth);
     addPresupuestoNumber(doc, pageWidth, margin, servicesBottomY, presupuesto);
@@ -269,12 +305,16 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   // ---- CONFIG ----
   const LINE_HEIGHT = 4;          // interlineado general
 
-  // ---- LOGO (izquierda, mantener aspecto) ----
-  const MAX_W = 85;          // límite de ancho
-  const TARGET_H = 28;       // altura deseada (más alto)
+  /**
+   * LOGO DIMENSIONS - Scaled to 1.5× as per client requirements
+   * Original: TARGET_H = 28mm
+   * New: TARGET_H = 42mm (28 × 1.5 = 42)
+   */
+  const MAX_W = 127;         // límite de ancho (85 × 1.5 = 127.5, rounded to 127)
+  const TARGET_H = 42;       // altura deseada escalada 1.5× (28 × 1.5 = 42)
   const LIFT_UP = 4;         // mover un poco hacia arriba
 
-  let logoY = yTop - LIFT_UP;
+  const logoY = yTop - LIFT_UP;
   let scaledW = 60;
   let scaledH = 20;
   try {
