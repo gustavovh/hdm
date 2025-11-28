@@ -26,7 +26,7 @@ Deno.serve(async (req: Request) => {
     const veintecuatroHorasAtras = new Date();
     veintecuatroHorasAtras.setHours(veintecuatroHorasAtras.getHours() - 24);
 
-    // Buscar presupuestos en estado ABIERTO o EN_EJECUCION que recibieron notificación
+    // Buscar presupuestos en estado ABIERTO que recibieron notificación
     // y no han sido actualizados en 24 horas desde la notificación
     const { data: presupuestosAbiertos, error: errorAbiertos } = await supabaseClient
       .from("presupuestos")
@@ -100,12 +100,13 @@ Deno.serve(async (req: Request) => {
 
         // Notificar al vendedor
         const notifVendedor = {
-          user_id: presupuesto.vendedor_id,
+          usuario_id: presupuesto.vendedor_id,
           tipo: "error",
           titulo: "Presupuesto anulado automáticamente",
           mensaje: `El presupuesto ${presupuesto.codigo} (${presupuesto.cliente_nombre}) fue anulado automáticamente por no cargar gestión en 24 horas desde la notificación.`,
-          relacionado_id: presupuesto.id,
-          relacionado_tipo: "presupuesto",
+          entidad: "presupuestos",
+          entidad_id: presupuesto.id,
+          leida: false,
         };
 
         await supabaseClient.from("notificaciones").insert(notifVendedor);
@@ -114,12 +115,13 @@ Deno.serve(async (req: Request) => {
         if (administrativos) {
           for (const admin of administrativos) {
             const notifAdmin = {
-              user_id: admin.id,
+              usuario_id: admin.id,
               tipo: "info",
               titulo: "Presupuesto anulado automáticamente",
               mensaje: `El presupuesto ${presupuesto.codigo} del vendedor ${vendedor.full_name} fue anulado automáticamente por falta de gestión.`,
-              relacionado_id: presupuesto.id,
-              relacionado_tipo: "presupuesto",
+              entidad: "presupuestos",
+              entidad_id: presupuesto.id,
+              leida: false,
             };
 
             await supabaseClient.from("notificaciones").insert(notifAdmin);
@@ -162,12 +164,13 @@ Deno.serve(async (req: Request) => {
 
         // Notificar al vendedor
         const notifVendedor = {
-          user_id: presupuesto.vendedor_id,
+          usuario_id: presupuesto.vendedor_id,
           tipo: "error",
           titulo: "Presupuesto anulado automáticamente",
           mensaje: `El presupuesto ${presupuesto.codigo} (${presupuesto.cliente_nombre}) fue anulado automáticamente por no cargar gestión en 24 horas desde la notificación.`,
-          relacionado_id: presupuesto.id,
-          relacionado_tipo: "presupuesto",
+          entidad: "presupuestos",
+          entidad_id: presupuesto.id,
+          leida: false,
         };
 
         await supabaseClient.from("notificaciones").insert(notifVendedor);
@@ -176,12 +179,13 @@ Deno.serve(async (req: Request) => {
         if (administrativos) {
           for (const admin of administrativos) {
             const notifAdmin = {
-              user_id: admin.id,
+              usuario_id: admin.id,
               tipo: "info",
               titulo: "Presupuesto anulado automáticamente",
               mensaje: `El presupuesto ${presupuesto.codigo} del vendedor ${vendedor.full_name} fue anulado automáticamente por falta de gestión.`,
-              relacionado_id: presupuesto.id,
-              relacionado_tipo: "presupuesto",
+              entidad: "presupuestos",
+              entidad_id: presupuesto.id,
+              leida: false,
             };
 
             await supabaseClient.from("notificaciones").insert(notifAdmin);

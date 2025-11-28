@@ -102,13 +102,13 @@ Deno.serve(async (req: Request) => {
 
         // Crear notificación para vendedor
         const notifVendedor = {
-          user_id: presupuesto.vendedor_id,
+          usuario_id: presupuesto.vendedor_id,
           tipo: "warning",
           titulo: "Presupuesto sin gestión - 5 días",
           mensaje: `El presupuesto ${presupuesto.codigo} (${presupuesto.cliente_nombre}) está en estado ABIERTO hace 5 días. Por favor, carga gestión o cambia el estado.`,
-          relacionado_id: presupuesto.id,
-          relacionado_tipo: "presupuesto",
-          requiere_comentario: true,
+          entidad: "presupuestos",
+          entidad_id: presupuesto.id,
+          leida: false,
         };
 
         await supabaseClient.from("notificaciones").insert(notifVendedor);
@@ -118,12 +118,13 @@ Deno.serve(async (req: Request) => {
         if (administrativos) {
           for (const admin of administrativos) {
             const notifAdmin = {
-              user_id: admin.id,
+              usuario_id: admin.id,
               tipo: "info",
               titulo: "Presupuesto sin gestión - 5 días",
               mensaje: `El presupuesto ${presupuesto.codigo} del vendedor ${vendedor.full_name} está en estado ABIERTO hace 5 días.`,
-              relacionado_id: presupuesto.id,
-              relacionado_tipo: "presupuesto",
+              entidad: "presupuestos",
+              entidad_id: presupuesto.id,
+              leida: false,
             };
 
             await supabaseClient.from("notificaciones").insert(notifAdmin);
@@ -153,13 +154,13 @@ Deno.serve(async (req: Request) => {
 
         // Crear notificación para vendedor
         const notifVendedor = {
-          user_id: presupuesto.vendedor_id,
+          usuario_id: presupuesto.vendedor_id,
           tipo: "warning",
           titulo: "Presupuesto en ejecución - 3 semanas",
           mensaje: `El presupuesto ${presupuesto.codigo} (${presupuesto.cliente_nombre}) está EN EJECUCIÓN hace 3 semanas. Por favor, carga gestión o cambia el estado.`,
-          relacionado_id: presupuesto.id,
-          relacionado_tipo: "presupuesto",
-          requiere_comentario: true,
+          entidad: "presupuestos",
+          entidad_id: presupuesto.id,
+          leida: false,
         };
 
         await supabaseClient.from("notificaciones").insert(notifVendedor);
@@ -169,12 +170,13 @@ Deno.serve(async (req: Request) => {
         if (administrativos) {
           for (const admin of administrativos) {
             const notifAdmin = {
-              user_id: admin.id,
+              usuario_id: admin.id,
               tipo: "info",
               titulo: "Presupuesto en ejecución - 3 semanas",
               mensaje: `El presupuesto ${presupuesto.codigo} del vendedor ${vendedor.full_name} está EN EJECUCIÓN hace 3 semanas.`,
-              relacionado_id: presupuesto.id,
-              relacionado_tipo: "presupuesto",
+              entidad: "presupuestos",
+              entidad_id: presupuesto.id,
+              leida: false,
             };
 
             await supabaseClient.from("notificaciones").insert(notifAdmin);

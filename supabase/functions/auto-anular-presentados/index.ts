@@ -6,15 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-interface Presupuesto {
-  id: string;
-  codigo: string;
-  cliente_nombre: string;
-  fecha_presentacion: string;
-  vendedor_id: string;
-  estado: string;
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -27,59 +18,55 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+    const supabaseClient = await import("npm:@supabase/supabase-js").then(
+      (mod) => mod.createClient(supabaseUrl, supabaseServiceKey)
+    );
+
     const hace30Dias = new Date();
     hace30Dias.setDate(hace30Dias.getDate() - 30);
     const fecha30Dias = hace30Dias.toISOString();
 
-    const { data: presupuestos, error: fetchError } = await fetch(
-      `${supabaseUrl}/rest/v1/presupuestos?estado=eq.PRESENTADO&fecha_presentacion=lt.${fecha30Dias}&select=id,codigo,cliente_nombre,fecha_presentacion,vendedor_id,estado`,
-      {
-        headers: {
-          apikey: supabaseServiceKey,
-          Authorization: `Bearer ${supabaseServiceKey}`,
-        },
-      }
-    ).then((res) => res.json());
+    const { data: presupuestos, error: fetchError } = await supabaseClient
+      .from("presupuestos")
+      .select(`
+        id,
+        codigo,
+        cliente_nombre,
+        fecha_presentacion,
+        vendedor_id,
+        estado,
+        vendedor:users!presupuestos_vendedor_id_fkey(email, full_name)
+      `)
+      .eq("estado", "PRESENTADO")
+      .lte("fecha_presentacion", fecha30Dias)
+      .is("deleted_at", null);
 
     if (fetchError) {
-      throw new Error(`Error fetching presupuestos: ${fetchError}`);
+      throw new Error(`Error fetching presupuestos: ${fetchError.message}`);
     }
 
-    const presupuestosArray = presupuestos as Presupuesto[];
-    const anulados: string[] = [];
+    const anulados: any[] = [];
 
-    for (const presupuesto of presupuestosArray) {
-      const { error: updateError } = await fetch(
-        `${supabaseUrl}/rest/v1/presupuestos?id=eq.${presupuesto.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            apikey: supabaseServiceKey,
-            Authorization: `Bearer ${supabaseServiceKey}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({
+    if (presupuestos && presupuestos.length > 0) {
+      for (const presupuesto of presupuestos) {
+        const vendedor = presupuesto.vendedor as any;
+
+        // Anular el presupuesto
+        const { error: updateError } = await supabaseClient
+          .from("presupuestos")
+          .update({
             estado: "ANULADO",
-            updated_at: new Date().toISOString(),
-          }),
+            ultima_actualizacion_estado: new Date().toISOString(),
+          })
+          .eq("id", presupuesto.id);
+
+        if (updateError) {
+          console.error(`Error updating presupuesto ${presupuesto.id}:`, updateError);
+          continue;
         }
-      ).then((res) => res.json());
 
-      if (updateError) {
-        console.error(`Error updating presupuesto ${presupuesto.id}:`, updateError);
-        continue;
-      }
-
-      await fetch(`${supabaseUrl}/rest/v1/auditorias`, {
-        method: "POST",
-        headers: {
-          apikey: supabaseServiceKey,
-          Authorization: `Bearer ${supabaseServiceKey}`,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify({
+        // Crear auditoría
+        await supabaseClient.from("auditorias").insert({
           accion: "AUTO_ANULAR_PRESENTADO",
           entidad: "presupuestos",
           entidad_id: presupuesto.id,
@@ -89,18 +76,17 @@ Deno.serve(async (req: Request) => {
             before: { estado: "PRESENTADO" },
             after: { estado: "ANULADO" },
           },
-        }),
-      });
+        });
 
-      await fetch(`${supabaseUrl}/rest/v1/notificaciones`, {
-        method: "POST",
-        headers: {
-          apikey: supabaseServiceKey,
-          Authorization: `Bearer ${supabaseServiceKey}`,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify({
+        // Buscar administrativos
+        const { data: administrativos } = await supabaseClient
+          .from("users")
+          .select("id, email, full_name")
+          .in("role", ["administrativo", "admin"])
+          .is("deleted_at", null);
+
+        // Notificar al vendedor
+        await supabaseClient.from("notificaciones").insert({
           usuario_id: presupuesto.vendedor_id,
           tipo: "AUTO_ANULACION",
           titulo: "Presupuesto Anulado Automáticamente",
@@ -108,10 +94,29 @@ Deno.serve(async (req: Request) => {
           entidad: "presupuestos",
           entidad_id: presupuesto.id,
           leida: false,
-        }),
-      });
+        });
 
-      anulados.push(presupuesto.codigo);
+        // Notificar a administrativos
+        if (administrativos) {
+          for (const admin of administrativos) {
+            await supabaseClient.from("notificaciones").insert({
+              usuario_id: admin.id,
+              tipo: "info",
+              titulo: "Presupuesto Anulado Automáticamente",
+              mensaje: `El presupuesto ${presupuesto.codigo} del vendedor ${vendedor?.full_name || 'desconocido'} fue anulado automáticamente (30 días sin respuesta).`,
+              entidad: "presupuestos",
+              entidad_id: presupuesto.id,
+              leida: false,
+            });
+          }
+        }
+
+        anulados.push({
+          codigo: presupuesto.codigo,
+          cliente: presupuesto.cliente_nombre,
+          vendedor: vendedor?.full_name || 'desconocido',
+        });
+      }
     }
 
     return new Response(
@@ -128,7 +133,7 @@ Deno.serve(async (req: Request) => {
         },
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error en auto-anulación:", error);
     return new Response(
       JSON.stringify({
