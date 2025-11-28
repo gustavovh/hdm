@@ -534,14 +534,36 @@ function ResetPasswordForm({ onSuccess, onCancel }: { onSuccess: () => void; onC
           return;
         }
 
-        // Give Supabase a moment to process the hash
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Give Supabase more time to process the hash and establish session
+        console.log('⏳ Waiting for Supabase to process recovery token...');
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('🔍 Checking recovery session:', session);
+        // Try multiple times to get the session
+        let session = null;
+        let attempts = 0;
+        const maxAttempts = 5;
+
+        while (!session && attempts < maxAttempts) {
+          attempts++;
+          console.log(`🔄 Attempt ${attempts}/${maxAttempts} to get session...`);
+
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+
+          if (currentSession) {
+            session = currentSession;
+            break;
+          }
+
+          // Wait between attempts
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+
+        console.log('🔍 Final session check:', session);
 
         if (!session) {
-          console.log('❌ No recovery session found');
+          console.log('❌ No recovery session found after all attempts');
           setHasValidSession(false);
           setError('El enlace de recuperación ha expirado o no es válido. Por favor, solicita un nuevo enlace desde la pantalla de login.');
         } else {
