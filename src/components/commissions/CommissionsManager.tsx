@@ -62,7 +62,7 @@ export function CommissionsManager() {
 
         const { data: presupuestos } = await supabase
           .from('presupuestos')
-          .select('total_neto, total_impuestos, total_comisiones, moneda')
+          .select('id, codigo, total_neto, total_impuestos, total_comisiones, tasa_comision, moneda, fecha_aceptacion')
           .eq('vendedor_id', vendedor.id)
           .in('estado', ['ACEPTADO', 'FACTURADO'])
           .gte('fecha_aceptacion', startDate.toISOString())
@@ -75,7 +75,7 @@ export function CommissionsManager() {
         ) || 0;
 
         const totalComisiones = presupuestos?.reduce(
-          (sum, p) => sum + parseFloat(p.total_comisiones as any),
+          (sum, p) => sum + (parseFloat(p.total_comisiones as any) || 0),
           0
         ) || 0;
 
@@ -124,57 +124,24 @@ export function CommissionsManager() {
     }
   };
 
-  const handleCalculateCommission = async (vendedorId: string) => {
-    setCalculating(true);
-    try {
-      await CommissionsService.calculateMonthlyCommission(
-        vendedorId,
-        selectedYear,
-        selectedMonth
-      );
-      await loadCommissionsData();
-      alert('Comisión calculada exitosamente');
-    } catch (error) {
-      console.error('Error calculating commission:', error);
-      alert('Error al calcular la comisión');
-    } finally {
-      setCalculating(false);
-    }
-  };
+  const handleExportReport = () => {
+    const csvContent = [
+      ['Vendedor', 'Email', 'Ventas', 'Objetivo', 'Avance %', 'Comisión'],
+      ...vendedoresStats.map(stat => [
+        stat.vendedor.full_name,
+        stat.vendedor.email,
+        stat.totalVentas.toString(),
+        stat.objetivo.toString(),
+        stat.porcentajeObjetivo.toString(),
+        stat.totalComisiones.toString(),
+      ])
+    ].map(row => row.join(',')).join('\n');
 
-  const handleMarkAsPaid = async (calculationId: string) => {
-    if (!confirm('¿Marcar esta comisión como pagada?')) return;
-
-    try {
-      await CommissionsService.markAsPaid(calculationId);
-      await loadCommissionsData();
-      alert('Comisión marcada como pagada');
-    } catch (error) {
-      console.error('Error marking as paid:', error);
-      alert('Error al marcar como pagada');
-    }
-  };
-
-  const handleRecalculateAll = async () => {
-    if (!confirm('¿Recalcular comisiones para todos los vendedores? Esta acción puede tomar unos minutos.')) return;
-
-    setCalculating(true);
-    try {
-      for (const stat of vendedoresStats) {
-        await CommissionsService.calculateMonthlyCommission(
-          stat.vendedor.id,
-          selectedYear,
-          selectedMonth
-        );
-      }
-      await loadCommissionsData();
-      alert('Comisiones recalculadas exitosamente');
-    } catch (error) {
-      console.error('Error recalculating commissions:', error);
-      alert('Error al recalcular las comisiones');
-    } finally {
-      setCalculating(false);
-    }
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `comisiones_${months[selectedMonth - 1]}_${selectedYear}.csv`;
+    link.click();
   };
 
   const formatCurrency = (amount: number) => {
@@ -206,7 +173,7 @@ export function CommissionsManager() {
           Gestión de Comisiones
         </h1>
         <p className="text-gray-600">
-          Visualiza y gestiona las comisiones de ventas por vendedor
+          Visualiza el total de comisiones asignadas por vendedor. Las comisiones se asignan individualmente en cada presupuesto.
         </p>
       </div>
 
@@ -247,11 +214,12 @@ export function CommissionsManager() {
             Actualizar
           </Button>
           <Button
-            onClick={handleRecalculateAll}
-            disabled={calculating || loading}
+            onClick={handleExportReport}
+            disabled={loading || vendedoresStats.length === 0}
+            variant="outline"
           >
-            <Calendar className="w-4 h-4 mr-2" />
-            Recalcular Todo
+            <Download className="w-4 h-4 mr-2" />
+            Exportar CSV
           </Button>
         </div>
       </div>
@@ -338,13 +306,7 @@ export function CommissionsManager() {
                     Avance
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Comisión
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Acciones
+                    Comisión Total
                   </th>
                 </tr>
               </thead>
@@ -387,55 +349,11 @@ export function CommissionsManager() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="text-sm font-bold text-green-600">
+                      <div className="text-lg font-bold text-green-600">
                         {formatCurrency(stat.totalComisiones)}
                       </div>
-                      {stat.calculation && (
-                        <div className="text-xs text-gray-500">
-                          Tasa: {stat.calculation.tasa_comision_aplicada}%
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {stat.calculation ? (
-                        stat.calculation.pagado ? (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Pagado
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            <XCircle className="w-3 h-3" />
-                            Pendiente
-                          </span>
-                        )
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                          No calculado
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {stat.calculation ? (
-                          !stat.calculation.pagado && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleMarkAsPaid(stat.calculation!.id)}
-                            >
-                              Marcar Pagado
-                            </Button>
-                          )
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => handleCalculateCommission(stat.vendedor.id)}
-                            disabled={calculating}
-                          >
-                            Calcular
-                          </Button>
-                        )}
+                      <div className="text-xs text-gray-500 mt-1">
+                        Suma de comisiones asignadas
                       </div>
                     </td>
                   </tr>

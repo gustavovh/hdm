@@ -8,6 +8,7 @@ import { AuditTimeline } from '../components/audit/AuditTimeline';
 import { PresupuestoStatusManager } from '../components/presupuestos/PresupuestoStatusManager';
 import { SeguimientoManager } from '../components/seguimiento/SeguimientoManager';
 import { PresupuestoEditor } from '../components/presupuestos/PresupuestoEditor';
+import { ComisionModal } from '../components/presupuestos/ComisionModal';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { BudgetCalculator } from '../services/budgetCalculator';
@@ -23,6 +24,7 @@ import {
   Clock,
   DollarSign,
   RefreshCw,
+  Percent,
 } from 'lucide-react';
 
 interface PresupuestoDetailProps {
@@ -37,6 +39,7 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
   const [imagenes, setImagenes] = useState<PresupuestoImagen[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRequestForm, setShowRequestForm] = useState(false);
+  const [showComisionModal, setShowComisionModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'detalles' | 'solicitudes' | 'seguimiento' | 'historial'>(
     'detalles'
@@ -213,6 +216,16 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
                   <Download className="w-4 h-4 mr-2" />
                   Descargar PDF
                 </Button>
+                {isAdmin && presupuesto.estado !== 'ANULADO' && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowComisionModal(true)}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Percent className="w-4 h-4 mr-2" />
+                    Comisión
+                  </Button>
+                )}
                 {(isVendedor || isAdministrativo) && presupuesto.estado !== 'ANULADO' && presupuesto.vendedor_id === user?.id && (
                   <Button onClick={() => setShowRequestForm(true)}>
                     <Tag className="w-4 h-4 mr-2" />
@@ -554,6 +567,15 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
           onSubmit={handleCreateRequest}
           presupuestoId={presupuesto.id}
           items={presupuesto.items}
+        />
+      )}
+
+      {showComisionModal && (
+        <ComisionModal
+          presupuesto={presupuesto}
+          isOpen={showComisionModal}
+          onClose={() => setShowComisionModal(false)}
+          onSuccess={loadPresupuesto}
         />
       )}
 
