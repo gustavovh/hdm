@@ -7,8 +7,9 @@ import { BudgetCalculator } from '../../services/budgetCalculator';
 interface DiscountRequestListProps {
   requests: SolicitudDescuento[];
   onCancel?: (id: string) => void;
-  onView: (request: SolicitudDescuento) => void;
+  onView?: (request: SolicitudDescuento) => void;
   isAdmin?: boolean;
+  isAdministrativo?: boolean;
 }
 
 export function DiscountRequestList({
@@ -16,6 +17,7 @@ export function DiscountRequestList({
   onCancel,
   onView,
   isAdmin = false,
+  isAdministrativo = false,
 }: DiscountRequestListProps) {
   const getStatusBadge = (status: SolicitudDescuento['estado']) => {
     const badges = {
@@ -68,7 +70,7 @@ export function DiscountRequestList({
                   <Calendar className="w-4 h-4" />
                   {new Date(request.created_at).toLocaleDateString()}
                 </span>
-                {isAdmin && (
+                {(isAdmin || isAdministrativo) && (
                   <span className="flex items-center gap-1">
                     <User className="w-4 h-4" />
                     {request.vendedor?.full_name}
@@ -76,9 +78,16 @@ export function DiscountRequestList({
                 )}
               </div>
             </div>
-            <Button size="sm" variant="ghost" onClick={() => onView(request)}>
-              Ver Detalles
-            </Button>
+            {onView && (
+              <Button size="sm" variant="ghost" onClick={() => onView(request)}>
+                {isAdmin ? 'Gestionar' : 'Ver Detalles'}
+              </Button>
+            )}
+            {isAdministrativo && (
+              <Badge variant="info" size="sm">
+                Solo lectura
+              </Badge>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-4 mb-4">

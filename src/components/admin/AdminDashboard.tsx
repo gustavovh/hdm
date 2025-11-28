@@ -864,7 +864,12 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                 <p className="text-gray-600 mt-4">Cargando solicitudes...</p>
               </div>
             ) : (
-              <DiscountRequestList requests={filteredRequests} onView={setSelectedRequest} isAdmin />
+              <DiscountRequestList
+                requests={filteredRequests}
+                onView={isAdmin ? setSelectedRequest : undefined}
+                isAdmin={isAdmin}
+                isAdministrativo={isAdministrativo}
+              />
             )}
           </>
         )}
@@ -1088,14 +1093,16 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
         {activeTab === 'targets' && <SalesTargetsManager />}
       </div>
 
-      <ApprovalModal
-        isOpen={!!selectedRequest}
-        onClose={() => setSelectedRequest(null)}
-        request={selectedRequest}
-        onApprove={handleApprove}
-        onApproveWithModification={handleApproveWithModification}
-        onReject={handleReject}
-      />
+      {isAdmin && (
+        <ApprovalModal
+          isOpen={!!selectedRequest}
+          onClose={() => setSelectedRequest(null)}
+          request={selectedRequest}
+          onApprove={handleApprove}
+          onApproveWithModification={handleApproveWithModification}
+          onReject={handleReject}
+        />
+      )}
 
       {showCambiarEstado && selectedPresupuestoForEstado && (
         <CambiarEstadoModal
