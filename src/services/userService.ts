@@ -100,9 +100,10 @@ export class UserService {
         .update(userUpdates)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error('Usuario no encontrado');
       return data;
     }
 
@@ -110,9 +111,10 @@ export class UserService {
       .from('users')
       .select()
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) throw new Error('Usuario no encontrado');
     return data;
   }
 
