@@ -38,21 +38,52 @@ export interface DashboardStats {
 }
 
 export class ReportsService {
-  static async getDashboardStats(period: '7d' | '30d' | '90d' = '30d'): Promise<DashboardStats> {
-    const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    const startDateStr = startDate.toISOString();
+  static async getDashboardStats(
+    period: '7d' | '30d' | '90d' = '30d',
+    customDateFrom?: string,
+    customDateTo?: string
+  ): Promise<DashboardStats> {
+    let startDateStr: string;
+    let previousStartDateStr: string;
 
-    const previousStartDate = new Date();
-    previousStartDate.setDate(previousStartDate.getDate() - (days * 2));
-    const previousStartDateStr = previousStartDate.toISOString();
+    if (customDateFrom && customDateTo) {
+      // Usar rango de fechas personalizado
+      startDateStr = new Date(customDateFrom).toISOString();
+      const endDate = new Date(customDateTo);
+      endDate.setHours(23, 59, 59, 999);
 
-    const { data: presupuestos } = await supabase
+      // Para el período anterior, calcular la misma cantidad de días
+      const daysDiff = Math.ceil((endDate.getTime() - new Date(customDateFrom).getTime()) / (1000 * 60 * 60 * 24));
+      const previousStartDate = new Date(customDateFrom);
+      previousStartDate.setDate(previousStartDate.getDate() - daysDiff);
+      previousStartDateStr = previousStartDate.toISOString();
+    } else {
+      // Usar período predefinido
+      const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      startDateStr = startDate.toISOString();
+
+      const previousStartDate = new Date();
+      previousStartDate.setDate(previousStartDate.getDate() - (days * 2));
+      previousStartDateStr = previousStartDate.toISOString();
+    }
+
+    // Construir query base
+    let presupuestosQuery = supabase
       .from('presupuestos')
       .select('id, total_neto, total_impuestos, created_at, estado, vendedor_id')
       .gte('created_at', startDateStr)
       .is('deleted_at', null);
+
+    // Si hay rango personalizado, agregar límite superior
+    if (customDateFrom && customDateTo) {
+      const endDate = new Date(customDateTo);
+      endDate.setHours(23, 59, 59, 999);
+      presupuestosQuery = presupuestosQuery.lte('created_at', endDate.toISOString());
+    }
+
+    const { data: presupuestos } = await presupuestosQuery;
 
     const { data: presupuestosPrevious } = await supabase
       .from('presupuestos')
@@ -61,34 +92,48 @@ export class ReportsService {
       .lt('created_at', startDateStr)
       .is('deleted_at', null);
 
-    const { data: solicitudes } = await supabase
+    // Helper para agregar límite de fecha superior si es necesario
+    const applyDateLimit = (query: any) => {
+      if (customDateFrom && customDateTo) {
+        const endDate = new Date(customDateTo);
+        endDate.setHours(23, 59, 59, 999);
+        return query.lte('created_at', endDate.toISOString());
+      }
+      return query;
+    };
+
+    let solicitudesQuery = supabase
       .from('solicitudes_descuento')
       .select('id, estado')
       .gte('created_at', startDateStr)
       .is('deleted_at', null);
+    const { data: solicitudes } = await applyDateLimit(solicitudesQuery);
 
-    const { data: presupuestosPresentados } = await supabase
+    let presentadosQuery = supabase
       .from('presupuestos')
       .select('id, estado')
       .in('estado', ['PRESENTADO', 'ACEPTADO', 'FACTURADO'])
       .gte('created_at', startDateStr)
       .is('deleted_at', null);
+    const { data: presupuestosPresentados } = await applyDateLimit(presentadosQuery);
 
-    const { data: presupuestosAceptados } = await supabase
+    let aceptadosQuery = supabase
       .from('presupuestos')
       .select('id, estado')
       .in('estado', ['ACEPTADO', 'FACTURADO'])
       .gte('created_at', startDateStr)
       .is('deleted_at', null);
+    const { data: presupuestosAceptados } = await applyDateLimit(aceptadosQuery);
 
-    const { data: presupuestosFacturados } = await supabase
+    let facturadosQuery = supabase
       .from('presupuestos')
       .select('id')
       .eq('estado', 'FACTURADO')
       .gte('created_at', startDateStr)
       .is('deleted_at', null);
+    const { data: presupuestosFacturados } = await applyDateLimit(facturadosQuery);
 
-    const { data: topVendedores } = await supabase
+    let topVendedoresQuery = supabase
       .from('presupuestos')
       .select(`
         vendedor_id,
@@ -98,6 +143,7 @@ export class ReportsService {
       `)
       .gte('created_at', startDateStr)
       .is('deleted_at', null);
+    const { data: topVendedores } = await applyDateLimit(topVendedoresQuery);
 
     const presupuestosTotal = presupuestos?.length || 0;
     const presupuestosPreviousTotal = presupuestosPrevious?.length || 0;

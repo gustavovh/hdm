@@ -24,12 +24,17 @@ export function ReportsDashboard() {
 
   useEffect(() => {
     loadStats();
-  }, [period]);
+  }, [period, dateFrom, dateTo, useCustomDate]);
 
   const loadStats = async () => {
     setLoading(true);
     try {
-      const data = await ReportsService.getDashboardStats(period);
+      let data;
+      if (useCustomDate && dateFrom && dateTo) {
+        data = await ReportsService.getDashboardStats(period, dateFrom, dateTo);
+      } else {
+        data = await ReportsService.getDashboardStats(period);
+      }
       setStats(data);
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -108,12 +113,14 @@ export function ReportsDashboard() {
           </button>
           <div className="h-8 w-px bg-gray-300 mx-2"></div>
           <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-gray-600" />
+            <Calendar className={`w-5 h-5 ${useCustomDate ? 'text-blue-600' : 'text-gray-600'}`} />
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => { setDateFrom(e.target.value); setUseCustomDate(true); }}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                useCustomDate ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+              }`}
               placeholder="Desde"
             />
             <span className="text-gray-600">-</span>
@@ -121,9 +128,24 @@ export function ReportsDashboard() {
               type="date"
               value={dateTo}
               onChange={(e) => { setDateTo(e.target.value); setUseCustomDate(true); }}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                useCustomDate ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+              }`}
               placeholder="Hasta"
             />
+            {useCustomDate && (
+              <button
+                onClick={() => {
+                  setUseCustomDate(false);
+                  setDateFrom('');
+                  setDateTo('');
+                }}
+                className="px-3 py-2 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                title="Limpiar fechas personalizadas"
+              >
+                Limpiar
+              </button>
+            )}
           </div>
         </div>
       </div>
