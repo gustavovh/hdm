@@ -375,26 +375,26 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
                     </Badge>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-center" style={{ minWidth: '200px' }}>
-                    <div className="flex justify-center gap-2">
+                    <div className="flex justify-center items-center gap-1">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDownloadPresupuesto(presupuesto);
                         }}
-                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Descargar PDF"
                       >
-                        <Download className="w-4 h-4" />
+                        <Download className="w-5 h-5" />
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleClonePresupuesto(presupuesto);
                         }}
-                        className="text-gray-600 hover:text-gray-800 transition-colors"
+                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                         title="Clonar presupuesto"
                       >
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-5 h-5" />
                       </button>
                       <button
                         onClick={(e) => {
@@ -402,10 +402,10 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
                           setSelectedPresupuestoForEstado(presupuesto);
                           setShowCambiarEstado(true);
                         }}
-                        className="text-green-600 hover:text-green-800 transition-colors"
+                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                         title="Cambiar estado"
                       >
-                        <RotateCw className="w-4 h-4" />
+                        <RotateCw className="w-5 h-5" />
                       </button>
                       <button
                         onClick={(e) => {
@@ -413,10 +413,10 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
                           setSelectedPresupuestoForFacturacion(presupuesto);
                           setShowFacturacion(true);
                         }}
-                        className="text-purple-600 hover:text-purple-800 transition-colors"
+                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                         title="Datos de facturación"
                       >
-                        <Receipt className="w-4 h-4" />
+                        <Receipt className="w-5 h-5" />
                       </button>
                     </div>
                   </td>
