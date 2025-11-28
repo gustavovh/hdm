@@ -26,16 +26,22 @@ Deno.serve(async (req: Request) => {
       }
     );
 
+    // Get email and password from request body
+    const body = await req.json();
+    const email = body.email || 'admin@hdm.com';
+    const password = body.password || 'Admin123456!';
+    const role = body.role || 'admin';
+
     // Verificar si el usuario ya existe
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const existingUser = existingUsers?.users.find(u => u.email === 'admin@hdm.com');
+    const existingUser = existingUsers?.users.find(u => u.email === email);
 
     if (existingUser) {
       // Si existe, actualizar su contraseña
       const { data: updatedUser, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
         existingUser.id,
         {
-          password: 'Admin123456!',
+          password: password,
           email_confirm: true,
         }
       );
@@ -44,10 +50,10 @@ Deno.serve(async (req: Request) => {
         throw updateError;
       }
 
-      // Asegurar que tenga rol admin
+      // Asegurar que tenga el rol correcto
       await supabaseAdmin
         .from('users')
-        .update({ role: 'admin', active: true })
+        .update({ role: role, active: true })
         .eq('id', existingUser.id);
 
       return new Response(
@@ -67,8 +73,8 @@ Deno.serve(async (req: Request) => {
 
     // Si no existe, crearlo
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: 'admin@hdm.com',
-      password: 'Admin123456!',
+      email: email,
+      password: password,
       email_confirm: true,
     });
 
@@ -77,10 +83,10 @@ Deno.serve(async (req: Request) => {
     }
 
     // El trigger handle_new_user se encargará de crear el usuario en public.users
-    // Pero necesitamos asegurar que tenga rol admin
+    // Pero necesitamos asegurar que tenga el rol correcto
     const { error: updateError } = await supabaseAdmin
       .from('users')
-      .update({ role: 'admin' })
+      .update({ role: role })
       .eq('id', authData.user.id);
 
     if (updateError) {
