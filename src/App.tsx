@@ -422,8 +422,16 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
     setLoading(true);
 
     try {
+      // IMPORTANTE: Esta URL debe estar configurada en Supabase Dashboard
+      // Authentication → URL Configuration → Redirect URLs
+      const redirectUrl = `${window.location.origin}`;
+
+      console.log('🔐 Sending password reset email');
+      console.log('📧 Email:', email);
+      console.log('🔗 Redirect URL:', redirectUrl);
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin,
+        redirectTo: redirectUrl,
       });
 
       if (error) throw error;
