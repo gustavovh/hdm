@@ -309,7 +309,12 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Presupuesto_${presupuesto.codigo}_${presupuesto.cliente_nombre?.replace(/\s+/g, '_') || 'cliente'}.pdf`;
+
+      // Generate filename: Presupuesto [codigo] - [concepto]
+      const sanitize = (text: string) => text.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s-]/g, '').replace(/\s+/g, ' ').trim();
+      const concepto = presupuesto.concepto ? sanitize(presupuesto.concepto) : 'Sin concepto';
+      link.download = `Presupuesto ${presupuesto.codigo} - ${concepto}.pdf`;
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
