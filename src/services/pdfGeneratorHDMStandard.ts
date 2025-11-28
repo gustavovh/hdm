@@ -3,11 +3,28 @@ import autoTable from 'jspdf-autotable';
 import { Presupuesto } from '../types/database.types';
 import { supabase } from '../lib/supabase';
 
-const LOGO_WIDTH_MM = 50;
-const LOGO_HEIGHT_MM = 13;
+// ============================================================================
+// PDF LAYOUT CONSTANTS
+// ============================================================================
+// Logo scaling: Original base was ~28mm height, now scaled to 1.5× = 42mm
+const LOGO_SCALE_FACTOR = 1.5;
+const LOGO_BASE_HEIGHT_MM = 28;
+const LOGO_TARGET_HEIGHT_MM = LOGO_BASE_HEIGHT_MM * LOGO_SCALE_FACTOR; // 42mm
+
+// Footer configuration to prevent signature overlap
+const FOOTER_HEIGHT_MM = 15; // Reserved height for footer area
+const FOOTER_MARGIN_MM = 10; // Distance from bottom of page to footer
+
+// Font configuration for consistent styling across body and tables
+const PDF_FONT_FAMILY = 'times';
+const PDF_BODY_FONT_SIZE = 11;
+const PDF_TABLE_FONT_SIZE = 10;
+const PDF_TITLE_FONT_SIZE = 12;
+const PDF_SMALL_FONT_SIZE = 9;
+const PDF_HEADER_FONT_SIZE = 8;
 
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
-  console.log('🎯 USANDO GENERADOR HDMSTANDARD - VERSIÓN CORRECTA 2024-11-24');
+  console.log('🎯 USANDO GENERADOR HDMSTANDARD - VERSIÓN ACTUALIZADA CON MEJORAS DE LAYOUT');
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -24,19 +41,19 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   const { headerEndY, servicesBottomY } = await addHeader(doc, margin, yPosition, pageWidth);
 
-  // Align presupuesto number with the last services line
+  // Align presupuesto number with the last services line (requirement #3)
   addPresupuestoNumber(doc, pageWidth, margin, servicesBottomY, presupuesto);
 
-  // Continue from the header end position
-  yPosition = headerEndY + 5;
+  // Continue from the header end position (reduced spacing per requirement #6)
+  yPosition = headerEndY + 3;
 
   yPosition = addClientInfo(doc, margin, yPosition, pageWidth, presupuesto);
 
-  yPosition += 8;
+  yPosition += 6;  // Reduced from 8 for better space usage
 
   yPosition = addIntroText(doc, margin, yPosition, pageWidth);
 
-  yPosition += 8;
+  yPosition += 6;  // Reduced from 8 for better space usage
 
   yPosition = addTrabajosTitle(doc, margin, yPosition);
 
@@ -44,46 +61,56 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   yPosition = await addItemsTable(doc, margin, yPosition, pageWidth, presupuesto);
 
-  yPosition += 10;
+  yPosition += 8;  // Reduced from 10 for better space usage
 
   yPosition = addFormaPago(doc, margin, yPosition, presupuesto);
 
-  yPosition += 8;
+  yPosition += 6;  // Reduced from 8 for better space usage
 
   yPosition = addObservaciones(doc, margin, yPosition, pageWidth, presupuesto);
 
-  yPosition += 15;
+  yPosition += 12;  // Reduced from 15 for better space usage
 
-  // Verificar si hay espacio suficiente para la firma
-  // Espacio necesario para firma completa: 40mm es suficiente
-  const signatureHeight = 40;
-  const bottomMargin = 20; // Margen inferior aumentado
-  const bottomLimit = pageHeight - bottomMargin;
+  // ============================================================================
+  // SIGNATURE OVERLAP PREVENTION (requirement #5)
+  // ============================================================================
+  // Calculate safe Y position for signature to prevent footer overlap
+  // Signature block height includes: image (30mm) + text details (20mm) + margin (5mm)
+  const signatureBlockHeight = 55;
+  // Footer reserved area: footer height + margin from bottom
+  const footerReservedHeight = FOOTER_HEIGHT_MM + FOOTER_MARGIN_MM;
+  // Safe bottom limit to prevent signature overlapping footer
+  const safeBottomLimit = pageHeight - footerReservedHeight - 5; // 5mm extra safety margin
 
-  // Verificar si la firma cabe en la página actual
-  if (yPosition + signatureHeight > bottomLimit) {
-    // No hay espacio suficiente, crear nueva página
+  // Check if signature fits on current page
+  if (yPosition + signatureBlockHeight > safeBottomLimit) {
+    // Not enough space - force page break (requirement #5)
+    console.log('📄 Signature would overlap footer - adding page break');
     doc.addPage();
-    const { headerEndY, servicesBottomY } = await addHeader(doc, margin, margin, pageWidth);
-    addPresupuestoNumber(doc, pageWidth, margin, servicesBottomY, presupuesto);
-    yPosition = headerEndY + 30;
+    const { servicesBottomY: newServicesBottomY } = await addHeader(doc, margin, margin, pageWidth);
+    addPresupuestoNumber(doc, pageWidth, margin, newServicesBottomY, presupuesto);
+    yPosition = margin + 60;  // Start signature after header on new page
+  } else if (yPosition + signatureBlockHeight > safeBottomLimit - 10) {
+    // Signature is close to footer - move it up slightly (requirement #5)
+    console.log('📄 Signature close to footer - adjusting position');
+    yPosition = safeBottomLimit - signatureBlockHeight - 5;
   }
 
-  // Agregar firma en la posición actual
+  // Add signature at the calculated safe position
   addSignature(doc, yPosition, pageWidth, signatureUrl, vendedorName, presupuesto, isAdministrativo);
 
-  // Guardar número de páginas antes de agregar anexo (para aplicar marca de agua solo a estas)
+  // Save page count before adding anexo (to apply watermark only to main pages)
   const pagesBeforeAnexo = doc.getNumberOfPages();
 
-  // Agregar páginas de ANEXO con imágenes si existen
+  // Add ANEXO pages with images if they exist
   await addAnexoPages(doc, presupuesto.id, pageWidth, pageHeight, margin);
 
-  // Agregar marca de agua SOLO a las páginas principales (no al anexo)
+  // Add watermark ONLY to main pages (not to anexo)
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
 
-    // Solo agregar marca de agua a páginas antes del anexo
+    // Only add watermark to pages before anexo
     if (i <= pagesBeforeAnexo) {
       addWatermark(doc, pageWidth, pageHeight);
     }
@@ -102,7 +129,7 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
 
   const fontSize = 80;
   doc.setFontSize(fontSize);
-  doc.setFont('times', 'bold');
+  doc.setFont(PDF_FONT_FAMILY, 'bold');
 
   const text = 'PRESUPUESTO';
   const centerX = (pageWidth / 2) + 30;
@@ -121,7 +148,8 @@ function addWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
 
 function addFooter(doc: jsPDF, pageWidth: number, pageHeight: number, pageNumber: number, totalPages: number) {
   const margin = 20;
-  const footerY = pageHeight - 10; // 10mm from bottom
+  // Footer positioned at FOOTER_MARGIN_MM from bottom
+  const footerY = pageHeight - FOOTER_MARGIN_MM;
   const lineY = footerY - 3; // Line 3mm above footer text
   
   doc.saveGraphicsState();
@@ -131,8 +159,9 @@ function addFooter(doc: jsPDF, pageWidth: number, pageHeight: number, pageNumber
   doc.setDrawColor(0, 0, 0);
   doc.line(margin, lineY, pageWidth - margin, lineY);
   
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  // Using consistent font family
+  doc.setFont(PDF_FONT_FAMILY, 'normal');
+  doc.setFontSize(PDF_HEADER_FONT_SIZE);
   doc.setTextColor(0, 0, 0);
   
   // Left: Company name
@@ -269,14 +298,18 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   // ---- CONFIG ----
   const LINE_HEIGHT = 4;          // interlineado general
 
-  // ---- LOGO (izquierda, mantener aspecto) ----
-  const MAX_W = 85;          // límite de ancho
-  const TARGET_H = 28;       // altura deseada (más alto)
-  const LIFT_UP = 4;         // mover un poco hacia arriba
+  // ---- LOGO (izquierda, mantener aspecto, scaled 1.5×) ----
+  // Logo scaled 1.5× as per requirement #1
+  const MAX_W = 127.5;            // límite de ancho (85 * 1.5 = 127.5)
+  const TARGET_H = LOGO_TARGET_HEIGHT_MM; // altura deseada escalada a 1.5× (42mm)
+  const LIFT_UP = 2;              // reducido para mejor alineación con logo más grande
 
-  let logoY = yTop - LIFT_UP;
-  let scaledW = 60;
-  let scaledH = 20;
+  const logoY = yTop - LIFT_UP;
+  // Default scaled dimensions based on 1.5× scaling factor (60mm * 1.5 = 90mm, 20mm * 1.5 = 30mm)
+  const LOGO_DEFAULT_WIDTH_SCALED = 60 * LOGO_SCALE_FACTOR;  // 90mm
+  const LOGO_DEFAULT_HEIGHT_SCALED = 20 * LOGO_SCALE_FACTOR; // 30mm
+  let scaledW = LOGO_DEFAULT_WIDTH_SCALED;
+  let scaledH = LOGO_DEFAULT_HEIGHT_SCALED;
   try {
     const response = await fetch('/hdm-logo.png');
     const blob = await response.blob();
@@ -302,7 +335,7 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
     const natH = tmpImg.height || 1;
     const aspect = natW / natH;
 
-    // escalar por altura objetivo y luego limitar por ancho máximo (sin deformar)
+    // escalar por altura objetivo (1.5×) y luego limitar por ancho máximo (sin deformar)
     scaledH = TARGET_H;
     scaledW = TARGET_H * aspect;
     if (scaledW > MAX_W) {
@@ -316,10 +349,11 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   }
 
   // ---- BLOQUE CONTACTO (derecha, totalmente alineado a la derecha) ----
+  // Using consistent header font size
   const contactX = pageWidth - rightMargin;
   let cy = logoY + 1; // arranca a nivel del logo
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(PDF_HEADER_FONT_SIZE);
+  doc.setFont(PDF_FONT_FAMILY, 'bold');
   doc.text('Dirección: Profesor Almada C/21 de setiembre', contactX, cy, { align: 'right' });
   cy += LINE_HEIGHT;
   doc.text('Luque - Paraguay', contactX, cy, { align: 'right' });
@@ -337,10 +371,11 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   const contactBottom = cy;
 
   // ---- BLOQUE DE SERVICIOS (debajo del logo; usa la altura real escalada) ----
-  const UNDER_LOGO_GAP = 8;   // separación segura
+  // Reduced gap since logo is larger (requirement #6 - optimize spacing)
+  const UNDER_LOGO_GAP = 4;   // reduced from 8mm for better spacing with larger logo
   let sy = logoY + scaledH + UNDER_LOGO_GAP; // asegura que no pise el logo
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
+  doc.setFont(PDF_FONT_FAMILY, 'bold');
+  doc.setFontSize(PDF_HEADER_FONT_SIZE);
   const servicesLines = [
     'Sistemas eléctricos de potencia – Obras civiles – Metalúrgica',
     'Domótica – Electrónica de Potencia – Media Tensión 23kV',
@@ -352,11 +387,11 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   }
   const servicesBottom = sy - LINE_HEIGHT; // Last line position (subtract the last increment)
 
-  // ---- No separator line - removed as per requirements ----
+  // ---- No separator line - removed as per requirement #2 ----
   const maxBottom = Math.max(contactBottom, servicesBottom);
   
   // Return both the header end position and services bottom for alignment
-  return { headerEndY: maxBottom + 6, servicesBottomY: servicesBottom };
+  return { headerEndY: maxBottom + 4, servicesBottomY: servicesBottom };
 }
 
 function formatPresupuestoCode(codigo: string): string {
@@ -369,13 +404,15 @@ function formatPresupuestoCode(codigo: string): string {
 }
 
 function addPresupuestoNumber(doc: jsPDF, pageWidth: number, margin: number, yPosition: number, presupuesto: Presupuesto): number {
-  doc.setFont('times', 'bold');
-  doc.setFontSize(12);  // Slightly larger than body text
+  // Using consistent font family (requirement #4) with title size
+  doc.setFont(PDF_FONT_FAMILY, 'bold');
+  doc.setFontSize(PDF_TITLE_FONT_SIZE);
 
   const rightMargin = pageWidth - margin;
   const formattedCode = formatPresupuestoCode(presupuesto.codigo);
   const text = `Presupuesto #: ${formattedCode}`;
 
+  // Position is aligned with services bottom (requirement #3)
   doc.text(text, rightMargin, yPosition, { align: 'right' });
 
   return yPosition;
@@ -408,13 +445,14 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, pageWidth:
 
   bodyRows.push(['Referencia de presupuesto:', concepto]);
 
+  // Using consistent font family and size (requirement #4)
   autoTable(doc, {
     startY: yPosition,
     body: bodyRows,
     theme: 'plain',
     styles: {
-      font: 'times',
-      fontSize: 11,  // Body text size ~11pt
+      font: PDF_FONT_FAMILY,
+      fontSize: PDF_BODY_FONT_SIZE,  // Consistent body text size
       cellPadding: 1,
       overflow: 'linebreak',
       lineWidth: 0,
@@ -441,8 +479,9 @@ function addClientInfo(doc: jsPDF, margin: number, yPosition: number, pageWidth:
 }
 
 function addIntroText(doc: jsPDF, margin: number, yPosition: number, pageWidth: number): number {
-  doc.setFont('times', 'normal');
-  doc.setFontSize(11);  // Body text size ~11pt
+  // Using consistent font family and size (requirement #4)
+  doc.setFont(PDF_FONT_FAMILY, 'normal');
+  doc.setFontSize(PDF_BODY_FONT_SIZE);
   const introText = 'Tengo el agrado de dirigirme a Ud. a fin de presentar la oferta económica por el trabajo de referencia a ser realizado.';
   const lines = doc.splitTextToSize(introText, pageWidth - (margin * 2));
   doc.text(lines, margin, yPosition);
@@ -450,8 +489,9 @@ function addIntroText(doc: jsPDF, margin: number, yPosition: number, pageWidth: 
 }
 
 function addTrabajosTitle(doc: jsPDF, margin: number, yPosition: number): number {
-  doc.setFont('times', 'bold');
-  doc.setFontSize(12);  // Title size, slightly larger
+  // Using consistent font family and size (requirement #4)
+  doc.setFont(PDF_FONT_FAMILY, 'bold');
+  doc.setFontSize(PDF_TITLE_FONT_SIZE);
   doc.text('Trabajos a ser Realizados:', margin, yPosition);
   return yPosition;
 }
@@ -507,6 +547,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     formatCurrency(totalConDescuento)
   ]);
 
+  // Using consistent font family and size for tables (requirement #4)
   autoTable(doc, {
     startY: yPosition,
     head: [[
@@ -521,8 +562,8 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     body: tableData,
     theme: 'grid',
     styles: {
-      font: 'times',
-      fontSize: 10,  // Adjusted for better readability
+      font: PDF_FONT_FAMILY,          // Consistent font family
+      fontSize: PDF_TABLE_FONT_SIZE,  // Consistent table font size (10pt)
       cellPadding: 2,
       lineWidth: 0.1,
       lineColor: [0, 0, 0],
@@ -533,7 +574,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
       fillColor: [255, 255, 255],
       textColor: [0, 0, 0],
       fontStyle: 'bold',
-      fontSize: 10,  // Consistent with body
+      fontSize: PDF_TABLE_FONT_SIZE,  // Consistent with body
       halign: 'center',
       valign: 'middle',
       minCellHeight: 8,
@@ -541,7 +582,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     bodyStyles: {
       textColor: [0, 0, 0],
       minCellHeight: 8,
-      fontSize: 10,  // Consistent size
+      fontSize: PDF_TABLE_FONT_SIZE,  // Consistent size
     },
     columnStyles: {
       0: { halign: 'center', cellWidth: 10 },
@@ -559,7 +600,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
 
       // Si no es la primera página, agregar encabezado
       if (currentPage > 1) {
-        const { headerEndY, servicesBottomY } = await addHeader(doc, margin, margin, pageWidth);
+        const { servicesBottomY } = await addHeader(doc, margin, margin, pageWidth);
         addPresupuestoNumber(doc, pageWidth, margin, servicesBottomY, presupuesto);
       }
     },
@@ -567,7 +608,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     didParseCell: (data) => {
       if (data.section === 'body' && data.row.index === tableData.length - 1) {
         data.cell.styles.fontStyle = 'bold';
-        data.cell.styles.fontSize = 11;
+        data.cell.styles.fontSize = PDF_BODY_FONT_SIZE;
         data.cell.styles.fillColor = [240, 240, 240];
       }
     }
@@ -577,28 +618,30 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
 }
 
 function addFormaPago(doc: jsPDF, margin: number, yPosition: number, presupuesto: Presupuesto): number {
-  doc.setFont('times', 'bold');
-  doc.setFontSize(12);  // Title size
+  // Using consistent font family and size (requirement #4)
+  doc.setFont(PDF_FONT_FAMILY, 'bold');
+  doc.setFontSize(PDF_TITLE_FONT_SIZE);
 
   const labelText = 'Forma de pago:';
   doc.text(labelText, margin, yPosition);
 
   const formaPago = presupuesto.observaciones?.match(/forma de pago:?\s*([^\n]+)/i)?.[1] || '30 DIAS';
-  doc.setFont('times', 'normal');
-  doc.setFontSize(11);  // Body text
+  doc.setFont(PDF_FONT_FAMILY, 'normal');
+  doc.setFontSize(PDF_BODY_FONT_SIZE);
   doc.text(formaPago.toUpperCase(), margin + 45, yPosition);
 
   return yPosition;
 }
 
 function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): number {
-  doc.setFont('times', 'bold');
-  doc.setFontSize(12);  // Title size
+  // Using consistent font family and size (requirement #4)
+  doc.setFont(PDF_FONT_FAMILY, 'bold');
+  doc.setFontSize(PDF_TITLE_FONT_SIZE);
   doc.text('Observación(es):', margin, yPosition);
   yPosition += 7;
 
-  doc.setFont('times', 'normal');
-  doc.setFontSize(11);  // Body text size
+  doc.setFont(PDF_FONT_FAMILY, 'normal');
+  doc.setFontSize(PDF_BODY_FONT_SIZE);
 
   const observaciones = presupuesto.observaciones ||
     'PRUEBAS DE DESCRIPCION';
@@ -607,8 +650,8 @@ function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWid
   doc.text(obsLines, margin, yPosition);
   yPosition += (obsLines.length * 6) + 5;
 
-  doc.setFont('times', 'normal');
-  doc.setFontSize(11);
+  doc.setFont(PDF_FONT_FAMILY, 'normal');
+  doc.setFontSize(PDF_BODY_FONT_SIZE);
   doc.text('* Los precios incluyen IVA.', margin, yPosition);
   yPosition += 6;
 
@@ -663,8 +706,9 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
       // Agregar detalles de la firma debajo
       let textY = signatureY + signatureHeight + 7;
 
-      doc.setFont('times', 'bold');
-      doc.setFontSize(10);
+      // Using consistent font family and size (requirement #4)
+      doc.setFont(PDF_FONT_FAMILY, 'bold');
+      doc.setFontSize(PDF_TABLE_FONT_SIZE);
       doc.setTextColor(0, 0, 0);
 
       // Solo mostrar detalles si NO es administrativo
@@ -676,8 +720,8 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
         }
 
         // Departamento
-        doc.setFont('times', 'normal');
-        doc.setFontSize(9);
+        doc.setFont(PDF_FONT_FAMILY, 'normal');
+        doc.setFontSize(PDF_SMALL_FONT_SIZE);
         doc.text('DEPARTAMENTO COMERCIAL', signatureX + (signatureWidth / 2), textY, { align: 'center' });
         textY += 5;
 
@@ -708,8 +752,9 @@ function addSignatureDetails(doc: jsPDF, x: number, y: number, width: number, ve
   // Removed line above signature details as per user request
   let textY = y + 5;
 
-  doc.setFont('times', 'bold');
-  doc.setFontSize(10);
+  // Using consistent font family and size (requirement #4)
+  doc.setFont(PDF_FONT_FAMILY, 'bold');
+  doc.setFontSize(PDF_TABLE_FONT_SIZE);
   doc.setTextColor(0, 0, 0);
 
   // Nombre del vendedor (solo si existe)
@@ -719,8 +764,8 @@ function addSignatureDetails(doc: jsPDF, x: number, y: number, width: number, ve
   }
 
   // Departamento
-  doc.setFont('times', 'normal');
-  doc.setFontSize(9);
+  doc.setFont(PDF_FONT_FAMILY, 'normal');
+  doc.setFontSize(PDF_SMALL_FONT_SIZE);
   doc.text('DEPARTAMENTO COMERCIAL', x + (width / 2), textY, { align: 'center' });
   textY += 5;
 
@@ -791,15 +836,15 @@ async function addAnexoPages(doc: jsPDF, presupuestoId: string, pageWidth: numbe
     const { headerEndY } = await addHeader(doc, margin, yPosition, pageWidth);
     yPosition = headerEndY + 10;
 
-    // Agregar título ANEXO
-    doc.setFont('times', 'bold');
+    // Agregar título ANEXO - using consistent font family
+    doc.setFont(PDF_FONT_FAMILY, 'bold');
     doc.setFontSize(16);
     doc.text('ANEXO', pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 10;
 
     // Agregar número de anexo
-    doc.setFont('times', 'normal');
-    doc.setFontSize(12);
+    doc.setFont(PDF_FONT_FAMILY, 'normal');
+    doc.setFontSize(PDF_TITLE_FONT_SIZE);
     doc.text(`Imagen ${i + 1} de ${images.length}`, pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 15;
 
@@ -827,8 +872,8 @@ async function addAnexoPages(doc: jsPDF, presupuestoId: string, pageWidth: numbe
       doc.addImage(images[i], 'JPEG', imgX, yPosition, imgWidth, imgHeight);
     } catch (error) {
       console.warn('Error adding image to PDF:', error);
-      doc.setFont('times', 'normal');
-      doc.setFontSize(10);
+      doc.setFont(PDF_FONT_FAMILY, 'normal');
+      doc.setFontSize(PDF_TABLE_FONT_SIZE);
       doc.text('Error al cargar la imagen', pageWidth / 2, yPosition, { align: 'center' });
     }
 
