@@ -7,6 +7,10 @@ interface EmailTemplate {
 }
 
 export class EmailService {
+  private static getAppUrl(): string {
+    return import.meta.env.VITE_APP_URL || window?.location?.origin || 'https://sistema-hdm.netlify.app';
+  }
+
   private static async sendEmail(to: string, subject: string, html: string, tipo?: string): Promise<void> {
     try {
       const { data, error } = await supabase.functions.invoke('send-email-notification', {
@@ -134,7 +138,7 @@ export class EmailService {
 
       <p>Por favor, revisa y aprueba esta solicitud lo antes posible.</p>
 
-      <a href="${window.location.origin}" class="button">
+      <a href="${this.getAppUrl()}" class="button">
         Ver Solicitud
       </a>
     `;
@@ -172,7 +176,7 @@ export class EmailService {
 
       <p>El descuento ha sido aplicado automáticamente al presupuesto.</p>
 
-      <a href="${window.location.origin}" class="button">
+      <a href="${this.getAppUrl()}" class="button">
         Ver Presupuesto
       </a>
     `;
@@ -209,7 +213,7 @@ export class EmailService {
 
       <p>El descuento modificado ha sido aplicado al presupuesto.</p>
 
-      <a href="${window.location.origin}" class="button">
+      <a href="${this.getAppUrl()}" class="button">
         Ver Presupuesto
       </a>
     `;
@@ -282,7 +286,7 @@ export class EmailService {
 
       <p>Por favor, revisa estas solicitudes para mantener un flujo de trabajo eficiente.</p>
 
-      <a href="${window.location.origin}" class="button">
+      <a href="${this.getAppUrl()}" class="button">
         Ver Solicitudes Pendientes
       </a>
     `;
@@ -325,7 +329,7 @@ export class EmailService {
         ${presupuesto.observaciones ? `<p><strong>Observaciones:</strong> ${presupuesto.observaciones}</p>` : ''}
       </div>
 
-      <a href="${window.location.origin}" class="button">
+      <a href="${this.getAppUrl()}" class="button">
         Ver Presupuesto
       </a>
     `;
