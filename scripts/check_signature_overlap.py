@@ -32,12 +32,20 @@ Example:
     python scripts/check_signature_overlap.py --pdf-file output/presupuesto.pdf --verbose
 
 Author: HDM Engineering Team
-Date: 2024
+Date: 2025-11-28
 """
 
 import argparse
 import sys
 from pathlib import Path
+
+# Try to import PyMuPDF once at module level
+try:
+    import fitz  # PyMuPDF
+    PYMUPDF_AVAILABLE = True
+except ImportError:
+    PYMUPDF_AVAILABLE = False
+    fitz = None
 
 # Constants matching pdfGeneratorHDMStandard.ts
 FOOTER_HEIGHT_MM = 13       # Reserved space for footer (line + text)
@@ -63,9 +71,7 @@ def check_pdf_signature_overlap(pdf_path: Path, verbose: bool = False) -> bool:
     Returns:
         True if no overlap detected, False otherwise
     """
-    try:
-        import fitz  # PyMuPDF
-    except ImportError:
+    if not PYMUPDF_AVAILABLE:
         print("❌ Error: PyMuPDF library not installed.")
         print("   Install with: pip install PyMuPDF")
         return False
@@ -197,13 +203,12 @@ def main():
         return 0 if success else 1
     
     # If no file specified, check if PyMuPDF is available
-    try:
-        import fitz  # noqa: F401
+    if PYMUPDF_AVAILABLE:
         print("✅ PyMuPDF library is available")
         print("\nTo check a PDF file, run:")
         print("  python scripts/check_signature_overlap.py --pdf-file <path-to-pdf>")
         return 0
-    except ImportError:
+    else:
         print("⚠️  PyMuPDF library is not installed.")
         print("   To enable PDF checking, install with: pip install PyMuPDF")
         print("\n   Constants validation completed successfully.")
