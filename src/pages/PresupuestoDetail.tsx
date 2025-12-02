@@ -43,7 +43,7 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showComisionModal, setShowComisionModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [activeTab, setActiveTab] = useState<'detalles' | 'solicitudes' | 'seguimiento' | 'historial'>(
+  const [activeTab, setActiveTab] = useState<'detalles' | 'solicitudes' | 'seguimiento' | 'facturacion' | 'historial'>(
     'detalles'
   );
 
@@ -382,6 +382,21 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
             >
               Gestión de Seguimiento
             </button>
+            <button
+              onClick={() => setActiveTab('facturacion')}
+              className={`pb-2 border-b-2 font-medium transition-colors ${
+                activeTab === 'facturacion'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Datos de Facturación
+              {(presupuesto.factura_numero || presupuesto.numero_factura) && (
+                <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-600 text-xs rounded-full">
+                  ✓
+                </span>
+              )}
+            </button>
             {isAdmin && (
               <button
                 onClick={() => setActiveTab('historial')}
@@ -553,6 +568,119 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
 
             {activeTab === 'seguimiento' && (
               <SeguimientoManager presupuestoId={presupuesto.id} />
+            )}
+
+            {activeTab === 'facturacion' && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Información de Facturación
+                </h3>
+
+                {!presupuesto.factura_numero && !presupuesto.numero_factura ? (
+                  <div className="text-center py-8">
+                    <FileText className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                    <p className="text-gray-600 mb-2">
+                      No hay datos de facturación registrados
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Los datos de factura se registran al cambiar el estado a "Facturado"
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Número de Factura
+                        </label>
+                        <div className="text-gray-900 font-medium">
+                          {presupuesto.factura_numero || presupuesto.numero_factura || '-'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Timbrado
+                        </label>
+                        <div className="text-gray-900">
+                          {presupuesto.factura_timbrado || '-'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Fecha de Factura
+                        </label>
+                        <div className="text-gray-900">
+                          {presupuesto.factura_fecha
+                            ? new Date(presupuesto.factura_fecha).toLocaleDateString('es-PY')
+                            : '-'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Monto Facturado
+                        </label>
+                        <div className="text-gray-900 font-medium">
+                          {presupuesto.monto_factura
+                            ? BudgetCalculator.formatCurrency(presupuesto.monto_factura, presupuesto.moneda)
+                            : BudgetCalculator.formatCurrency(
+                                presupuesto.total_neto + presupuesto.total_impuestos,
+                                presupuesto.moneda
+                              )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Condición de Pago
+                        </label>
+                        <div className="text-gray-900">
+                          {presupuesto.condicion_pago || '-'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Medio de Pago
+                        </label>
+                        <div className="text-gray-900">
+                          {presupuesto.medio_pago || '-'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {presupuesto.enlace_comprobante && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Comprobante
+                        </label>
+                        <a
+                          href={presupuesto.enlace_comprobante}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-700 underline flex items-center gap-1"
+                        >
+                          <FileText className="w-4 h-4" />
+                          Ver comprobante
+                        </a>
+                      </div>
+                    )}
+
+                    {presupuesto.factura_observacion && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Observaciones
+                        </label>
+                        <div className="text-gray-900 bg-gray-50 p-3 rounded border border-gray-200">
+                          {presupuesto.factura_observacion}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
 
             {activeTab === 'historial' && isAdmin && (

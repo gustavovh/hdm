@@ -76,7 +76,7 @@ export function FacturacionView() {
           medio_pago,
           enlace_comprobante,
           created_at,
-          vendedor:users!presupuestos_vendedor_id_fkey(nombre_completo)
+          vendedor:users!presupuestos_vendedor_id_fkey(full_name)
         `)
         .or('estado.eq.FACTURADO,factura_numero.not.is.null,numero_factura.not.is.null')
         .order('created_at', { ascending: false });
@@ -90,7 +90,7 @@ export function FacturacionView() {
 
       const formattedData: FacturaData[] = (data || []).map(item => ({
         ...item,
-        vendedor_nombre: (item.vendedor as any)?.nombre_completo || 'Sin asignar',
+        vendedor_nombre: (item.vendedor as any)?.full_name || 'Sin asignar',
       }));
 
       setFacturas(formattedData);
