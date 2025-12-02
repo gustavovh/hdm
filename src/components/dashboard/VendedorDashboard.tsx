@@ -95,7 +95,7 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
       const misPresupuestos = presupuestos.filter(p => p.vendedor_id === user.id && !p.deleted_at);
 
       const estadisticas = misPresupuestos.reduce((acc, p) => {
-        const montoTotal = p.total_neto + p.total_impuestos + p.total_comisiones;
+        const montoTotal = p.total_neto + p.total_impuestos;
 
         acc.total++;
         acc.montoTotal += montoTotal;

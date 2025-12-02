@@ -174,7 +174,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
     });
 
     const stats = filteredData.reduce((acc, p) => {
-      const montoTotal = p.total_neto + p.total_impuestos + p.total_comisiones;
+      const montoTotal = p.total_neto + p.total_impuestos;
       acc.totalPresupuestos++;
       acc.totalMonto += montoTotal;
 

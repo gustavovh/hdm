@@ -34,7 +34,7 @@ export const exportService = {
     content += '-'.repeat(80) + '\n\n';
 
     data.presupuestos.forEach((p, index) => {
-      const montoTotal = p.total_neto + p.total_impuestos + p.total_comisiones;
+      const montoTotal = p.total_neto + p.total_impuestos;
 
       content += `${index + 1}. ${p.codigo}\n`;
       content += `   Cliente: ${p.cliente_nombre}\n`;
@@ -117,7 +117,7 @@ export const exportService = {
     content += '<tbody>\n';
 
     data.presupuestos.forEach((p, index) => {
-      const montoTotal = p.total_neto + p.total_impuestos + p.total_comisiones;
+      const montoTotal = p.total_neto + p.total_impuestos;
       const rowColor = index % 2 === 0 ? '#F9FAFB' : '#FFFFFF';
 
       content += `<tr style="background-color: ${rowColor};">\n`;
