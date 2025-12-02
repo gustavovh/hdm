@@ -150,14 +150,23 @@ export class CommissionsService {
     const montoVendido =
       monedaPrincipal === 'PYG' ? montoVendidoPYG : montoVendidoUSD;
 
-    const objetivo = await this.getVendedorObjective(vendedorId, anio, mes);
+    // Usar sales_targets en lugar de vendedor_objectives
+    const { data: salesTarget } = await supabase
+      .from('sales_targets')
+      .select('objetivo')
+      .eq('user_id', vendedorId)
+      .eq('año', anio)
+      .eq('mes', mes)
+      .maybeSingle();
+
+    const objetivoMonto = salesTarget?.objetivo || 0;
     const tier = await this.calculateTier(montoVendido, monedaPrincipal);
 
     const tasaComision = tier?.tasa_comision || 3.0;
     const montoComision = (montoVendido * tasaComision) / 100;
 
-    const porcentajeCumplimiento = objetivo
-      ? Math.round((montoVendido / objetivo.objetivo_monto) * 100)
+    const porcentajeCumplimiento = objetivoMonto > 0
+      ? Math.round((montoVendido / objetivoMonto) * 100)
       : undefined;
 
     const calculationData = {
@@ -165,7 +174,7 @@ export class CommissionsService {
       periodo_anio: anio,
       periodo_mes: mes,
       monto_vendido: montoVendido,
-      objetivo_monto: objetivo?.objetivo_monto,
+      objetivo_monto: objetivoMonto || null,
       porcentaje_cumplimiento: porcentajeCumplimiento,
       tier_aplicado_id: tier?.id,
       tasa_comision_aplicada: tasaComision,
