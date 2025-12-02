@@ -612,8 +612,8 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
                           Fecha de Factura
                         </label>
                         <div className="text-gray-900">
-                          {presupuesto.factura_fecha
-                            ? new Date(presupuesto.factura_fecha).toLocaleDateString('es-PY')
+                          {presupuesto.fecha_facturacion
+                            ? new Date(presupuesto.fecha_facturacion).toLocaleDateString('es-PY')
                             : '-'}
                         </div>
                       </div>
