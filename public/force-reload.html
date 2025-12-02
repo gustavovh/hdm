@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Forzar Recarga - HDM</title>
+    <script>
+        // Limpiar TODO
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+        
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                for (let name of names) caches.delete(name);
+            });
+        }
+        
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Redirigir con cache buster
+        setTimeout(function() {
+            window.location.href = '/?v=' + new Date().getTime();
+        }, 1000);
+    </script>
+</head>
+<body>
+    <h1>Limpiando caché...</h1>
+    <p>Serás redirigido automáticamente...</p>
+</body>
+</html>

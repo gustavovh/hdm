@@ -39,30 +39,27 @@ export function ProductosList({ onSelectProducto, onEdit, selectionMode = false 
     }
   }, []);
 
-  const handleSearch = useCallback(async () => {
-    if (searchTerm.trim()) {
-      try {
-        const results = await ProductosService.searchProductos(searchTerm);
-        setProductos(results);
-      } catch (error) {
-        console.error('Error searching productos:', error);
-      }
-    } else {
-      loadData();
-    }
-  }, [searchTerm, loadData]);
-
   useEffect(() => {
     loadData();
   }, [loadData]);
 
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      handleSearch();
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchTerm.trim()) {
+        try {
+          console.log('Searching for:', searchTerm);
+          const results = await ProductosService.searchProductos(searchTerm);
+          setProductos(results);
+        } catch (error) {
+          console.error('Error searching productos:', error);
+        }
+      } else {
+        loadData();
+      }
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [handleSearch]);
+  }, [searchTerm, loadData]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de eliminar este producto?')) return;
