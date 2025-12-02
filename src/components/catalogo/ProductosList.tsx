@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Package, Edit, Trash2, Filter } from 'lucide-react';
+import { Plus, Search, Package, Edit, Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
@@ -26,6 +26,14 @@ export function ProductosList({ onSelectProducto, onEdit, selectionMode = false 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      handleSearch();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
 
   const loadData = async () => {
     try {
@@ -119,7 +127,6 @@ export function ProductosList({ onSelectProducto, onEdit, selectionMode = false 
                 placeholder="Buscar por nombre, código o descripción..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 className="pl-10"
               />
             </div>
@@ -137,11 +144,6 @@ export function ProductosList({ onSelectProducto, onEdit, selectionMode = false 
               </option>
             ))}
           </Select>
-
-          <Button onClick={handleSearch} variant="secondary">
-            <Filter className="w-4 h-4 mr-2" />
-            Buscar
-          </Button>
         </div>
       </div>
 
