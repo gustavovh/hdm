@@ -32,6 +32,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
   const [showCatalogo, setShowCatalogo] = useState(false);
   const [showProductoForm, setShowProductoForm] = useState(false);
   const [showClienteSearch, setShowClienteSearch] = useState(false);
+  const [searchingItemIndex, setSearchingItemIndex] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'detalles' | 'facturacion'>('detalles');
   const [savedPresupuestoId, setSavedPresupuestoId] = useState<string | undefined>(presupuestoId);
 
@@ -122,15 +123,28 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
   };
 
   const addProductoFromCatalogo = (producto: Producto) => {
-    setItems([
-      ...items,
-      {
-        tempId: Date.now().toString(),
+    if (searchingItemIndex !== null) {
+      // Actualizar ítem existente
+      const updatedItems = [...items];
+      updatedItems[searchingItemIndex] = {
+        ...updatedItems[searchingItemIndex],
         descripcion: producto.nombre + (producto.descripcion ? ` - ${producto.descripcion}` : ''),
-        cantidad: 1,
         precio_unitario: producto.precio_base,
-      },
-    ]);
+      };
+      setItems(updatedItems);
+      setSearchingItemIndex(null);
+    } else {
+      // Agregar nuevo ítem
+      setItems([
+        ...items,
+        {
+          tempId: Date.now().toString(),
+          descripcion: producto.nombre + (producto.descripcion ? ` - ${producto.descripcion}` : ''),
+          cantidad: 1,
+          precio_unitario: producto.precio_base,
+        },
+      ]);
+    }
     setShowCatalogo(false);
   };
 
@@ -674,14 +688,25 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
                 >
                   <div className="grid grid-cols-12 gap-4">
                     <div className="col-span-6">
-                      <Input
-                        label="Descripción *"
-                        value={item.descripcion}
-                        onChange={(e) =>
-                          updateItem(index, 'descripcion', e.target.value)
-                        }
-                        placeholder="Descripción del ítem"
-                      />
+                      <div className="space-y-2">
+                        <Input
+                          label="Descripción *"
+                          value={item.descripcion}
+                          onChange={(e) =>
+                            updateItem(index, 'descripcion', e.target.value)
+                          }
+                          placeholder="Descripción del ítem"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSearchingItemIndex(index)}
+                          className="w-full"
+                        >
+                          <Search className="w-4 h-4 mr-2" />
+                          Buscar en Catálogo
+                        </Button>
+                      </div>
                     </div>
                     <div className="col-span-2">
                       <Input
@@ -877,8 +902,11 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       />
 
       <Modal
-        isOpen={showCatalogo}
-        onClose={() => setShowCatalogo(false)}
+        isOpen={showCatalogo || searchingItemIndex !== null}
+        onClose={() => {
+          setShowCatalogo(false);
+          setSearchingItemIndex(null);
+        }}
         title="Seleccionar producto del catálogo"
         size="large"
       >
