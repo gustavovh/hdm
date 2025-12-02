@@ -173,8 +173,8 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
       try {
         const comisionData = await CommissionsService.calculateMonthlyCommission(
           user.id,
-          currentMonth,
-          currentYear
+          currentYear,
+          currentMonth
         );
         comisionEstimada = comisionData.monto_comision || 0;
         montoVendido = comisionData.monto_vendido || 0;
