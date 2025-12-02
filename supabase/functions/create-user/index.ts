@@ -67,6 +67,15 @@ Deno.serve(async (req: Request) => {
       throw new Error('Password must be at least 6 characters');
     }
 
+    // Verificar si el usuario ya existe
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const userExists = existingUsers?.users.some(u => u.email === email);
+
+    if (userExists) {
+      throw new Error('El usuario ya existe');
+    }
+
+    // Crear usuario con contraseña directamente establecida
     const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -83,6 +92,20 @@ Deno.serve(async (req: Request) => {
 
     if (createError) throw createError;
     if (!authData.user) throw new Error('Failed to create user');
+
+    // IMPORTANTE: Actualizar el usuario para asegurar que la contraseña funcione
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      authData.user.id,
+      {
+        password: password,
+        email_confirm: true,
+      }
+    );
+
+    if (updateError) {
+      console.error('Error updating user password:', updateError);
+      // No lanzar error aquí, el usuario ya fue creado
+    }
 
     const { data: newUser, error: insertError } = await supabaseAdmin
       .from('users')
