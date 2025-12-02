@@ -24,6 +24,7 @@ export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: Presupues
     cliente_email: presupuesto.cliente_email || '',
     cliente_telefono: presupuesto.cliente_telefono || '',
     cliente_documento: presupuesto.cliente_documento || '',
+    nombre_fantasia: presupuesto.nombre_fantasia || '',
     concepto: presupuesto.concepto || '',
     observaciones: presupuesto.observaciones || '',
     moneda: presupuesto.moneda || 'PYG',
@@ -38,6 +39,7 @@ export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: Presupues
     setFormData({
       ...formData,
       cliente_nombre: cliente.nombre,
+      nombre_fantasia: cliente.nombre_fantasia || '',
       cliente_documento: cliente.documento || '',
       cliente_telefono: cliente.telefono || '',
       cliente_email: cliente.email || '',
@@ -105,6 +107,17 @@ export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: Presupues
                   value={formData.cliente_nombre}
                   onChange={(e) => setFormData({ ...formData, cliente_nombre: e.target.value })}
                   placeholder="Nombre completo del cliente"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre de Fantasía
+                </label>
+                <Input
+                  value={formData.nombre_fantasia}
+                  onChange={(e) => setFormData({ ...formData, nombre_fantasia: e.target.value })}
+                  placeholder="Nombre comercial (opcional)"
                 />
               </div>
 
