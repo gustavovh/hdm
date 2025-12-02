@@ -712,8 +712,18 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                           {getStatusLabel(presupuesto.estado)}
                         </Badge>
                       </td>
-                      <td className="px-2 py-3 text-center" style={{ width: '220px', minWidth: '220px' }}>
+                      <td className="px-2 py-3 text-center" style={{ width: '260px', minWidth: '260px' }}>
                         <div className="flex gap-1 justify-center flex-nowrap">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectPresupuesto && onSelectPresupuesto(presupuesto.id);
+                            }}
+                            className="p-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded transition-colors"
+                            title="Ver presupuesto"
+                          >
+                            <Eye className="w-5 h-5" />
+                          </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

@@ -406,8 +406,19 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
                       {getStatusLabel(presupuesto.estado)}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-center" style={{ minWidth: '200px' }}>
+                  <td className="px-4 py-3 whitespace-nowrap text-center" style={{ minWidth: '240px' }}>
                     <div className="flex justify-center items-center gap-2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectPresupuesto(presupuesto.id);
+                        }}
+                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg border border-indigo-200"
+                        style={{ display: 'inline-flex', padding: '8px', cursor: 'pointer' }}
+                        title="Ver presupuesto"
+                      >
+                        <Eye className="w-5 h-5" style={{ width: '20px', height: '20px' }} />
+                      </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
