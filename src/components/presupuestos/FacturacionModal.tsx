@@ -17,6 +17,7 @@ interface FacturacionModalProps {
 
 interface InvoiceData {
   numero_factura: string;
+  timbrado: string;
   fecha_facturacion: string;
   monto_factura: number;
   condicion_pago: string;
@@ -33,6 +34,7 @@ export function FacturacionModal({
   const [loading, setLoading] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     numero_factura: presupuesto.numero_factura || '',
+    timbrado: presupuesto.factura_timbrado || '',
     fecha_facturacion: presupuesto.fecha_facturacion || new Date().toISOString().split('T')[0],
     monto_factura: presupuesto.monto_factura || (presupuesto.total_neto + presupuesto.total_impuestos),
     condicion_pago: presupuesto.condicion_pago || 'Contado',
@@ -49,6 +51,7 @@ export function FacturacionModal({
         .from('presupuestos')
         .update({
           numero_factura: invoiceData.numero_factura,
+          factura_timbrado: invoiceData.timbrado || null,
           fecha_facturacion: invoiceData.fecha_facturacion,
           monto_factura: invoiceData.monto_factura,
           condicion_pago: invoiceData.condicion_pago,
@@ -116,6 +119,23 @@ export function FacturacionModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                <FileText className="w-4 h-4 inline mr-1" />
+                Timbrado
+              </label>
+              <Input
+                value={invoiceData.timbrado}
+                onChange={(e) =>
+                  setInvoiceData({ ...invoiceData, timbrado: e.target.value })
+                }
+                placeholder="12345678"
+                maxLength={8}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 <Calendar className="w-4 h-4 inline mr-1" />
                 Fecha de Facturación *
               </label>
@@ -128,25 +148,25 @@ export function FacturacionModal({
                 required
               />
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <DollarSign className="w-4 h-4 inline mr-1" />
-              Monto Facturado *
-            </label>
-            <Input
-              type="number"
-              step="0.01"
-              value={invoiceData.monto_factura}
-              onChange={(e) =>
-                setInvoiceData({
-                  ...invoiceData,
-                  monto_factura: parseFloat(e.target.value),
-                })
-              }
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <DollarSign className="w-4 h-4 inline mr-1" />
+                Monto Facturado *
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                value={invoiceData.monto_factura}
+                onChange={(e) =>
+                  setInvoiceData({
+                    ...invoiceData,
+                    monto_factura: parseFloat(e.target.value),
+                  })
+                }
+                required
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
