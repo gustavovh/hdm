@@ -1007,7 +1007,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                           </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">
-                          {formatCurrency(presupuesto.total_neto + presupuesto.total_impuestos + presupuesto.total_comisiones)}
+                          {formatCurrency(presupuesto.total_neto + presupuesto.total_impuestos)}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-center">
                           <Badge color={getStatusColor(presupuesto.estado)}>
