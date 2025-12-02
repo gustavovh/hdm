@@ -247,11 +247,12 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
       return sum + item.cantidad * item.precio_unitario;
     }, 0);
 
-    const totalImpuestos = totalBruto * (formData.tasa_impuesto / 100);
-    const totalComisiones = totalBruto * (formData.tasa_comision / 100);
-    const totalFinal = totalBruto + totalImpuestos;
+    const totalNeto = totalBruto;
+    const totalImpuestos = totalNeto * (formData.tasa_impuesto / 100);
+    const totalComisiones = totalNeto * (formData.tasa_comision / 100);
+    const totalFinal = totalNeto + totalImpuestos;
 
-    return { totalBruto, totalImpuestos, totalComisiones, totalFinal };
+    return { totalBruto, totalNeto, totalImpuestos, totalComisiones, totalFinal };
   };
 
   const saveItemToCatalogo = async (item: ItemForm) => {
@@ -345,7 +346,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         estado,
         total_bruto: totals.totalBruto,
         total_descuento: 0,
-        total_neto: totals.totalFinal,
+        total_neto: totals.totalNeto,
         total_impuestos: totals.totalImpuestos,
         total_comisiones: totals.totalComisiones,
         factura_numero: formData.factura_numero || null,
