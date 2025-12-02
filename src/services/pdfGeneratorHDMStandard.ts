@@ -270,13 +270,13 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   const LINE_HEIGHT = 4;          // interlineado general
 
   // ---- LOGO (izquierda, mantener aspecto) ----
-  const MAX_W = 85;          // límite de ancho
-  const TARGET_H = 28;       // altura deseada (más alto)
+  const MAX_W = 50;          // límite de ancho (50mm como en HDMv2)
+  const TARGET_H = 15;       // altura deseada razonable
   const LIFT_UP = 4;         // mover un poco hacia arriba
 
   let logoY = yTop - LIFT_UP;
-  let scaledW = 60;
-  let scaledH = 20;
+  let scaledW = 50;
+  let scaledH = 13;
   try {
     const response = await fetch('/hdm-logo.png');
     const blob = await response.blob();
