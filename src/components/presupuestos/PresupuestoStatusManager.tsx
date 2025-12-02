@@ -23,6 +23,7 @@ interface PresupuestoStatusManagerProps {
 
 interface InvoiceData {
   numero_factura: string;
+  timbrado: string;
   fecha_factura: string;
   monto_factura: number;
   condicion_pago: string;
@@ -40,6 +41,7 @@ export function PresupuestoStatusManager({
   const [loading, setLoading] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     numero_factura: '',
+    timbrado: '',
     fecha_factura: new Date().toISOString().split('T')[0],
     monto_factura: presupuesto.total_neto + presupuesto.total_impuestos,
     condicion_pago: 'Contado',
@@ -113,6 +115,7 @@ export function PresupuestoStatusManager({
       if (targetStatus === 'FACTURADO') {
         updates.fecha_facturacion = invoiceData.fecha_factura;
         updates.numero_factura = invoiceData.numero_factura;
+        updates.factura_timbrado = invoiceData.timbrado || null;
         updates.monto_factura = invoiceData.monto_factura;
         updates.condicion_pago = invoiceData.condicion_pago;
         updates.medio_pago = invoiceData.medio_pago;
@@ -189,7 +192,7 @@ export function PresupuestoStatusManager({
               <h4 className="font-semibold text-gray-900">Datos de Facturación</h4>
 
               <Input
-                label="Número de Factura"
+                label="Número de Factura *"
                 value={invoiceData.numero_factura}
                 onChange={(e) =>
                   setInvoiceData({ ...invoiceData, numero_factura: e.target.value })
@@ -199,7 +202,17 @@ export function PresupuestoStatusManager({
               />
 
               <Input
-                label="Fecha de Factura"
+                label="Timbrado"
+                value={invoiceData.timbrado}
+                onChange={(e) =>
+                  setInvoiceData({ ...invoiceData, timbrado: e.target.value })
+                }
+                placeholder="12345678"
+                maxLength={8}
+              />
+
+              <Input
+                label="Fecha de Factura *"
                 type="date"
                 value={invoiceData.fecha_factura}
                 onChange={(e) =>
