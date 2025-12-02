@@ -43,23 +43,21 @@ export function ProductosList({ onSelectProducto, onEdit, selectionMode = false 
     loadData();
   }, [loadData]);
 
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchTerm.trim()) {
-        try {
-          console.log('Searching for:', searchTerm);
-          const results = await ProductosService.searchProductos(searchTerm);
-          setProductos(results);
-        } catch (error) {
-          console.error('Error searching productos:', error);
-        }
-      } else {
-        loadData();
+  const handleManualSearch = async () => {
+    if (searchTerm.trim()) {
+      try {
+        setLoading(true);
+        const results = await ProductosService.searchProductos(searchTerm);
+        setProductos(results);
+      } catch (error) {
+        console.error('Error searching productos:', error);
+      } finally {
+        setLoading(false);
       }
-    }, 300);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, loadData]);
+    } else {
+      loadData();
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de eliminar este producto?')) return;
@@ -115,7 +113,7 @@ export function ProductosList({ onSelectProducto, onEdit, selectionMode = false 
       )}
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex gap-4">
+        <div className="flex gap-4 mb-4">
           <div className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -124,15 +122,31 @@ export function ProductosList({ onSelectProducto, onEdit, selectionMode = false 
                 placeholder="Buscar por nombre, código o descripción..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleManualSearch();
+                  }
+                }}
                 className="pl-10"
               />
             </div>
           </div>
 
+          <Button onClick={handleManualSearch} variant="primary">
+            <Search className="w-4 h-4 mr-2" />
+            Buscar
+          </Button>
+
+          <Button onClick={loadData} variant="outline">
+            Ver Todos
+          </Button>
+        </div>
+
+        <div className="flex gap-4">
           <Select
             value={categoriaFilter}
             onChange={(e) => setCategoriaFilter(e.target.value)}
-            className="w-64"
+            className="flex-1"
           >
             <option value="all">Todas las categorías</option>
             {categorias.map((cat) => (
