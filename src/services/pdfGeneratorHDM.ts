@@ -433,7 +433,10 @@ export class HDMPDFGenerator {
         const signatureHeightMm = this.calcHeightMmFromWidthMm(signature.width, signature.height, signatureWidthMm);
         const xPos = pageWidth - rightMargin - 45;
 
-        doc.addImage(signature.dataUrl, 'PNG', xPos, yPosition, signatureWidthMm, signatureHeightMm);
+        const imageFormat = signatureUrl.toLowerCase().endsWith('.jpg') ||
+                           signatureUrl.toLowerCase().endsWith('.jpeg') ? 'JPEG' : 'PNG';
+
+        doc.addImage(signature.dataUrl, imageFormat, xPos, yPosition, signatureWidthMm, signatureHeightMm);
         yPosition += signatureHeightMm + 2;
       } catch (error) {
         console.error('Error loading signature:', error);

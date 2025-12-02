@@ -659,11 +659,12 @@ function addSignature(doc: jsPDF, yPosition: number, pageWidth: number, signatur
 
       const maxHeight = 30;
 
-      // Detectar el tipo de imagen del data URL
+      // Detectar el tipo de imagen del data URL o URL normal
       let imageType = 'PNG';
-      if (signatureUrl.includes('data:image/jpeg') || signatureUrl.includes('data:image/jpg')) {
+      if (signatureUrl.includes('data:image/jpeg') || signatureUrl.includes('data:image/jpg') ||
+          signatureUrl.toLowerCase().endsWith('.jpg') || signatureUrl.toLowerCase().endsWith('.jpeg')) {
         imageType = 'JPEG';
-      } else if (signatureUrl.includes('data:image/png')) {
+      } else if (signatureUrl.includes('data:image/png') || signatureUrl.toLowerCase().endsWith('.png')) {
         imageType = 'PNG';
       }
 

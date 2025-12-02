@@ -354,7 +354,10 @@ export class PDFGenerator {
         const signatureHeightMm = this.calcHeightMmFromWidthMm(signature.width, signature.height, signatureWidthMm);
         const xPos = summaryX;
 
-        doc.addImage(signature.dataUrl, 'PNG', xPos, signatureY, signatureWidthMm, signatureHeightMm);
+        const imageFormat = signatureUrl.toLowerCase().endsWith('.jpg') ||
+                           signatureUrl.toLowerCase().endsWith('.jpeg') ? 'JPEG' : 'PNG';
+
+        doc.addImage(signature.dataUrl, imageFormat, xPos, signatureY, signatureWidthMm, signatureHeightMm);
         signatureY += signatureHeightMm + 2;
       } catch (error) {
         console.error('Error loading signature:', error);

@@ -363,17 +363,30 @@ export class HDMPDFGeneratorV2 {
       // Si hay firma, agregarla
       if (signingUser.signature_url) {
         try {
-          const signatureBase64 = await this.loadImageAsBase64(signingUser.signature_url);
-          const signatureWidth = 40;
-          const signatureHeight = 25;
-          doc.addImage(signatureBase64, 'PNG', centerX - (signatureWidth / 2), yPosition, signatureWidth, signatureHeight);
-          yPosition += signatureHeight + 2;
+          const signatureData = await this.loadImageAsBase64WithSize(signingUser.signature_url);
+          const maxSignatureWidth = 40;
+          const maxSignatureHeight = 25;
+
+          const aspectRatio = signatureData.height / signatureData.width;
+          let finalWidth = maxSignatureWidth;
+          let finalHeight = finalWidth * aspectRatio;
+
+          if (finalHeight > maxSignatureHeight) {
+            finalHeight = maxSignatureHeight;
+            finalWidth = finalHeight / aspectRatio;
+          }
+
+          const imageFormat = signingUser.signature_url.toLowerCase().endsWith('.jpg') ||
+                             signingUser.signature_url.toLowerCase().endsWith('.jpeg') ? 'JPEG' : 'PNG';
+
+          doc.addImage(signatureData.dataUrl, imageFormat, centerX - (finalWidth / 2), yPosition, finalWidth, finalHeight);
+          yPosition += finalHeight + 2;
         } catch (error) {
           console.error('Error loading signature:', error);
-          yPosition += 8; // Espacio si no hay firma
+          yPosition += 8;
         }
       } else {
-        yPosition += 8; // Espacio si no hay firma
+        yPosition += 8;
       }
 
       doc.setFontSize(8);
