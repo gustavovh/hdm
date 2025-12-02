@@ -139,9 +139,8 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
         montoPromedio: 0,
       });
 
-      const totalNoAnulados = estadisticas.presentado + estadisticas.aceptado + estadisticas.facturado;
-      estadisticas.tasaAceptacion = totalNoAnulados > 0
-        ? ((estadisticas.aceptado + estadisticas.facturado) / totalNoAnulados) * 100
+      estadisticas.tasaAceptacion = estadisticas.presentado > 0
+        ? ((estadisticas.aceptado + estadisticas.facturado) / estadisticas.presentado) * 100
         : 0;
 
       estadisticas.montoPromedio = estadisticas.total > 0
@@ -159,27 +158,39 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
 
+      let objetivoActual = 0;
+      let montoVendido = 0;
+      let comisionEstimada = 0;
+
+      try {
+        const target = await salesTargetsService.getCurrentTargetForUser(user.id);
+        setCurrentTarget(target);
+        objetivoActual = target?.objetivo || 0;
+      } catch (error) {
+        console.error('Error cargando objetivo:', error);
+      }
+
       try {
         const comisionData = await CommissionsService.calculateMonthlyCommission(
           user.id,
           currentMonth,
           currentYear
         );
-        setComisiones({
-          estimadas: comisionData.comision_total || 0,
-          objetivo: comisionData.objetivo || 0,
-          avance: comisionData.porcentaje_cumplimiento || 0,
-        });
+        comisionEstimada = comisionData.monto_comision || 0;
+        montoVendido = comisionData.monto_vendido || 0;
       } catch (error) {
         console.error('Error cargando comisiones:', error);
       }
 
-      try {
-        const target = await salesTargetsService.getCurrentTargetForUser(user.id);
-        setCurrentTarget(target);
-      } catch (error) {
-        console.error('Error cargando objetivo:', error);
-      }
+      const avanceCalculado = objetivoActual > 0
+        ? Math.round((montoVendido / objetivoActual) * 100)
+        : 0;
+
+      setComisiones({
+        estimadas: comisionEstimada,
+        objetivo: objetivoActual,
+        avance: avanceCalculado,
+      });
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
