@@ -75,6 +75,10 @@ Deno.serve(async (req: Request) => {
         full_name,
         role,
       },
+      app_metadata: {
+        provider: 'email',
+        providers: ['email'],
+      },
     });
 
     if (createError) throw createError;
