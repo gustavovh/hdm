@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Package, Edit, Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -23,19 +23,7 @@ export function ProductosList({ onSelectProducto, onEdit, selectionMode = false 
   const [categoriaFilter, setCategoriaFilter] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      handleSearch();
-    }, 300);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [productosData, categoriasData] = await Promise.all([
@@ -49,9 +37,9 @@ export function ProductosList({ onSelectProducto, onEdit, selectionMode = false 
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     if (searchTerm.trim()) {
       try {
         const results = await ProductosService.searchProductos(searchTerm);
@@ -62,7 +50,19 @@ export function ProductosList({ onSelectProducto, onEdit, selectionMode = false 
     } else {
       loadData();
     }
-  };
+  }, [searchTerm, loadData]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      handleSearch();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [handleSearch]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de eliminar este producto?')) return;
