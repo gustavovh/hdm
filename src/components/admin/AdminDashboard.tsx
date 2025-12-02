@@ -18,6 +18,7 @@ import { Filter, RefreshCw, FileText, Trash2, Search, Target, TrendingUp, Dollar
 import { CambiarEstadoModal } from '../presupuestos/CambiarEstadoModal';
 import { FacturacionModal } from '../presupuestos/FacturacionModal';
 import { generateHDMStandardPDF } from '../../services/pdfGeneratorHDMStandard';
+import { FacturacionView } from './FacturacionView';
 
 interface GeneralStats {
   totalPresupuestos: number;
@@ -41,7 +42,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
   const [filters, setFilters] = useState<FilterOptions>({ estado: ['PENDIENTE'] });
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [activeTab, setActiveTab] = useState<'requests' | 'presupuestos' | 'targets' | 'indicators'>('indicators');
+  const [activeTab, setActiveTab] = useState<'requests' | 'presupuestos' | 'targets' | 'indicators' | 'facturacion'>('indicators');
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
   const [presupuestosLoading, setPresupuestosLoading] = useState(false);
   const [presupuestoSearch, setPresupuestoSearch] = useState('');
@@ -589,6 +590,17 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                 Objetivos de Ventas
               </button>
             )}
+            <button
+              onClick={() => setActiveTab('facturacion')}
+              className={`${
+                activeTab === 'facturacion'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <Receipt className="w-4 h-4 inline-block mr-2" />
+              Datos de Facturación
+            </button>
           </nav>
         </div>
 
@@ -1091,6 +1103,8 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
         )}
 
         {activeTab === 'targets' && <SalesTargetsManager />}
+
+        {activeTab === 'facturacion' && <FacturacionView />}
       </div>
 
       {isAdmin && (
