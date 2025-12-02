@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Search, RefreshCw, Download, Copy, RotateCw, Receipt } from 'lucide-react';
+import { FileText, Plus, Search, RefreshCw, Download, Copy, RotateCw, Receipt, Eye } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
