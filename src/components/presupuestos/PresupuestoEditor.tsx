@@ -5,8 +5,10 @@ import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { supabase } from '../../lib/supabase';
-import { Save, X } from 'lucide-react';
+import { Save, X, Search } from 'lucide-react';
 import { ItemsEditor } from './ItemsEditor';
+import { ClienteSearchModal } from './ClienteSearchModal';
+import { Cliente } from '../../services/clientesService';
 
 interface PresupuestoEditorProps {
   presupuesto: Presupuesto;
@@ -16,6 +18,7 @@ interface PresupuestoEditorProps {
 
 export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: PresupuestoEditorProps) {
   const [loading, setLoading] = useState(false);
+  const [showClienteSearch, setShowClienteSearch] = useState(false);
   const [formData, setFormData] = useState({
     cliente_nombre: presupuesto.cliente_nombre || '',
     cliente_email: presupuesto.cliente_email || '',
@@ -30,6 +33,16 @@ export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: Presupues
     tasa_impuesto: presupuesto.tasa_impuesto || 10,
     tasa_comision: presupuesto.tasa_comision || 0,
   });
+
+  const handleSelectCliente = (cliente: Cliente) => {
+    setFormData({
+      ...formData,
+      cliente_nombre: cliente.nombre,
+      cliente_documento: cliente.documento || '',
+      cliente_telefono: cliente.telefono || '',
+      cliente_email: cliente.email || '',
+    });
+  };
 
   const handleSave = async () => {
     if (!formData.cliente_nombre) {
@@ -70,7 +83,18 @@ export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: Presupues
 
         <div className="space-y-6">
           <div className="bg-white rounded-lg p-4 space-y-4">
-            <h4 className="font-semibold text-gray-900">Información del Cliente</h4>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-semibold text-gray-900">Información del Cliente</h4>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowClienteSearch(true)}
+              >
+                <Search className="w-4 h-4 mr-2" />
+                Buscar Cliente
+              </Button>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -262,6 +286,12 @@ export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: Presupues
           onItemsUpdated={onUpdate}
         />
       </div>
+
+      <ClienteSearchModal
+        isOpen={showClienteSearch}
+        onClose={() => setShowClienteSearch(false)}
+        onSelect={handleSelectCliente}
+      />
     </div>
   );
 }
