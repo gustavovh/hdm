@@ -78,11 +78,15 @@ export function FacturacionView() {
           created_at,
           vendedor:users!presupuestos_vendedor_id_fkey(nombre_completo)
         `)
-        .eq('estado', 'FACTURADO')
-        .order('factura_fecha', { ascending: false, nullsFirst: false })
+        .or('estado.eq.FACTURADO,factura_numero.not.is.null,numero_factura.not.is.null')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Facturas cargadas:', data?.length || 0);
 
       const formattedData: FacturaData[] = (data || []).map(item => ({
         ...item,
