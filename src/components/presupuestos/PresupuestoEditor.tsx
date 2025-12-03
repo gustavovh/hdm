@@ -10,6 +10,7 @@ import { ItemsEditor } from './ItemsEditor';
 import { ClienteSearchModal } from './ClienteSearchModal';
 import { ImageUpload } from './ImageUpload';
 import { Cliente } from '../../services/clientesService';
+import { EstadoWorkflowService, type BudgetStatus } from '../../services/estadoWorkflowService';
 
 interface PresupuestoEditorProps {
   presupuesto: Presupuesto;
@@ -55,9 +56,40 @@ export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: Presupues
 
     setLoading(true);
     try {
+      let nuevoEstado = presupuesto.estado;
+
+      if (presupuesto.estado === 'CLONADO') {
+        nuevoEstado = 'ABIERTO';
+      }
+
+      if (presupuesto.estado !== 'CLONADO' && presupuesto.estado !== nuevoEstado) {
+        const validacion = await EstadoWorkflowService.validarTransicion(
+          presupuesto.estado as BudgetStatus,
+          nuevoEstado as BudgetStatus
+        );
+
+        if (!validacion.permitido) {
+          alert(`No se puede guardar el presupuesto:\n\n${validacion.mensaje}`);
+          setLoading(false);
+          return;
+        }
+
+        if (validacion.requiere_aprobacion) {
+          alert(
+            `⚠️ CAMBIO EXCEPCIONAL DETECTADO\n\n` +
+            `${validacion.mensaje}\n\n` +
+            `Este cambio de estado de "${EstadoWorkflowService.getEstadoLabel(presupuesto.estado as BudgetStatus)}" a "${EstadoWorkflowService.getEstadoLabel(nuevoEstado as BudgetStatus)}" requiere aprobación administrativa.\n\n` +
+            `No puedes guardar el presupuesto con este cambio de estado.\n\n` +
+            `Debes usar el botón "Cambiar Estado" para crear una solicitud que será revisada por un administrador.`
+          );
+          setLoading(false);
+          return;
+        }
+      }
+
       const updateData = {
         ...formData,
-        estado: presupuesto.estado === 'CLONADO' ? 'ABIERTO' : presupuesto.estado,
+        estado: nuevoEstado,
       };
 
       const { error } = await supabase
@@ -67,7 +99,7 @@ export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: Presupues
 
       if (error) throw error;
 
-      alert('Presupuesto actualizado y abierto exitosamente');
+      alert('Presupuesto actualizado exitosamente');
       onUpdate();
     } catch (error: any) {
       console.error('Error updating presupuesto:', error);

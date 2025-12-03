@@ -15,6 +15,7 @@ import { ProductosService } from '../../services/productosService';
 import { ClientesService, Cliente } from '../../services/clientesService';
 import { ClienteSearchModal } from './ClienteSearchModal';
 import { supabase } from '../../lib/supabase';
+import { EstadoWorkflowService, type BudgetStatus } from '../../services/estadoWorkflowService';
 
 interface PresupuestoFormProps {
   presupuestoId?: string;
@@ -60,6 +61,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
   const [items, setItems] = useState<ItemForm[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [estadoActual, setEstadoActual] = useState<BudgetStatus | null>(null);
 
   useEffect(() => {
     if (presupuestoId) {
@@ -74,6 +76,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
     try {
       setLoading(true);
       const presupuesto = await PresupuestoService.getById(presupuestoId);
+      setEstadoActual(presupuesto.estado as BudgetStatus);
       setFormData({
         concepto: presupuesto.concepto || '',
         cliente_nombre: presupuesto.cliente_nombre,
@@ -308,6 +311,40 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
     if (items.length === 0 || items.some((item) => !item.descripcion.trim())) {
       alert('Debes agregar al menos un ítem válido');
       return;
+    }
+
+    if (presupuestoId && estadoActual && estadoActual !== estado) {
+      try {
+        const validacion = await EstadoWorkflowService.validarTransicion(
+          estadoActual,
+          estado as BudgetStatus
+        );
+
+        if (!validacion.permitido) {
+          alert(`No se puede guardar el presupuesto:\n\n${validacion.mensaje}`);
+          return;
+        }
+
+        if (validacion.requiere_aprobacion) {
+          const confirmar = confirm(
+            `⚠️ CAMBIO EXCEPCIONAL DETECTADO\n\n` +
+            `${validacion.mensaje}\n\n` +
+            `Este cambio de estado de "${EstadoWorkflowService.getEstadoLabel(estadoActual)}" a "${EstadoWorkflowService.getEstadoLabel(estado as BudgetStatus)}" requiere aprobación administrativa.\n\n` +
+            `No puedes guardar el presupuesto con este cambio de estado directamente.\n\n` +
+            `Debes usar el botón "Cambiar Estado" para crear una solicitud que será revisada por un administrador.\n\n` +
+            `¿Deseas continuar? (El estado se mantendrá como "${EstadoWorkflowService.getEstadoLabel(estadoActual)}")`
+          );
+
+          if (!confirmar) {
+            return;
+          }
+
+          estado = estadoActual;
+        }
+      } catch (error: any) {
+        alert('Error al validar la transición de estado:\n' + error.message);
+        return;
+      }
     }
 
     try {
