@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Presupuesto, BudgetStatus } from '../../types/database.types';
 import { PresupuestoService } from '../../services/api';
+import { EstadoWorkflowService, type ValidacionTransicion } from '../../services/estadoWorkflowService';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
@@ -39,6 +40,7 @@ export function PresupuestoStatusManager({
   const [showModal, setShowModal] = useState(false);
   const [targetStatus, setTargetStatus] = useState<BudgetStatus | null>(null);
   const [loading, setLoading] = useState(false);
+  const [validacion, setValidacion] = useState<ValidacionTransicion | null>(null);
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     numero_factura: '',
     timbrado: '',
@@ -94,11 +96,67 @@ export function PresupuestoStatusManager({
     setTargetStatus(status);
   };
 
+  useEffect(() => {
+    const validarSeleccion = async () => {
+      if (targetStatus && presupuesto.estado) {
+        try {
+          const result = await EstadoWorkflowService.validarTransicion(
+            presupuesto.estado,
+            targetStatus
+          );
+          setValidacion(result);
+        } catch (error) {
+          console.error('Error validando transición:', error);
+        }
+      } else {
+        setValidacion(null);
+      }
+    };
+
+    validarSeleccion();
+  }, [targetStatus, presupuesto.estado]);
+
   const handleConfirm = async () => {
-    if (!targetStatus) return;
+    if (!targetStatus || !validacion) return;
+
+    if (!validacion.permitido && !validacion.requiere_aprobacion) {
+      alert(validacion.mensaje);
+      return;
+    }
 
     setLoading(true);
     try {
+      // Si requiere aprobación o no está permitido, crear solicitud
+      if (!validacion.permitido || validacion.requiere_aprobacion) {
+        const justificacion = observaciones || prompt(
+          `⚠️ CAMBIO DE ESTADO QUE REQUIERE APROBACIÓN\n\n` +
+          `De: "${EstadoWorkflowService.getEstadoLabel(presupuesto.estado)}" → A: "${EstadoWorkflowService.getEstadoLabel(targetStatus)}"\n\n` +
+          `${validacion.mensaje}\n\n` +
+          `Por favor, proporciona una justificación para este cambio:`
+        );
+
+        if (!justificacion || !justificacion.trim()) {
+          alert('Debes proporcionar una justificación para el cambio de estado.');
+          setLoading(false);
+          return;
+        }
+
+        await EstadoWorkflowService.crearSolicitud(
+          presupuesto.id,
+          targetStatus,
+          justificacion
+        );
+
+        alert('SU SOLICITUD DE CAMBIO DE ESTADO FUE REMITIDA AL ADMINISTRADOR');
+        setShowModal(false);
+        setTargetStatus(null);
+        setObservaciones('');
+        onUpdate();
+        setLoading(false);
+        return;
+      }
+
+      // Cambio directo permitido
       const updates: any = {
         estado: targetStatus,
         observaciones: observaciones || presupuesto.observaciones,
@@ -122,14 +180,15 @@ export function PresupuestoStatusManager({
         updates.enlace_comprobante = invoiceData.enlace_comprobante;
       }
 
-      await PresupuestoService.update(presupuesto.id, updates);
+      await EstadoWorkflowService.cambiarEstadoDirecto(presupuesto.id, targetStatus);
+      alert('Estado actualizado exitosamente');
       setShowModal(false);
       setTargetStatus(null);
       setObservaciones('');
       onUpdate();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error changing status:', error);
-      alert('Error al cambiar el estado del presupuesto');
+      alert('Error: ' + (error.message || 'Error desconocido'));
     } finally {
       setLoading(false);
     }
@@ -186,6 +245,35 @@ export function PresupuestoStatusManager({
               </option>
             ))}
           </Select>
+
+          {validacion && targetStatus && (
+            <div
+              className={`rounded-lg p-4 ${
+                validacion.permitido
+                  ? validacion.requiere_aprobacion
+                    ? 'bg-orange-50 border border-orange-200'
+                    : 'bg-green-50 border border-green-200'
+                  : 'bg-orange-50 border border-orange-200'
+              }`}
+            >
+              <p
+                className={`text-sm ${
+                  validacion.permitido
+                    ? validacion.requiere_aprobacion
+                      ? 'text-orange-800'
+                      : 'text-green-800'
+                    : 'text-orange-800'
+                }`}
+              >
+                {validacion.mensaje}
+              </p>
+              {(!validacion.permitido || validacion.requiere_aprobacion) && (
+                <p className="text-xs text-orange-700 mt-2">
+                  Esta solicitud será revisada por un administrador.
+                </p>
+              )}
+            </div>
+          )}
 
           {targetStatus === 'FACTURADO' && (
             <div className="space-y-3 border-t pt-4">
@@ -291,9 +379,11 @@ export function PresupuestoStatusManager({
             <Button
               onClick={handleConfirm}
               loading={loading}
-              disabled={!targetStatus}
+              disabled={!targetStatus || !validacion}
             >
-              Confirmar Cambio
+              {validacion && (!validacion.permitido || validacion.requiere_aprobacion)
+                ? 'SOLICITAR CAMBIO'
+                : 'Confirmar Cambio'}
             </Button>
           </div>
         </div>
