@@ -241,11 +241,36 @@ export class PresupuestoService {
     id: string,
     updates: UpdatePresupuestoDTO
   ): Promise<Presupuesto> {
-    const { data: before } = await supabase
+    const { data: before, error: beforeError } = await supabase
       .from('presupuestos')
       .select()
       .eq('id', id)
       .single();
+
+    if (beforeError) throw beforeError;
+
+    // VALIDACIÓN CRÍTICA: Si se intenta cambiar el estado, validar la transición
+    if (updates.estado && before?.estado && updates.estado !== before.estado) {
+      // Importar dinámicamente para evitar dependencias circulares
+      const { EstadoWorkflowService } = await import('./estadoWorkflowService');
+
+      const validacion = await EstadoWorkflowService.validarTransicion(
+        before.estado as any,
+        updates.estado as any
+      );
+
+      if (!validacion.permitido) {
+        throw new Error(`CAMBIO DE ESTADO NO PERMITIDO: ${validacion.mensaje}`);
+      }
+
+      if (validacion.requiere_aprobacion) {
+        throw new Error(
+          `CAMBIO DE ESTADO REQUIERE APROBACIÓN: ${validacion.mensaje}\n\n` +
+          `No puedes cambiar el estado directamente de "${before.estado}" a "${updates.estado}".\n` +
+          `Debes crear una solicitud de cambio excepcional que será revisada por un administrador.`
+        );
+      }
+    }
 
     const { data, error } = await supabase
       .from('presupuestos')

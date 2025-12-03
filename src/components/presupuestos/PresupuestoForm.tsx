@@ -846,7 +846,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
               Cancelar
             </Button>
             <Button
-              onClick={() => handleSubmit('ABIERTO')}
+              onClick={() => handleSubmit(estadoActual || 'ABIERTO')}
               loading={saving}
             >
               <Save className="w-4 h-4 mr-2" />
@@ -913,7 +913,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
               Cancelar
             </Button>
             <Button
-              onClick={() => handleSubmit('ABIERTO')}
+              onClick={() => handleSubmit(estadoActual || 'ABIERTO')}
               loading={saving}
             >
               <Save className="w-4 h-4 mr-2" />
