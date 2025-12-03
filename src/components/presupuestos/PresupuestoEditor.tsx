@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { Save, X, Search } from 'lucide-react';
 import { ItemsEditor } from './ItemsEditor';
 import { ClienteSearchModal } from './ClienteSearchModal';
+import { ImageUpload } from './ImageUpload';
 import { Cliente } from '../../services/clientesService';
 
 interface PresupuestoEditorProps {
@@ -297,6 +298,14 @@ export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: Presupues
           presupuestoId={presupuesto.id}
           moneda={formData.moneda}
           onItemsUpdated={onUpdate}
+        />
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <h4 className="font-semibold text-gray-900 mb-4">Imágenes del Presupuesto</h4>
+        <ImageUpload
+          presupuestoId={presupuesto.id}
+          onUploadComplete={onUpdate}
         />
       </div>
 
