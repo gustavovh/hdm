@@ -19,6 +19,7 @@ import { CambiarEstadoModal } from '../presupuestos/CambiarEstadoModal';
 import { FacturacionModal } from '../presupuestos/FacturacionModal';
 import { generateHDMStandardPDF } from '../../services/pdfGeneratorHDMStandard';
 import { FacturacionView } from './FacturacionView';
+import { SolicitudesEstadoManager } from './SolicitudesEstadoManager';
 
 interface GeneralStats {
   totalPresupuestos: number;
@@ -42,7 +43,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
   const [filters, setFilters] = useState<FilterOptions>({ estado: ['PENDIENTE'] });
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [activeTab, setActiveTab] = useState<'requests' | 'presupuestos' | 'targets' | 'indicators' | 'facturacion'>('indicators');
+  const [activeTab, setActiveTab] = useState<'requests' | 'presupuestos' | 'targets' | 'indicators' | 'facturacion' | 'solicitudes_estado'>('indicators');
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
   const [presupuestosLoading, setPresupuestosLoading] = useState(false);
   const [presupuestoSearch, setPresupuestoSearch] = useState('');
@@ -601,6 +602,19 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
               <Receipt className="w-4 h-4 inline-block mr-2" />
               Datos de Facturación
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => setActiveTab('solicitudes_estado')}
+                className={`${
+                  activeTab === 'solicitudes_estado'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              >
+                <RotateCw className="w-4 h-4 inline-block mr-2" />
+                Solicitudes de Estado
+              </button>
+            )}
           </nav>
         </div>
 
@@ -1105,6 +1119,8 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
         {activeTab === 'targets' && <SalesTargetsManager />}
 
         {activeTab === 'facturacion' && <FacturacionView />}
+
+        {activeTab === 'solicitudes_estado' && <SolicitudesEstadoManager />}
       </div>
 
       {isAdmin && (
