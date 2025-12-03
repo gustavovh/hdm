@@ -15,7 +15,9 @@ import {
   Receipt,
   Trash2,
   Search,
-  RefreshCw
+  RefreshCw,
+  Calendar,
+  Filter
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PresupuestoService } from '../../services/api';
@@ -78,12 +80,14 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
   const [showFacturacion, setShowFacturacion] = useState(false);
   const [selectedPresupuestoForFacturacion, setSelectedPresupuestoForFacturacion] = useState<Presupuesto | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'presupuestos'>('overview');
+  const [fechaDesde, setFechaDesde] = useState<string>('');
+  const [fechaHasta, setFechaHasta] = useState<string>('');
 
   useEffect(() => {
     if (user) {
       loadDashboardData();
     }
-  }, [user]);
+  }, [user, fechaDesde, fechaHasta]);
 
   const loadDashboardData = async () => {
     if (!user) return;
@@ -92,7 +96,25 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
       setLoading(true);
 
       const presupuestos = await PresupuestoService.getAll();
-      const misPresupuestos = presupuestos.filter(p => p.vendedor_id === user.id && !p.deleted_at);
+      let misPresupuestos = presupuestos.filter(p => p.vendedor_id === user.id && !p.deleted_at);
+
+      // Aplicar filtros de fecha si existen
+      if (fechaDesde) {
+        const fechaDesdeDate = new Date(fechaDesde);
+        fechaDesdeDate.setHours(0, 0, 0, 0);
+        misPresupuestos = misPresupuestos.filter(p => {
+          const presupuestoDate = new Date(p.created_at);
+          return presupuestoDate >= fechaDesdeDate;
+        });
+      }
+      if (fechaHasta) {
+        const fechaHastaDate = new Date(fechaHasta);
+        fechaHastaDate.setHours(23, 59, 59, 999);
+        misPresupuestos = misPresupuestos.filter(p => {
+          const presupuestoDate = new Date(p.created_at);
+          return presupuestoDate <= fechaHastaDate;
+        });
+      }
 
       const estadisticas = misPresupuestos.reduce((acc, p) => {
         const montoTotal = p.total_neto + p.total_impuestos;
@@ -155,9 +177,6 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
       setPresupuestosPendientes(pendientes);
       setAllPresupuestos(misPresupuestos);
 
-      const currentMonth = new Date().getMonth() + 1;
-      const currentYear = new Date().getFullYear();
-
       let objetivoActual = 0;
       let montoVendido = 0;
       let comisionEstimada = 0;
@@ -170,17 +189,14 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
         console.error('Error cargando objetivo:', error);
       }
 
-      try {
-        const comisionData = await CommissionsService.calculateMonthlyCommission(
-          user.id,
-          currentYear,
-          currentMonth
-        );
-        comisionEstimada = comisionData.monto_comision || 0;
-        montoVendido = comisionData.monto_vendido || 0;
-      } catch (error) {
-        console.error('Error cargando comisiones:', error);
-      }
+      // Calcular comisiones basadas en presupuestos filtrados
+      const presupuestosFacturados = misPresupuestos.filter(p => p.estado === 'FACTURADO');
+      montoVendido = presupuestosFacturados.reduce((sum, p) => {
+        return sum + (p.total_neto + p.total_impuestos);
+      }, 0);
+
+      // Calcular comisión estimada (promedio 2.5% del monto vendido)
+      comisionEstimada = montoVendido * 0.025;
 
       const avanceCalculado = objetivoActual > 0
         ? Math.round((montoVendido / objetivoActual) * 100)
@@ -460,6 +476,46 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
               Vista general de tu actividad y rendimiento
             </p>
           )}
+
+          <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Filtrar por fechas:</span>
+              </div>
+              <div className="flex items-center gap-3 flex-1">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600">Desde:</label>
+                  <Input
+                    type="date"
+                    value={fechaDesde}
+                    onChange={(e) => setFechaDesde(e.target.value)}
+                    className="w-40"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600">Hasta:</label>
+                  <Input
+                    type="date"
+                    value={fechaHasta}
+                    onChange={(e) => setFechaHasta(e.target.value)}
+                    className="w-40"
+                  />
+                </div>
+                {(fechaDesde || fechaHasta) && (
+                  <button
+                    onClick={() => {
+                      setFechaDesde('');
+                      setFechaHasta('');
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
