@@ -18,6 +18,7 @@ interface FacturaData {
   factura_numero: string | null;
   factura_timbrado: string | null;
   factura_fecha: string | null;
+  fecha_facturacion: string | null;
   factura_observacion: string | null;
   numero_factura: string | null;
   monto_factura: number | null;
@@ -69,6 +70,7 @@ export function FacturacionView() {
           factura_numero,
           factura_timbrado,
           factura_fecha,
+          fecha_facturacion,
           factura_observacion,
           numero_factura,
           monto_factura,
@@ -133,7 +135,7 @@ export function FacturacionView() {
       f.moneda,
       f.factura_numero || '',
       f.factura_timbrado || '',
-      f.factura_fecha || '',
+      f.fecha_facturacion || f.factura_fecha || '',
       f.numero_factura || '',
       f.monto_factura || '',
       f.condicion_pago || '',
@@ -282,10 +284,10 @@ export function FacturacionView() {
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-900">
-                        {factura.factura_fecha ? (
+                        {(factura.fecha_facturacion || factura.factura_fecha) ? (
                           <>
                             <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                            {new Date(factura.factura_fecha).toLocaleDateString('es-PY')}
+                            {new Date(factura.fecha_facturacion || factura.factura_fecha!).toLocaleDateString('es-PY')}
                           </>
                         ) : (
                           '-'
