@@ -98,9 +98,7 @@ export function CambiarEstadoModal({
           nuevoEstado,
           justificacion
         );
-        alert(
-          'Solicitud de cambio excepcional creada. Un administrador debe aprobarla para que el cambio se aplique.'
-        );
+        alert('SU SOLICITUD DE CAMBIO DE ESTADO FUE REMITIDA AL ADMINISTRADOR');
       } else {
         // Cambio directo (transición normal)
         await EstadoWorkflowService.cambiarEstadoDirecto(presupuestoId, nuevoEstado);
@@ -260,7 +258,7 @@ export function CambiarEstadoModal({
             loading={loading}
             disabled={!nuevoEstado || !validacion?.permitido}
           >
-            {validacion?.requiere_aprobacion ? 'Crear Solicitud' : 'Cambiar Estado'}
+            {validacion?.requiere_aprobacion ? 'SOLICITAR CAMBIO' : 'Cambiar Estado'}
           </Button>
         </div>
       </div>

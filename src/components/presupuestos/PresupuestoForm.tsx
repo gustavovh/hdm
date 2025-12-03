@@ -320,26 +320,33 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
           estado as BudgetStatus
         );
 
-        if (!validacion.permitido) {
-          alert(`No se puede guardar el presupuesto:\n\n${validacion.mensaje}`);
-          return;
-        }
-
-        if (validacion.requiere_aprobacion) {
-          const confirmar = confirm(
-            `⚠️ CAMBIO EXCEPCIONAL DETECTADO\n\n` +
+        // Si no está permitido o requiere aprobación, crear solicitud automáticamente
+        if (!validacion.permitido || validacion.requiere_aprobacion) {
+          const justificacion = prompt(
+            `⚠️ CAMBIO DE ESTADO QUE REQUIERE APROBACIÓN\n\n` +
+            `De: "${EstadoWorkflowService.getEstadoLabel(estadoActual)}" → A: "${EstadoWorkflowService.getEstadoLabel(estado as BudgetStatus)}"\n\n` +
             `${validacion.mensaje}\n\n` +
-            `Este cambio de estado de "${EstadoWorkflowService.getEstadoLabel(estadoActual)}" a "${EstadoWorkflowService.getEstadoLabel(estado as BudgetStatus)}" requiere aprobación administrativa.\n\n` +
-            `No puedes guardar el presupuesto con este cambio de estado directamente.\n\n` +
-            `Debes usar el botón "Cambiar Estado" para crear una solicitud que será revisada por un administrador.\n\n` +
-            `¿Deseas continuar? (El estado se mantendrá como "${EstadoWorkflowService.getEstadoLabel(estadoActual)}")`
+            `Por favor, proporciona una justificación para este cambio:`
           );
 
-          if (!confirmar) {
-            return;
+          if (!justificacion || !justificacion.trim()) {
+            alert('Debes proporcionar una justificación para el cambio de estado.\n\nEl presupuesto se guardará manteniendo su estado actual.');
+            estado = estadoActual;
+          } else {
+            // Crear solicitud de cambio
+            try {
+              await EstadoWorkflowService.crearSolicitud(
+                presupuestoId,
+                estado as BudgetStatus,
+                justificacion
+              );
+              alert('SU SOLICITUD DE CAMBIO DE ESTADO FUE REMITIDA AL ADMINISTRADOR\n\nEl presupuesto se guardará con su estado actual hasta que el administrador apruebe el cambio.');
+              estado = estadoActual;
+            } catch (error: any) {
+              alert('Error al crear la solicitud:\n' + error.message + '\n\nEl presupuesto se guardará con su estado actual.');
+              estado = estadoActual;
+            }
           }
-
-          estado = estadoActual;
         }
       } catch (error: any) {
         alert('Error al validar la transición de estado:\n' + error.message);
