@@ -318,21 +318,28 @@ export class EstadoWorkflowService {
    * Obtiene los estados excepcionales posibles desde un estado dado
    */
   static getEstadosExcepcionales(estadoActual: BudgetStatus): BudgetStatus[] {
-    const estadosExcepcionales: Record<BudgetStatus, BudgetStatus[]> = {
-      ABIERTO: [],
-      CLONADO: [],
-      PRESENTADO: [],
-      ACEPTADO: ['RECHAZADO'],
-      EN_EJECUCION: ['CANCELADO', 'INTERVENCION_ORDINARIA'],
-      FACTURADO: ['ACEPTADO', 'EN_EJECUCION'], // Excepcional: reabrir facturado
-      RECHAZADO: [],
-      CANCELADO: [],
-      INTERVENCION_ORDINARIA: [],
-      ANULADO: [],
-      BORRADOR: [],
-    };
+    // Todos los estados posibles
+    const todosLosEstados: BudgetStatus[] = [
+      'ABIERTO',
+      'CLONADO',
+      'PRESENTADO',
+      'ACEPTADO',
+      'EN_EJECUCION',
+      'FACTURADO',
+      'RECHAZADO',
+      'CANCELADO',
+      'INTERVENCION_ORDINARIA',
+      'ANULADO',
+      'BORRADOR',
+    ];
 
-    return estadosExcepcionales[estadoActual] || [];
+    // Obtener transiciones normales
+    const estadosNormales = this.getEstadosSiguientes(estadoActual);
+
+    // Retornar todos los estados EXCEPTO el actual y los normales
+    return todosLosEstados.filter(
+      (estado) => estado !== estadoActual && !estadosNormales.includes(estado)
+    );
   }
 
   /**
