@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Bell, X, Check } from 'lucide-react';
+import { Bell, X, Check, ExternalLink } from 'lucide-react';
 import { Notificacion } from '../../types/database.types';
 import { NotificationService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
+import { SolicitudCambioEstadoModal } from './SolicitudCambioEstadoModal';
 
 export function NotificationCenter() {
   const { user } = useAuth();
@@ -13,6 +14,8 @@ export function NotificationCenter() {
   const [notifications, setNotifications] = useState<Notificacion[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [selectedSolicitudId, setSelectedSolicitudId] = useState<string | null>(null);
+  const [showSolicitudModal, setShowSolicitudModal] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -81,6 +84,23 @@ export function NotificationCenter() {
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
+  };
+
+  const handleNotificationClick = (notification: Notificacion) => {
+    if (notification.entidad === 'solicitudes_cambio_estado' && notification.entidad_id) {
+      setSelectedSolicitudId(notification.entidad_id);
+      setShowSolicitudModal(true);
+      if (!notification.leida) {
+        handleMarkAsRead(notification.id);
+      }
+    }
+  };
+
+  const handleSolicitudProcessed = () => {
+    setShowSolicitudModal(false);
+    setSelectedSolicitudId(null);
+    loadNotifications();
+    loadUnreadCount();
   };
 
   const getNotificationIcon = (tipo: string) => {
@@ -180,49 +200,61 @@ export function NotificationCenter() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {(notifications || []).map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-4 hover:bg-gray-50 transition-colors ${
-                        !notification.leida ? 'bg-blue-50' : ''
-                      }`}
-                    >
-                      <div className="flex gap-3">
-                        <div className="text-2xl flex-shrink-0">
-                          {getNotificationIcon(notification.tipo)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <p className="font-medium text-gray-900 text-sm">
-                              {notification.titulo}
-                            </p>
-                            {!notification.leida && (
-                              <Badge variant="info" size="sm">
-                                Nueva
-                              </Badge>
-                            )}
+                  {(notifications || []).map((notification) => {
+                    const isClickable = notification.entidad === 'solicitudes_cambio_estado' && notification.entidad_id;
+                    return (
+                      <div
+                        key={notification.id}
+                        className={`p-4 transition-colors ${
+                          !notification.leida ? 'bg-blue-50' : ''
+                        } ${isClickable ? 'cursor-pointer hover:bg-gray-100' : ''}`}
+                        onClick={() => isClickable && handleNotificationClick(notification)}
+                      >
+                        <div className="flex gap-3">
+                          <div className="text-2xl flex-shrink-0">
+                            {getNotificationIcon(notification.tipo)}
                           </div>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {notification.mensaje}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-500">
-                              {formatTime(notification.created_at)}
-                            </span>
-                            {!notification.leida && (
-                              <button
-                                onClick={() => handleMarkAsRead(notification.id)}
-                                className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                              >
-                                <Check className="w-3 h-3" />
-                                Marcar como leída
-                              </button>
-                            )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-gray-900 text-sm">
+                                  {notification.titulo}
+                                </p>
+                                {isClickable && (
+                                  <ExternalLink className="w-3 h-3 text-blue-600" />
+                                )}
+                              </div>
+                              {!notification.leida && (
+                                <Badge variant="info" size="sm">
+                                  Nueva
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">
+                              {notification.mensaje}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-gray-500">
+                                {formatTime(notification.created_at)}
+                              </span>
+                              {!notification.leida && !isClickable && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsRead(notification.id);
+                                  }}
+                                  className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  Marcar como leída
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -241,6 +273,18 @@ export function NotificationCenter() {
             )}
           </div>
         </>
+      )}
+
+      {showSolicitudModal && selectedSolicitudId && (
+        <SolicitudCambioEstadoModal
+          solicitudId={selectedSolicitudId}
+          isOpen={showSolicitudModal}
+          onClose={() => {
+            setShowSolicitudModal(false);
+            setSelectedSolicitudId(null);
+          }}
+          onProcessed={handleSolicitudProcessed}
+        />
       )}
     </div>
   );
