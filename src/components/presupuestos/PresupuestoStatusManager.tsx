@@ -119,24 +119,21 @@ export function PresupuestoStatusManager({
   const handleConfirm = async () => {
     if (!targetStatus || !validacion) return;
 
-    if (!validacion.permitido && !validacion.requiere_aprobacion) {
+    // Si no está permitido en absoluto, mostrar error
+    if (!validacion.permitido) {
       alert(validacion.mensaje);
+      setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      // Si requiere aprobación o no está permitido, crear solicitud
-      if (!validacion.permitido || validacion.requiere_aprobacion) {
-        const justificacion = observaciones || prompt(
-          `⚠️ CAMBIO DE ESTADO QUE REQUIERE APROBACIÓN\n\n` +
-          `De: "${EstadoWorkflowService.getEstadoLabel(presupuesto.estado)}" → A: "${EstadoWorkflowService.getEstadoLabel(targetStatus)}"\n\n` +
-          `${validacion.mensaje}\n\n` +
-          `Por favor, proporciona una justificación para este cambio:`
-        );
+      // Si requiere aprobación, crear solicitud
+      if (validacion.requiere_aprobacion) {
+        const justificacion = observaciones.trim();
 
-        if (!justificacion || !justificacion.trim()) {
-          alert('Debes proporcionar una justificación para el cambio de estado.');
+        if (!justificacion) {
+          alert('Debes proporcionar una justificación en el campo "Observaciones" para este cambio excepcional.');
           setLoading(false);
           return;
         }
@@ -147,7 +144,7 @@ export function PresupuestoStatusManager({
           justificacion
         );
 
-        alert('SU SOLICITUD DE CAMBIO DE ESTADO FUE REMITIDA AL ADMINISTRADOR');
+        alert('✅ SU SOLICITUD DE CAMBIO DE ESTADO FUE REMITIDA AL ADMINISTRADOR.\n\nEl presupuesto permanecerá en su estado actual hasta que un administrador apruebe el cambio.');
         setShowModal(false);
         setTargetStatus(null);
         setObservaciones('');
@@ -251,26 +248,34 @@ export function PresupuestoStatusManager({
               className={`rounded-lg p-4 ${
                 validacion.permitido
                   ? validacion.requiere_aprobacion
-                    ? 'bg-orange-50 border border-orange-200'
+                    ? 'bg-orange-50 border-2 border-orange-400'
                     : 'bg-green-50 border border-green-200'
-                  : 'bg-orange-50 border border-orange-200'
+                  : 'bg-red-50 border border-red-200'
               }`}
             >
               <p
-                className={`text-sm ${
+                className={`text-sm font-medium ${
                   validacion.permitido
                     ? validacion.requiere_aprobacion
-                      ? 'text-orange-800'
+                      ? 'text-orange-900'
                       : 'text-green-800'
-                    : 'text-orange-800'
+                    : 'text-red-800'
                 }`}
               >
                 {validacion.mensaje}
               </p>
-              {(!validacion.permitido || validacion.requiere_aprobacion) && (
-                <p className="text-xs text-orange-700 mt-2">
-                  Esta solicitud será revisada por un administrador.
-                </p>
+              {validacion.requiere_aprobacion && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-sm text-orange-800 font-semibold">
+                    ⚠️ Cambio Excepcional - Requiere Aprobación Administrativa
+                  </p>
+                  <p className="text-xs text-orange-700">
+                    • El presupuesto PERMANECERÁ EN SU ESTADO ACTUAL<br/>
+                    • Su solicitud será enviada al administrador<br/>
+                    • Recibirá una notificación con la decisión<br/>
+                    • DEBE proporcionar una justificación en el campo "Observaciones"
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -359,11 +364,25 @@ export function PresupuestoStatusManager({
           )}
 
           <Textarea
-            label="Observaciones (opcional)"
+            label={
+              validacion?.requiere_aprobacion
+                ? 'Justificación del Cambio Excepcional *'
+                : 'Observaciones (opcional)'
+            }
             value={observaciones}
             onChange={(e) => setObservaciones(e.target.value)}
-            rows={3}
-            placeholder="Agrega cualquier comentario sobre este cambio de estado..."
+            rows={validacion?.requiere_aprobacion ? 4 : 3}
+            placeholder={
+              validacion?.requiere_aprobacion
+                ? 'REQUERIDO: Explica detalladamente por qué es necesario este cambio excepcional...'
+                : 'Agrega cualquier comentario sobre este cambio de estado...'
+            }
+            required={validacion?.requiere_aprobacion}
+            className={
+              validacion?.requiere_aprobacion
+                ? 'border-orange-300 focus:border-orange-500 focus:ring-orange-500'
+                : ''
+            }
           />
 
           <div className="flex gap-3 justify-end pt-4 border-t">
