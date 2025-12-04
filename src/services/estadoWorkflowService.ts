@@ -64,8 +64,8 @@ export class EstadoWorkflowService {
   ): Promise<ValidacionTransicion> {
     try {
       const { data, error } = await supabase.rpc('validar_transicion_estado', {
-        p_estado_origen: estadoOrigen,
-        p_estado_destino: estadoDestino,
+        p_estado_origen: estadoOrigen as string,
+        p_estado_destino: estadoDestino as string,
       });
 
       if (error) throw error;
@@ -88,7 +88,7 @@ export class EstadoWorkflowService {
     try {
       const { data, error } = await supabase.rpc('crear_solicitud_cambio_estado', {
         p_presupuesto_id: presupuestoId,
-        p_estado_destino: estadoDestino,
+        p_estado_destino: estadoDestino as string,
         p_justificacion: justificacion,
       });
 
