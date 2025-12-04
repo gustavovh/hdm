@@ -85,6 +85,7 @@ export function NotificationCenter() {
 
   const getNotificationIcon = (tipo: string) => {
     switch (tipo) {
+      // Tipos de descuentos (legacy)
       case 'NUEVA_SOLICITUD_DESCUENTO':
         return '📝';
       case 'SOLICITUD_APROBADA':
@@ -95,6 +96,17 @@ export function NotificationCenter() {
         return '❌';
       case 'RECORDATORIO_SOLICITUDES_PENDIENTES':
         return '⏰';
+
+      // Tipos genéricos
+      case 'warning':
+        return '⚠️';
+      case 'info':
+        return 'ℹ️';
+      case 'success':
+        return '✅';
+      case 'error':
+        return '❌';
+
       default:
         return '🔔';
     }
