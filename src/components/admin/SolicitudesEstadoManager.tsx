@@ -178,7 +178,7 @@ export function SolicitudesEstadoManager() {
                     </span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Cliente: {solicitud.presupuestos?.nombre_cliente || 'N/A'}
+                    Cliente: {solicitud.presupuestos?.cliente_nombre || 'N/A'}
                   </p>
                 </div>
               </div>

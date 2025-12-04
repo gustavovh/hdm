@@ -27,7 +27,7 @@ export interface SolicitudCambioEstado {
   updated_at: string;
   presupuestos?: {
     codigo: string;
-    nombre_cliente: string;
+    cliente_nombre: string;
   };
   users?: {
     full_name: string;
@@ -110,7 +110,7 @@ export class EstadoWorkflowService {
         .from('solicitudes_cambio_estado')
         .select(`
           *,
-          presupuestos!inner(codigo, nombre_cliente),
+          presupuestos!inner(codigo, cliente_nombre),
           users!solicitudes_cambio_estado_solicitante_id_fkey(full_name, email)
         `)
         .eq('estado_solicitud', 'PENDIENTE')
@@ -134,7 +134,7 @@ export class EstadoWorkflowService {
         .from('solicitudes_cambio_estado')
         .select(`
           *,
-          presupuestos!inner(codigo, nombre_cliente),
+          presupuestos!inner(codigo, cliente_nombre),
           users!solicitudes_cambio_estado_solicitante_id_fkey(full_name, email)
         `)
         .order('created_at', { ascending: false });
@@ -157,7 +157,7 @@ export class EstadoWorkflowService {
         .from('solicitudes_cambio_estado')
         .select(`
           *,
-          presupuestos!inner(codigo, nombre_cliente),
+          presupuestos!inner(codigo, cliente_nombre),
           users!solicitudes_cambio_estado_solicitante_id_fkey(full_name, email)
         `)
         .eq('solicitante_id', userId)
@@ -183,7 +183,7 @@ export class EstadoWorkflowService {
         .from('solicitudes_cambio_estado')
         .select(`
           *,
-          presupuestos!inner(codigo, nombre_cliente),
+          presupuestos!inner(codigo, cliente_nombre),
           users!solicitudes_cambio_estado_solicitante_id_fkey(full_name, email)
         `)
         .eq('presupuesto_id', presupuestoId)
