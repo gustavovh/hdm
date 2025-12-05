@@ -103,7 +103,9 @@ didDrawPage: (data) => { ... }
 ```typescript
 // Archivo: pdfGeneratorHDMStandard.ts
 
-const LOGO_WIDTH_MM = 50;        // Ancho fijo del logo
+const LOGO_WIDTH_MM = 50;        // Ancho fijo del logo (NO MODIFICAR)
+const UNDER_LOGO_GAP = 8;        // Gap después del logo
+const LINE_HEIGHT = 4;           // Altura de línea de servicios
 const BOTTOM_MARGIN = 20;        // Margen inferior de página
 const SAFE_FOOTER_ZONE = 25;     // Zona protegida para footer
 
@@ -111,9 +113,17 @@ const SAFE_FOOTER_ZONE = 25;     // Zona protegida para footer
 margin: {
   left: 20,
   right: 20,
-  top: 50,     // Espacio para header en páginas adicionales
+  top: 65,     // Espacio para header en páginas adicionales (logo 13mm + gap 8mm + servicios 12mm + gaps ~32mm)
   bottom: 50,  // Espacio para footer
 }
+
+// Cálculo del espacio del header:
+// - Logo: 50mm × aspect(~0.26) = ~13mm
+// - Gap después logo: 8mm
+// - Servicios (3 líneas × 4mm): 12mm
+// - Número presupuesto + gaps: ~24mm
+// - Total: ~57mm
+// - Usamos 65mm para dar margen de seguridad
 ```
 
 ## ✅ RESULTADO ESPERADO

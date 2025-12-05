@@ -23,7 +23,7 @@ Esto forza al navegador a descargar los archivos NUEVOS.
 3. REGENERA el PDF (NO uses un PDF viejo)
 4. Busca este mensaje:
    ```
-   🎯 USANDO GENERADOR HDMSTANDARD - VERSIÓN ANTI-SUPERPOSICIÓN v2.1 - 2024-12-05-1456
+   🎯 USANDO GENERADOR HDMSTANDARD - VERSIÓN ANTI-SUPERPOSICIÓN v2.2 - 2024-12-05-1530 - margin.top 65mm
    ```
 
 ### PASO 3: Generar PDF Nuevo
@@ -56,16 +56,19 @@ Si los pasos anteriores no funcionan:
 - Número de presupuesto visible
 - **TABLA COMIENZA DEBAJO** (sin superposición)
 
-## CAMBIOS APLICADOS EN EL CÓDIGO:
+## CAMBIOS APLICADOS EN EL CÓDIGO v2.2:
 
-1. **Logo 50mm fijo** en todas las páginas
-2. **margin.top: 50** en autoTable para reservar espacio para header
-3. **didDrawPage sincrónico** con logo pre-cargado
-4. **yTop ajustado** para que header se dibuje dentro del margin.top
+1. **Logo 50mm fijo** en todas las páginas (NO MODIFICAR)
+2. **margin.top: 65mm** en autoTable para reservar suficiente espacio para header completo
+3. **Gap después del logo: 8mm** (consistente entre páginas)
+4. **didDrawPage sincrónico** con logo pre-cargado
+5. **yTop ajustado** para que header se dibuje dentro del margin.top
+6. **Número de presupuesto** con más espacio (24mm después del logo)
 
 ---
 
 **SI AÚN VES SUPERPOSICIÓN:**
 1. Verifica que hiciste CTRL+SHIFT+R
-2. Verifica en consola que dice "v2.1 - 2024-12-05-1456"
+2. Verifica en consola que dice "v2.2 - 2024-12-05-1530 - margin.top 65mm"
 3. Verifica que GENERASTE un PDF nuevo (no abriste uno viejo)
+4. Si el logo sigue pequeño, revisa que el mensaje en consola incluya "LOGO_WIDTH_MM = 50"

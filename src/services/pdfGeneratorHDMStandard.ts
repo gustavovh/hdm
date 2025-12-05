@@ -40,7 +40,7 @@ async function preloadLogo(): Promise<{ dataUrl: string; width: number; height: 
 }
 
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
-  console.log('🎯 USANDO GENERADOR HDMSTANDARD - VERSIÓN ANTI-SUPERPOSICIÓN v2.1 - 2024-12-05-1456');
+  console.log('🎯 USANDO GENERADOR HDMSTANDARD - VERSIÓN ANTI-SUPERPOSICIÓN v2.2 - 2024-12-05-1530 - margin.top 65mm');
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -584,7 +584,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     margin: {
       left: margin,
       right: margin,
-      top: 50, // Espacio para header en páginas adicionales (logo + servicios + gap)
+      top: 65, // Espacio para header en páginas adicionales (logo 13mm + servicios 12mm + gaps + número 8mm)
       bottom: 50, // Zona de seguridad para footer
     },
     didDrawPage: (data) => {
@@ -610,7 +610,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
           doc.addImage(preloadedLogo.dataUrl, 'PNG', leftMargin, yTop, scaledW, scaledH);
 
           // Bloque de servicios debajo del logo
-          let sy = yTop + scaledH + 4;
+          let sy = yTop + scaledH + 8; // Gap después del logo (consistente con página 1)
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(8);
           const servicesLines = [
@@ -642,7 +642,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
         doc.text('RUC: 80122639-2', contactX, cy, { align: 'right' });
 
         // Número de presupuesto (colocarlo debajo del bloque de servicios)
-        const servicesBottom = yTop + (preloadedLogo ? LOGO_WIDTH_MM * (preloadedLogo.height / preloadedLogo.width) + 16 : 28);
+        const servicesBottom = yTop + (preloadedLogo ? LOGO_WIDTH_MM * (preloadedLogo.height / preloadedLogo.width) + 24 : 36);
         doc.setFont('times', 'bold');
         doc.setFontSize(12);
         const formattedCode = formatPresupuestoCode(presupuesto.codigo);
