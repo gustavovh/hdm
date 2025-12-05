@@ -298,6 +298,9 @@ export class CorporatePDFGenerator {
         6: { cellWidth: 25, halign: 'right' },
       },
       alternateRowStyles: { fillColor: [249, 250, 251] },
+      margin: {
+        bottom: 90, // CRÍTICO: Evita superposición con footer
+      },
     });
 
     yPosition = (doc as any).lastAutoTable.finalY + 10;

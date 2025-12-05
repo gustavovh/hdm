@@ -167,6 +167,12 @@ export class HDMPDFGeneratorV2 {
     const rightMargin = 20;
     const topMargin = 15;
 
+    // ========== CONSTANTES CRÍTICAS ANTI-SUPERPOSICIÓN ==========
+    const BOTTOM_MARGIN = 30;
+    const SAFE_FOOTER_ZONE = 60;
+    const CONTENT_MAX_Y = pageHeight - BOTTOM_MARGIN - SAFE_FOOTER_ZONE;
+    // ============================================================
+
     // Watermark - "PRESUPUESTO" en diagonal
     this.addWatermark(doc, pageWidth, pageHeight);
 
@@ -245,7 +251,11 @@ export class HDMPDFGeneratorV2 {
         4: { cellWidth: 25, halign: 'right' },
         5: { cellWidth: 25, halign: 'right' },
       },
-      margin: { left: leftMargin, right: rightMargin },
+      margin: {
+        left: leftMargin,
+        right: rightMargin,
+        bottom: 90, // CRÍTICO: Evita que la tabla invada el footer
+      },
       didDrawPage: (data) => {
         // Agregar watermark en cada página
         this.addWatermark(doc, pageWidth, pageHeight);
@@ -285,16 +295,14 @@ export class HDMPDFGeneratorV2 {
     doc.text(presupuesto.condicion_pago || 'CONTADO', leftMargin + 35, yPosition);
     yPosition += 8;
 
-    // Constantes para control de espacio
-    const BOTTOM_MARGIN = 30;
-    const SIGNATURE_SPACE = 50;
-    const MIN_SPACE_FOR_CONTENT = 40;
-
     // Observaciones
     if (presupuesto.observaciones) {
-      // Verificar espacio antes de empezar
-      if (yPosition > pageHeight - BOTTOM_MARGIN - SIGNATURE_SPACE - MIN_SPACE_FOR_CONTENT) {
+      // REGLA ABSOLUTA: Verificar espacio antes de empezar observaciones
+      const MIN_SPACE_FOR_CONTENT = 40;
+      if (yPosition > CONTENT_MAX_Y - MIN_SPACE_FOR_CONTENT) {
+        console.log('⚠️ NO HAY ESPACIO para observaciones, creando nueva página');
         doc.addPage();
+        this.addWatermark(doc, pageWidth, pageHeight);
         yPosition = topMargin;
       }
 
@@ -304,10 +312,12 @@ export class HDMPDFGeneratorV2 {
       doc.setFont('helvetica', 'normal');
       const obsText = doc.splitTextToSize(presupuesto.observaciones, pageWidth - leftMargin - rightMargin);
 
-      // Verificar línea por línea
+      // REGLA ABSOLUTA: Verificar CADA LÍNEA antes de agregar
       for (let i = 0; i < obsText.length; i++) {
-        if (yPosition > pageHeight - BOTTOM_MARGIN - SIGNATURE_SPACE) {
+        if (yPosition + 5 > CONTENT_MAX_Y) {
+          console.log('⚠️ Línea de observación excede límite, nueva página');
           doc.addPage();
+          this.addWatermark(doc, pageWidth, pageHeight);
           yPosition = topMargin;
         }
         doc.text(obsText[i], leftMargin, yPosition);
@@ -317,9 +327,11 @@ export class HDMPDFGeneratorV2 {
 
     yPosition += 3;
 
-    // Verificar espacio para notas finales
-    if (yPosition > pageHeight - BOTTOM_MARGIN - SIGNATURE_SPACE - 15) {
+    // REGLA ABSOLUTA: Verificar espacio para notas finales
+    if (yPosition + 15 > CONTENT_MAX_Y) {
+      console.log('⚠️ Notas finales exceden límite, nueva página');
       doc.addPage();
+      this.addWatermark(doc, pageWidth, pageHeight);
       yPosition = topMargin;
     }
 
@@ -334,14 +346,17 @@ export class HDMPDFGeneratorV2 {
     doc.text('Estamos a su disposición ante cualquier consulta.', leftMargin, yPosition);
     yPosition += 10;
 
-    // Definir límite máximo para la firma (debe estar por encima del footer)
-    const footerY = pageHeight - 10;
-    const maxSignatureY = footerY - 40; // Reservar 40mm de espacio mínimo sobre el footer
+    // ========== VERIFICACIÓN CRÍTICA: ESPACIO PARA FIRMA ==========
+    const signatureHeight = 50;
 
-    // Si la posición actual sobrepasa el límite, ajustar
-    if (yPosition > maxSignatureY) {
-      yPosition = maxSignatureY;
+    // REGLA ABSOLUTA: La firma NUNCA puede invadir la zona del footer
+    if (yPosition + signatureHeight > CONTENT_MAX_Y) {
+      console.log('⚠️ NO HAY ESPACIO para firma, creando nueva página');
+      doc.addPage();
+      this.addWatermark(doc, pageWidth, pageHeight);
+      yPosition = topMargin + 30;
     }
+    // ==============================================================
 
     // Firma del vendedor que creó el presupuesto - centrada en la página
     // Si el vendedor es administrativo, usa la firma del admin en su lugar

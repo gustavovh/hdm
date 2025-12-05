@@ -205,7 +205,11 @@ export class HDMPDFGenerator {
 
     autoTable(doc, {
       startY: yPosition,
-      margin: { left: leftMargin, right: rightMargin },
+      margin: {
+        left: leftMargin,
+        right: rightMargin,
+        bottom: 90, // CRÍTICO: Evita superposición con footer
+      },
       head: [['#', 'Item|Grp', 'Descripción', 'Cantidad', 'Unidad', 'P.Unitario', 'Sub Total']],
       body: tableData,
       theme: 'grid',

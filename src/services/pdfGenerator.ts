@@ -214,6 +214,9 @@ export class PDFGenerator {
         5: { cellWidth: 25, halign: 'right' },
         6: { cellWidth: 25, halign: 'right' },
       },
+      margin: {
+        bottom: 90, // CRÍTICO: Evita superposición con footer
+      },
     });
 
     yPosition = (doc as any).lastAutoTable.finalY + 10;
