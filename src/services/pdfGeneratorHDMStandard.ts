@@ -602,15 +602,16 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
         // CALCULAR yTop: debe estar DENTRO del margin.top
         const yTop = margin + 2; // margin es 20, entonces 22mm desde arriba (dentro del margin.top de 90)
 
-        // Logo
+        // Logo y cálculo de altura
+        let scaledH = 21; // fallback
         if (preloadedLogo) {
           const aspect = preloadedLogo.height / preloadedLogo.width;
           const scaledW = LOGO_WIDTH_MM;
-          const scaledH = LOGO_WIDTH_MM * aspect;
+          scaledH = LOGO_WIDTH_MM * aspect;
           doc.addImage(preloadedLogo.dataUrl, 'PNG', leftMargin, yTop, scaledW, scaledH);
 
           // Bloque de servicios debajo del logo
-          let sy = yTop + scaledH + 8; // Gap después del logo (consistente con página 1)
+          let sy = yTop + scaledH + 8;
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(8);
           const servicesLines = [
@@ -622,9 +623,6 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
             doc.text(line, leftMargin + 2, sy);
             sy += LINE_HEIGHT;
           }
-
-          // Guardar posición final de servicios para el número de presupuesto
-          const finalServicesY = sy;
         }
 
         // Bloque de contacto (derecha)
@@ -644,8 +642,8 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
         cy += LINE_HEIGHT;
         doc.text('RUC: 80122639-2', contactX, cy, { align: 'right' });
 
-        // Número de presupuesto (colocado inmediatamente después de servicios, sin gap extra)
-        const servicesBottom = preloadedLogo ? (yTop + scaledH + 8 + 14) : (yTop + 20);
+        // Número de presupuesto
+        const servicesBottom = yTop + scaledH + 8 + 14;
         doc.setFont('times', 'bold');
         doc.setFontSize(12);
         const formattedCode = formatPresupuestoCode(presupuesto.codigo);
