@@ -3,8 +3,8 @@ import autoTable from 'jspdf-autotable';
 import { Presupuesto } from '../types/database.types';
 import { supabase } from '../lib/supabase';
 
-const LOGO_WIDTH_MM = 50;
-const LOGO_HEIGHT_MM = 13;
+const LOGO_WIDTH_MM = 80;
+const LOGO_HEIGHT_MM = 21;
 
 // Pre-cargar logo para uso en todas las páginas
 async function preloadLogo(): Promise<{ dataUrl: string; width: number; height: number } | null> {
@@ -40,7 +40,7 @@ async function preloadLogo(): Promise<{ dataUrl: string; width: number; height: 
 }
 
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
-  console.log('🎯 USANDO GENERADOR HDMSTANDARD - VERSIÓN ANTI-SUPERPOSICIÓN v2.2 - 2024-12-05-1530 - margin.top 65mm');
+  console.log('🎯 HDMSTANDARD v3.1 - LOGO 80mm - FIX número presupuesto - 2024-12-05-1555');
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -309,11 +309,11 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   // ---- CONFIG ----
   const LINE_HEIGHT = 4;          // interlineado general
 
-  // ---- LOGO (izquierda, TAMAÑO FIJO 50mm ancho, mantener aspecto) ----
-  const LOGO_WIDTH_MM = 50;  // TAMAÑO FIJO - NO MODIFICAR
+  // ---- LOGO (izquierda, TAMAÑO AMPLIADO 80mm ancho, mantener aspecto) ----
+  const LOGO_WIDTH_MM = 80;
   let logoY = yTop;
   let scaledW = LOGO_WIDTH_MM;
-  let scaledH = 13; // fallback
+  let scaledH = 21; // fallback proporcional
   try {
     const response = await fetch('/hdm-logo.png');
     const blob = await response.blob();
@@ -584,7 +584,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     margin: {
       left: margin,
       right: margin,
-      top: 65, // Espacio para header en páginas adicionales (logo 13mm + servicios 12mm + gaps + número 8mm)
+      top: 90, // Espacio AMPLIADO para logo 80mm
       bottom: 50, // Zona de seguridad para footer
     },
     didDrawPage: (data) => {
@@ -597,10 +597,10 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
         const leftMargin = margin;
         const rightMargin = margin;
         const LINE_HEIGHT = 4;
-        const LOGO_WIDTH_MM = 50;
+        const LOGO_WIDTH_MM = 80;
 
         // CALCULAR yTop: debe estar DENTRO del margin.top
-        const yTop = margin + 2; // margin es 20, entonces 22mm desde arriba (dentro del margin.top de 50)
+        const yTop = margin + 2; // margin es 20, entonces 22mm desde arriba (dentro del margin.top de 90)
 
         // Logo
         if (preloadedLogo) {
@@ -622,6 +622,9 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
             doc.text(line, leftMargin + 2, sy);
             sy += LINE_HEIGHT;
           }
+
+          // Guardar posición final de servicios para el número de presupuesto
+          const finalServicesY = sy;
         }
 
         // Bloque de contacto (derecha)
@@ -641,8 +644,8 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
         cy += LINE_HEIGHT;
         doc.text('RUC: 80122639-2', contactX, cy, { align: 'right' });
 
-        // Número de presupuesto (colocarlo debajo del bloque de servicios)
-        const servicesBottom = yTop + (preloadedLogo ? LOGO_WIDTH_MM * (preloadedLogo.height / preloadedLogo.width) + 24 : 36);
+        // Número de presupuesto (colocado inmediatamente después de servicios, sin gap extra)
+        const servicesBottom = preloadedLogo ? (yTop + scaledH + 8 + 14) : (yTop + 20);
         doc.setFont('times', 'bold');
         doc.setFontSize(12);
         const formattedCode = formatPresupuestoCode(presupuesto.codigo);
