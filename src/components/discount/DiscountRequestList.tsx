@@ -1,7 +1,7 @@
 import { SolicitudDescuento } from '../../types/database.types';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
-import { Calendar, User, Percent, DollarSign, Package } from 'lucide-react';
+import { Calendar, User, Percent, DollarSign, Package, FileText, CreditCard, Building2 } from 'lucide-react';
 import { BudgetCalculator } from '../../services/budgetCalculator';
 
 interface DiscountRequestListProps {
@@ -58,7 +58,7 @@ export function DiscountRequestList({
           className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
         >
           <div className="flex justify-between items-start mb-4">
-            <div>
+            <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 {getStatusBadge(request.estado)}
                 <Badge variant="neutral" size="sm">
@@ -89,6 +89,64 @@ export function DiscountRequestList({
               </Badge>
             )}
           </div>
+
+          {request.presupuesto && (
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Datos del Presupuesto
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-blue-700 mb-1">Código</p>
+                  <p className="font-semibold text-blue-900">{request.presupuesto.codigo}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-blue-700 mb-1">Cliente</p>
+                  <p className="font-semibold text-blue-900">{request.presupuesto.cliente_nombre}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-blue-700 mb-1">Monto Total</p>
+                  <p className="font-semibold text-blue-900">
+                    {BudgetCalculator.formatCurrency(
+                      request.presupuesto.total_neto,
+                      request.presupuesto.moneda
+                    )}
+                  </p>
+                </div>
+                {request.presupuesto.concepto && (
+                  <div className="col-span-2 md:col-span-3">
+                    <p className="text-xs text-blue-700 mb-1">Concepto</p>
+                    <p className="text-blue-900">{request.presupuesto.concepto}</p>
+                  </div>
+                )}
+                {request.presupuesto.cliente_documento && (
+                  <div>
+                    <p className="text-xs text-blue-700 mb-1 flex items-center gap-1">
+                      <CreditCard className="w-3 h-3" />
+                      RUC/CI
+                    </p>
+                    <p className="text-blue-900">{request.presupuesto.cliente_documento}</p>
+                  </div>
+                )}
+                {request.presupuesto.nombre_fantasia && (
+                  <div>
+                    <p className="text-xs text-blue-700 mb-1 flex items-center gap-1">
+                      <Building2 className="w-3 h-3" />
+                      Nombre Fantasía
+                    </p>
+                    <p className="text-blue-900">{request.presupuesto.nombre_fantasia}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-blue-700 mb-1">Estado</p>
+                  <Badge variant="info" size="sm">
+                    {request.presupuesto.estado}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div>

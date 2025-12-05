@@ -458,7 +458,8 @@ export class DiscountRequestService {
         *,
         vendedor:users!solicitudes_descuento_vendedor_id_fkey(*),
         aprobador:users!solicitudes_descuento_aprobado_por_fkey(*),
-        presupuesto:presupuestos(*)
+        presupuesto:presupuestos(*),
+        item:presupuesto_items(*)
       `,
         { count: 'exact' }
       )
