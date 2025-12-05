@@ -584,6 +584,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     margin: {
       left: margin,
       right: margin,
+      top: 50, // Espacio para header en páginas adicionales (logo + servicios + gap)
       bottom: 50, // Zona de seguridad para footer
     },
     didDrawPage: (data) => {

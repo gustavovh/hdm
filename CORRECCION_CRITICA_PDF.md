@@ -1,122 +1,144 @@
 # CORRECCIÓN CRÍTICA: Superposición en PDFs
 
-## ❌ PROBLEMAS IDENTIFICADOS
+## ❌ PROBLEMA RAÍZ IDENTIFICADO
 
-### 1. Superposición de Contenido en Página 2
-**Causa:** El callback `didDrawPage` de autoTable era `async`, lo que causaba que:
-- El header se agregaba DESPUÉS de que la tabla se dibujaba
-- La tabla se superponía sobre el logo y la información de contacto
+### Superposición de Contenido en Páginas Adicionales
+**Causa REAL:** La tabla NO reservaba espacio superior para el header en páginas adicionales.
 
-**Solución:** 
-- Pre-cargar el logo ANTES de crear la tabla
-- Usar callback SINCRÓNICO en `didDrawPage`
-- Agregar header con logo pre-cargado en memoria
+**Explicación del Flujo:**
+1. autoTable calcula dónde dibujar la tabla
+2. En páginas adicionales, comienza en `yTop = margin` (20mm desde arriba)
+3. Dibuja toda la tabla
+4. DESPUÉS ejecuta `didDrawPage` callback
+5. `didDrawPage` dibuja header (logo + servicios + contacto) en yTop = 20mm
+6. **Resultado:** Header se dibuja ENCIMA de la tabla ya renderizada
 
-### 2. Logo Más Pequeño de lo Esperado
-**Causa:** Configuración incorrecta del tamaño:
+**La Solución Correcta:**
 ```typescript
-// ❌ INCORRECTO
-const TARGET_H = 15;  // altura objetivo
-scaledH = TARGET_H;
-scaledW = TARGET_H * aspect;
+margin: {
+  left: margin,
+  right: margin,
+  top: 50,     // ← CRÍTICO: Espacio para header en páginas adicionales
+  bottom: 50,  // Espacio para footer
+}
 ```
 
-**Solución:**
-```typescript
-// ✅ CORRECTO
-const LOGO_WIDTH_MM = 50;  // TAMAÑO FIJO - NO MODIFICAR
-scaledW = LOGO_WIDTH_MM;
-scaledH = LOGO_WIDTH_MM * aspect;  // Alto proporcional
-```
+Esto obliga a autoTable a comenzar la tabla en yTop = 50mm en todas las páginas, dejando espacio libre arriba para que `didDrawPage` dibuje el header sin superposición.
 
-### 3. Espacio Excesivo en Blanco
-**Causa:** Zona de seguridad exageradamente grande (90mm de margen inferior)
-
-**Solución:** Optimización a 50mm, suficiente para evitar superposiciones
-
-## ✅ CORRECCIONES IMPLEMENTADAS
+## ✅ IMPLEMENTACIÓN CORRECTA
 
 ### 1. Pre-carga de Logo
 ```typescript
 async function preloadLogo(): Promise<{ dataUrl: string; width: number; height: number } | null> {
-  // Carga el logo una sola vez antes de la tabla
-  // Retorna dataUrl + dimensiones para uso sincrónico
+  // Carga el logo UNA VEZ antes de crear la tabla
+  // Retorna dataUrl + dimensiones para uso sincrónico en didDrawPage
 }
 ```
 
-### 2. Callback Sincrónico en didDrawPage
+### 2. Uso del Logo Pre-cargado
 ```typescript
-didDrawPage: (data) => {  // NO async!
-  if (currentPage > 1) {
-    // Usa preloadedLogo (ya en memoria)
-    doc.addImage(preloadedLogo.dataUrl, ...);
-    // Agrega servicios y contacto
-    // Agrega número de presupuesto
+const preloadedLogo = await preloadLogo();
+yPosition = await addItemsTable(doc, margin, yPosition, pageWidth, presupuesto, preloadedLogo);
+```
+
+### 3. Callback Sincrónico con Margen Superior
+```typescript
+autoTable(doc, {
+  startY: yPosition,
+  margin: {
+    left: margin,
+    right: margin,
+    top: 50,    // ← Reserva espacio para header
+    bottom: 50,
+  },
+  didDrawPage: (data) => {  // ← Sincrónico (NO async)
+    if (data.pageNumber > 1) {
+      // Dibuja header usando preloadedLogo (ya en memoria)
+      const scaledH = LOGO_WIDTH_MM * (preloadedLogo.height / preloadedLogo.width);
+      doc.addImage(preloadedLogo.dataUrl, 'PNG', leftMargin, yTop, LOGO_WIDTH_MM, scaledH);
+      // ... servicios, contacto, número
+    }
   }
-}
+});
 ```
 
-### 3. Tamaño de Logo Fijo
-- **Ancho:** 50mm (CONSTANTE - NO MODIFICAR)
-- **Alto:** Calculado según aspect ratio real de la imagen
-- Preserva proporciones originales
+### 4. Cálculo del Espacio del Header
+- Logo: ~13mm (50mm ancho × aspect ratio)
+- Gap después del logo: 8mm
+- Servicios (3 líneas): 12mm (3 × 4mm)
+- Gap adicional: 7mm
+- **Total: ~40mm** → Usamos **50mm** para margen de seguridad
 
-### 4. Optimización de Espacios
-- Margen inferior de tabla: 50mm (antes 90mm)
-- Zona de seguridad footer: 25mm (antes 60mm)
-- Total protegido: 45mm (suficiente y óptimo)
+## 🛡️ REGLAS ABSOLUTAS
 
-## 🛡️ POLÍTICA DE EJECUCIÓN
-
-### REGLA ABSOLUTA: NUNCA Modificar Tamaño del Logo
+### REGLA 1: SIEMPRE usar `margin.top` en autoTable
 ```typescript
-const LOGO_WIDTH_MM = 50;  // TAMAÑO FIJO - NO MODIFICAR
-```
-
-### REGLA ABSOLUTA: SIEMPRE Agregar Header en Páginas Adicionales
-El `didDrawPage` DEBE:
-1. Verificar si `currentPage > 1`
-2. Agregar logo, servicios, contacto y número
-3. Usar logo PRE-CARGADO (sincrónico)
-
-### REGLA ABSOLUTA: Callbacks de autoTable NUNCA Async
-```typescript
-// ❌ MAL
-didDrawPage: async (data) => {
-  await addHeader(...);  // Se ejecuta DESPUÉS del dibujo
-}
-
-// ✅ BIEN
-didDrawPage: (data) => {
-  doc.addImage(preloadedLogo.dataUrl, ...);  // Sincrónico
-}
-```
-
-## 📏 CONSTANTES OPTIMIZADAS
-
-```typescript
-// Zona protegida para footer
-const BOTTOM_MARGIN = 20;
-const SAFE_FOOTER_ZONE = 25;
-const CONTENT_MAX_Y = pageHeight - BOTTOM_MARGIN - SAFE_FOOTER_ZONE;
-
-// Logo (TAMAÑO FIJO)
-const LOGO_WIDTH_MM = 50;  // NO MODIFICAR
-
-// Margen de tabla
 margin: {
-  bottom: 50,  // Suficiente para evitar superposición
+  top: 50,  // NO OMITIR - Previene superposición
 }
 ```
 
-## ✅ RESULTADO FINAL
+### REGLA 2: Logo SIEMPRE 50mm de ancho
+```typescript
+const LOGO_WIDTH_MM = 50;  // CONSTANTE - NO MODIFICAR
+```
 
+### REGLA 3: Pre-cargar logo antes de autoTable
+```typescript
+const preloadedLogo = await preloadLogo();
+// ... luego usar en didDrawPage
+```
+
+### REGLA 4: didDrawPage SIEMPRE sincrónico
+```typescript
+// ❌ MAL - Async se ejecuta después del render
+didDrawPage: async (data) => { ... }
+
+// ✅ BIEN - Sincrónico se ejecuta durante el render
+didDrawPage: (data) => { ... }
+```
+
+## 📏 CONSTANTES FINALES
+
+```typescript
+// Archivo: pdfGeneratorHDMStandard.ts
+
+const LOGO_WIDTH_MM = 50;        // Ancho fijo del logo
+const BOTTOM_MARGIN = 20;        // Margen inferior de página
+const SAFE_FOOTER_ZONE = 25;     // Zona protegida para footer
+
+// Configuración de autoTable
+margin: {
+  left: 20,
+  right: 20,
+  top: 50,     // Espacio para header en páginas adicionales
+  bottom: 50,  // Espacio para footer
+}
+```
+
+## ✅ RESULTADO ESPERADO
+
+Después de estos cambios:
 - ✅ Cero superposiciones en todas las páginas
-- ✅ Logo con tamaño correcto (50mm ancho)
-- ✅ Header presente en TODAS las páginas
-- ✅ Uso óptimo del espacio disponible
-- ✅ Zona de seguridad adecuada para footer
+- ✅ Logo 50mm ancho con aspect ratio correcto
+- ✅ Header completo en TODAS las páginas adicionales
+- ✅ Tabla comienza DESPUÉS del header (yTop = 50mm)
+- ✅ Footer protegido en todas las páginas
+
+## 🔧 VERIFICACIÓN
+
+Para verificar que funciona:
+1. Crear presupuesto con muchos ítems (para forzar múltiples páginas)
+2. Generar PDF
+3. Verificar página 2 y siguientes:
+   - Logo visible en parte superior
+   - Servicios visibles debajo del logo
+   - Contacto visible en esquina superior derecha
+   - Número de presupuesto visible
+   - **Tabla comienza DEBAJO de todo lo anterior (sin superposición)**
 
 ---
 
-**IMPORTANTE:** No modificar estas configuraciones sin documentar el motivo y validar que NO se introduzcan superposiciones.
+**ÚLTIMA ACTUALIZACIÓN:** 2025-12-05
+**CAUSA RAÍZ:** Falta de `margin.top` en configuración de autoTable
+**SOLUCIÓN:** Agregado `margin: { top: 50 }` para reservar espacio para header
