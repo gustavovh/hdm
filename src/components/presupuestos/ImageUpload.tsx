@@ -129,6 +129,14 @@ export function ImageUpload({ presupuestoId, onUploadComplete }: ImageUploadProp
       }
       uploadImage(file);
     }
+    e.target.value = '';
+  };
+
+  const handleButtonClick = () => {
+    const input = document.getElementById('image-upload-input') as HTMLInputElement;
+    if (input) {
+      input.click();
+    }
   };
 
   if (!presupuestoId) {
@@ -149,8 +157,9 @@ export function ImageUpload({ presupuestoId, onUploadComplete }: ImageUploadProp
           Imágenes del Presupuesto
         </h3>
 
-        <label>
+        <div>
           <input
+            id="image-upload-input"
             type="file"
             accept="image/*"
             onChange={handleFileSelect}
@@ -162,12 +171,12 @@ export function ImageUpload({ presupuestoId, onUploadComplete }: ImageUploadProp
             variant="secondary"
             size="sm"
             disabled={uploading}
-            as="span"
+            onClick={handleButtonClick}
           >
             <Upload className="w-4 h-4 mr-2" />
             {uploading ? 'Subiendo...' : 'Subir Imagen'}
           </Button>
-        </label>
+        </div>
       </div>
 
       {loading ? (
