@@ -40,7 +40,7 @@ async function preloadLogo(): Promise<{ dataUrl: string; width: number; height: 
 }
 
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
-  console.log('🎯 USANDO GENERADOR HDMSTANDARD - VERSIÓN ANTI-SUPERPOSICIÓN 2024-12-05');
+  console.log('🎯 USANDO GENERADOR HDMSTANDARD - VERSIÓN ANTI-SUPERPOSICIÓN v2.1 - 2024-12-05-1456');
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -596,9 +596,11 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
         // Header en páginas adicionales
         const leftMargin = margin;
         const rightMargin = margin;
-        const yTop = margin;
         const LINE_HEIGHT = 4;
         const LOGO_WIDTH_MM = 50;
+
+        // CALCULAR yTop: debe estar DENTRO del margin.top
+        const yTop = margin + 2; // margin es 20, entonces 22mm desde arriba (dentro del margin.top de 50)
 
         // Logo
         if (preloadedLogo) {
@@ -608,7 +610,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
           doc.addImage(preloadedLogo.dataUrl, 'PNG', leftMargin, yTop, scaledW, scaledH);
 
           // Bloque de servicios debajo del logo
-          let sy = yTop + scaledH + 8;
+          let sy = yTop + scaledH + 4;
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(8);
           const servicesLines = [
@@ -639,8 +641,8 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
         cy += LINE_HEIGHT;
         doc.text('RUC: 80122639-2', contactX, cy, { align: 'right' });
 
-        // Número de presupuesto
-        const servicesBottom = yTop + (preloadedLogo ? LOGO_WIDTH_MM * (preloadedLogo.height / preloadedLogo.width) + 20 : 30);
+        // Número de presupuesto (colocarlo debajo del bloque de servicios)
+        const servicesBottom = yTop + (preloadedLogo ? LOGO_WIDTH_MM * (preloadedLogo.height / preloadedLogo.width) + 16 : 28);
         doc.setFont('times', 'bold');
         doc.setFontSize(12);
         const formattedCode = formatPresupuestoCode(presupuesto.codigo);
