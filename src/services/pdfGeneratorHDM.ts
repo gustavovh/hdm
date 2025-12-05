@@ -208,7 +208,7 @@ export class HDMPDFGenerator {
       margin: {
         left: leftMargin,
         right: rightMargin,
-        bottom: 90, // CRÍTICO: Evita superposición con footer
+        bottom: 50, // Zona de seguridad para footer
       },
       head: [['#', 'Item|Grp', 'Descripción', 'Cantidad', 'Unidad', 'P.Unitario', 'Sub Total']],
       body: tableData,

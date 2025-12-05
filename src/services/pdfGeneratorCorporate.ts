@@ -299,7 +299,7 @@ export class CorporatePDFGenerator {
       },
       alternateRowStyles: { fillColor: [249, 250, 251] },
       margin: {
-        bottom: 90, // CRÍTICO: Evita superposición con footer
+        bottom: 50, // Zona de seguridad para footer
       },
     });
 

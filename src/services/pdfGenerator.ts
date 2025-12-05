@@ -215,7 +215,7 @@ export class PDFGenerator {
         6: { cellWidth: 25, halign: 'right' },
       },
       margin: {
-        bottom: 90, // CRÍTICO: Evita superposición con footer
+        bottom: 50, // Zona de seguridad para footer
       },
     });
 

@@ -19,8 +19,8 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   const margin = 20;
 
   // ========== CONSTANTES CRÍTICAS ANTI-SUPERPOSICIÓN ==========
-  const BOTTOM_MARGIN = 30;
-  const SAFE_FOOTER_ZONE = 60;
+  const BOTTOM_MARGIN = 20;
+  const SAFE_FOOTER_ZONE = 25; // Zona de seguridad optimizada
   const CONTENT_MAX_Y = pageHeight - BOTTOM_MARGIN - SAFE_FOOTER_ZONE;
   // ============================================================
 
@@ -61,7 +61,7 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   yPosition += 15;
 
   // ========== VERIFICACIÓN CRÍTICA: ESPACIO PARA FIRMA ==========
-  const signatureHeight = 50; // Espacio completo necesario
+  const signatureHeight = 45; // Espacio necesario para firma
 
   // REGLA ABSOLUTA: La firma NUNCA puede invadir la zona del footer
   if (yPosition + signatureHeight > CONTENT_MAX_Y) {
@@ -69,7 +69,7 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
     doc.addPage();
     const { headerEndY, servicesBottomY } = await addHeader(doc, margin, margin, pageWidth);
     addPresupuestoNumber(doc, pageWidth, margin, servicesBottomY, presupuesto);
-    yPosition = headerEndY + 30;
+    yPosition = headerEndY + 10; // Espacio reducido después del header
   }
   // ==============================================================
 
@@ -559,7 +559,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     margin: {
       left: margin,
       right: margin,
-      bottom: 90, // CRÍTICO: Evita que la tabla invada el footer
+      bottom: 50, // Zona de seguridad para footer
     },
     didDrawPage: async (data) => {
       const currentPage = data.pageNumber;
@@ -601,10 +601,10 @@ function addFormaPago(doc: jsPDF, margin: number, yPosition: number, presupuesto
 
 function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): number {
   const pageHeight = doc.internal.pageSize.getHeight();
-  const BOTTOM_MARGIN = 30;
-  const SAFE_FOOTER_ZONE = 60;
+  const BOTTOM_MARGIN = 20;
+  const SAFE_FOOTER_ZONE = 25;
   const CONTENT_MAX_Y = pageHeight - BOTTOM_MARGIN - SAFE_FOOTER_ZONE;
-  const MIN_SPACE_FOR_CONTENT = 40;
+  const MIN_SPACE_FOR_CONTENT = 30;
 
   // REGLA ABSOLUTA: Verificar espacio antes de comenzar observaciones
   if (yPosition > CONTENT_MAX_Y - MIN_SPACE_FOR_CONTENT) {
@@ -631,7 +631,7 @@ function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWid
     if (yPosition + 6 > CONTENT_MAX_Y) {
       console.log('⚠️ Línea de observación excede límite, nueva página');
       doc.addPage();
-      yPosition = margin;
+      yPosition = margin + 10; // Pequeño margen superior
     }
     doc.text(obsLines[i], margin, yPosition);
     yPosition += 6;
@@ -640,10 +640,10 @@ function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWid
   yPosition += 5;
 
   // REGLA ABSOLUTA: Verificar espacio para notas finales
-  if (yPosition + 15 > CONTENT_MAX_Y) {
+  if (yPosition + 12 > CONTENT_MAX_Y) {
     console.log('⚠️ Notas finales exceden límite, nueva página');
     doc.addPage();
-    yPosition = margin;
+    yPosition = margin + 10;
   }
 
   doc.setFont('times', 'normal');
@@ -850,8 +850,8 @@ async function addAnexoPages(doc: jsPDF, presupuestoId: string, pageWidth: numbe
       const imgRatio = imgProps.width / imgProps.height;
 
       // REGLA ABSOLUTA: Calcular área disponible sin invadir footer
-      const BOTTOM_MARGIN = 30;
-      const SAFE_FOOTER_ZONE = 60;
+      const BOTTOM_MARGIN = 20;
+      const SAFE_FOOTER_ZONE = 25;
       const maxWidth = pageWidth - (margin * 2);
       const maxHeight = pageHeight - yPosition - BOTTOM_MARGIN - SAFE_FOOTER_ZONE;
 

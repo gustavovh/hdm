@@ -168,8 +168,8 @@ export class HDMPDFGeneratorV2 {
     const topMargin = 15;
 
     // ========== CONSTANTES CRÍTICAS ANTI-SUPERPOSICIÓN ==========
-    const BOTTOM_MARGIN = 30;
-    const SAFE_FOOTER_ZONE = 60;
+    const BOTTOM_MARGIN = 20;
+    const SAFE_FOOTER_ZONE = 25; // Zona de seguridad optimizada
     const CONTENT_MAX_Y = pageHeight - BOTTOM_MARGIN - SAFE_FOOTER_ZONE;
     // ============================================================
 
@@ -254,7 +254,7 @@ export class HDMPDFGeneratorV2 {
       margin: {
         left: leftMargin,
         right: rightMargin,
-        bottom: 90, // CRÍTICO: Evita que la tabla invada el footer
+        bottom: 50, // Zona de seguridad para footer
       },
       didDrawPage: (data) => {
         // Agregar watermark en cada página
@@ -298,12 +298,12 @@ export class HDMPDFGeneratorV2 {
     // Observaciones
     if (presupuesto.observaciones) {
       // REGLA ABSOLUTA: Verificar espacio antes de empezar observaciones
-      const MIN_SPACE_FOR_CONTENT = 40;
+      const MIN_SPACE_FOR_CONTENT = 30;
       if (yPosition > CONTENT_MAX_Y - MIN_SPACE_FOR_CONTENT) {
         console.log('⚠️ NO HAY ESPACIO para observaciones, creando nueva página');
         doc.addPage();
         this.addWatermark(doc, pageWidth, pageHeight);
-        yPosition = topMargin;
+        yPosition = topMargin + 10;
       }
 
       doc.setFont('helvetica', 'bold');
@@ -318,7 +318,7 @@ export class HDMPDFGeneratorV2 {
           console.log('⚠️ Línea de observación excede límite, nueva página');
           doc.addPage();
           this.addWatermark(doc, pageWidth, pageHeight);
-          yPosition = topMargin;
+          yPosition = topMargin + 10;
         }
         doc.text(obsText[i], leftMargin, yPosition);
         yPosition += 5;
@@ -328,11 +328,11 @@ export class HDMPDFGeneratorV2 {
     yPosition += 3;
 
     // REGLA ABSOLUTA: Verificar espacio para notas finales
-    if (yPosition + 15 > CONTENT_MAX_Y) {
+    if (yPosition + 12 > CONTENT_MAX_Y) {
       console.log('⚠️ Notas finales exceden límite, nueva página');
       doc.addPage();
       this.addWatermark(doc, pageWidth, pageHeight);
-      yPosition = topMargin;
+      yPosition = topMargin + 10;
     }
 
     // Nota de IVA
@@ -347,14 +347,14 @@ export class HDMPDFGeneratorV2 {
     yPosition += 10;
 
     // ========== VERIFICACIÓN CRÍTICA: ESPACIO PARA FIRMA ==========
-    const signatureHeight = 50;
+    const signatureHeight = 45;
 
     // REGLA ABSOLUTA: La firma NUNCA puede invadir la zona del footer
     if (yPosition + signatureHeight > CONTENT_MAX_Y) {
       console.log('⚠️ NO HAY ESPACIO para firma, creando nueva página');
       doc.addPage();
       this.addWatermark(doc, pageWidth, pageHeight);
-      yPosition = topMargin + 30;
+      yPosition = topMargin + 20;
     }
     // ==============================================================
 
