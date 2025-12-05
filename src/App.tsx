@@ -182,17 +182,6 @@ function AuthenticatedApp() {
                   Mis Presupuestos
                 </button>
                 <button
-                  onClick={() => setCurrentView('reports')}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
-                    currentView === 'reports'
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-700 shadow'
-                  }`}
-                >
-                  <BarChart3 className="w-5 h-5" />
-                  Reportes
-                </button>
-                <button
                   onClick={() => setCurrentView('catalogo')}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all ${
                     currentView === 'catalogo'
