@@ -3,8 +3,12 @@ import autoTable from 'jspdf-autotable';
 import { Presupuesto } from '../types/database.types';
 import { supabase } from '../lib/supabase';
 
-const LOGO_WIDTH_MM = 80;
-const LOGO_HEIGHT_MM = 21;
+// ============================================================================
+// CONFIGURACIÓN FINAL DEL LOGO - ¡NO MODIFICAR ESTOS VALORES!
+// Tamaño aprobado y validado: 50mm x 13mm
+// ============================================================================
+const LOGO_WIDTH_MM = 50;
+const LOGO_HEIGHT_MM = 13;
 
 // Pre-cargar logo para uso en todas las páginas
 async function preloadLogo(): Promise<{ dataUrl: string; width: number; height: number } | null> {
@@ -40,7 +44,7 @@ async function preloadLogo(): Promise<{ dataUrl: string; width: number; height: 
 }
 
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
-  console.log('🎯 HDMSTANDARD v3.1 - LOGO 80mm - FIX número presupuesto - 2024-12-05-1555');
+  console.log('🎯 HDMSTANDARD v4.0 - LOGO CORREGIDO 50mm - TAMAÑO FINAL - 2024-12-05-1610');
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -309,11 +313,13 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   // ---- CONFIG ----
   const LINE_HEIGHT = 4;          // interlineado general
 
-  // ---- LOGO (izquierda, TAMAÑO AMPLIADO 80mm ancho, mantener aspecto) ----
-  const LOGO_WIDTH_MM = 80;
+  // ========================================================================
+  // LOGO - TAMAÑO FINAL 50mm x 13mm - ¡NO MODIFICAR!
+  // ========================================================================
+  const LOGO_WIDTH_MM = 50;
   let logoY = yTop;
   let scaledW = LOGO_WIDTH_MM;
-  let scaledH = 21; // fallback proporcional
+  let scaledH = 13; // fallback
   try {
     const response = await fetch('/hdm-logo.png');
     const blob = await response.blob();
@@ -584,7 +590,7 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
     margin: {
       left: margin,
       right: margin,
-      top: 90, // Espacio AMPLIADO para logo 80mm
+      top: 65, // ¡NO MODIFICAR! Espacio para header con logo 50mm x 13mm
       bottom: 50, // Zona de seguridad para footer
     },
     didDrawPage: (data) => {
@@ -597,13 +603,16 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
         const leftMargin = margin;
         const rightMargin = margin;
         const LINE_HEIGHT = 4;
-        const LOGO_WIDTH_MM = 80;
+        // ================================================================
+        // LOGO TAMAÑO FINAL: 50mm x 13mm - ¡NO MODIFICAR!
+        // ================================================================
+        const LOGO_WIDTH_MM = 50;
 
         // CALCULAR yTop: debe estar DENTRO del margin.top
-        const yTop = margin + 2; // margin es 20, entonces 22mm desde arriba (dentro del margin.top de 90)
+        const yTop = margin + 2; // margin es 20, entonces 22mm desde arriba (dentro del margin.top de 65)
 
         // Logo y cálculo de altura
-        let scaledH = 21; // fallback
+        let scaledH = 13; // fallback para logo 50mm
         if (preloadedLogo) {
           const aspect = preloadedLogo.height / preloadedLogo.width;
           const scaledW = LOGO_WIDTH_MM;
