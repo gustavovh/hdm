@@ -6,6 +6,39 @@ import { supabase } from '../lib/supabase';
 const LOGO_WIDTH_MM = 50;
 const LOGO_HEIGHT_MM = 13;
 
+// Pre-cargar logo para uso en todas las páginas
+async function preloadLogo(): Promise<{ dataUrl: string; width: number; height: number } | null> {
+  try {
+    const response = await fetch('/hdm-logo.png');
+    const blob = await response.blob();
+    const reader = new FileReader();
+
+    await new Promise((resolve, reject) => {
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+    const logoData = reader.result as string;
+
+    const tmpImg: HTMLImageElement = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error('No se pudo leer dimensiones del logo'));
+      i.src = logoData;
+    });
+
+    return {
+      dataUrl: logoData,
+      width: tmpImg.width,
+      height: tmpImg.height
+    };
+  } catch (error) {
+    console.warn('Error pre-cargando logo:', error);
+    return null;
+  }
+}
+
 export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<Blob> {
   console.log('🎯 USANDO GENERADOR HDMSTANDARD - VERSIÓN ANTI-SUPERPOSICIÓN 2024-12-05');
   const doc = new jsPDF({
@@ -25,6 +58,9 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
   // ============================================================
 
   const { signatureUrl, vendedorName, isAdministrativo } = await loadVendedorData(presupuesto.vendedor_id);
+
+  // Pre-cargar logo para uso en todas las páginas de la tabla
+  const preloadedLogo = await preloadLogo();
 
   let yPosition = margin;
 
@@ -48,7 +84,7 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   yPosition += 5;
 
-  yPosition = await addItemsTable(doc, margin, yPosition, pageWidth, presupuesto);
+  yPosition = await addItemsTable(doc, margin, yPosition, pageWidth, presupuesto, preloadedLogo);
 
   yPosition += 10;
 
@@ -273,14 +309,11 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
   // ---- CONFIG ----
   const LINE_HEIGHT = 4;          // interlineado general
 
-  // ---- LOGO (izquierda, mantener aspecto) ----
-  const MAX_W = 50;          // límite de ancho (50mm como en HDMv2)
-  const TARGET_H = 15;       // altura deseada razonable
-  const LIFT_UP = 4;         // mover un poco hacia arriba
-
-  let logoY = yTop - LIFT_UP;
-  let scaledW = 50;
-  let scaledH = 13;
+  // ---- LOGO (izquierda, TAMAÑO FIJO 50mm ancho, mantener aspecto) ----
+  const LOGO_WIDTH_MM = 50;  // TAMAÑO FIJO - NO MODIFICAR
+  let logoY = yTop;
+  let scaledW = LOGO_WIDTH_MM;
+  let scaledH = 13; // fallback
   try {
     const response = await fetch('/hdm-logo.png');
     const blob = await response.blob();
@@ -294,7 +327,7 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
 
     const logoData = reader.result as string;
 
-    // cargar dimensiones reales desde el DataURL para respetar el aspecto
+    // Cargar dimensiones reales para respetar aspect ratio
     const tmpImg: HTMLImageElement = await new Promise((resolve, reject) => {
       const i = new Image();
       i.onload = () => resolve(i);
@@ -302,17 +335,9 @@ async function addHeader(doc: jsPDF, margin: number, yPosition: number, pageWidt
       i.src = logoData;
     });
 
-    const natW = tmpImg.width || 1;
-    const natH = tmpImg.height || 1;
-    const aspect = natW / natH;
-
-    // escalar por altura objetivo y luego limitar por ancho máximo (sin deformar)
-    scaledH = TARGET_H;
-    scaledW = TARGET_H * aspect;
-    if (scaledW > MAX_W) {
-      scaledW = MAX_W;
-      scaledH = MAX_W / aspect;
-    }
+    const aspect = tmpImg.height / tmpImg.width;
+    scaledW = LOGO_WIDTH_MM;
+    scaledH = LOGO_WIDTH_MM * aspect; // Alto proporcional al ancho fijo
 
     doc.addImage(logoData, 'PNG', leftMargin, logoY, scaledW, scaledH);
   } catch (error) {
@@ -460,7 +485,7 @@ function addTrabajosTitle(doc: jsPDF, margin: number, yPosition: number): number
   return yPosition;
 }
 
-async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): Promise<number> {
+async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto, preloadedLogo: { dataUrl: string; width: number; height: number } | null): Promise<number> {
   // Preparar datos de la tabla
   const tableData = presupuesto.items?.map((item, index) => [
     (index + 1).toString(),
@@ -561,14 +586,64 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
       right: margin,
       bottom: 50, // Zona de seguridad para footer
     },
-    didDrawPage: async (data) => {
+    didDrawPage: (data) => {
       const currentPage = data.pageNumber;
       doc.setPage(currentPage);
 
-      // Si no es la primera página, agregar encabezado
+      // Si no es la primera página, agregar encabezado SINCRÓNICAMENTE
       if (currentPage > 1) {
-        const { headerEndY, servicesBottomY } = await addHeader(doc, margin, margin, pageWidth);
-        addPresupuestoNumber(doc, pageWidth, margin, servicesBottomY, presupuesto);
+        // Header en páginas adicionales
+        const leftMargin = margin;
+        const rightMargin = margin;
+        const yTop = margin;
+        const LINE_HEIGHT = 4;
+        const LOGO_WIDTH_MM = 50;
+
+        // Logo
+        if (preloadedLogo) {
+          const aspect = preloadedLogo.height / preloadedLogo.width;
+          const scaledW = LOGO_WIDTH_MM;
+          const scaledH = LOGO_WIDTH_MM * aspect;
+          doc.addImage(preloadedLogo.dataUrl, 'PNG', leftMargin, yTop, scaledW, scaledH);
+
+          // Bloque de servicios debajo del logo
+          let sy = yTop + scaledH + 8;
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          const servicesLines = [
+            'Sistemas eléctricos de potencia – Obras civiles – Metalúrgica',
+            'Domótica – Electrónica de Potencia – Media Tensión 23kV',
+            'Mediciones Eléctricas – Gestoría ANDE – Asesoría Energética'
+          ];
+          for (const line of servicesLines) {
+            doc.text(line, leftMargin + 2, sy);
+            sy += LINE_HEIGHT;
+          }
+        }
+
+        // Bloque de contacto (derecha)
+        const contactX = pageWidth - rightMargin;
+        let cy = yTop + 1;
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Dirección: Profesor Almada C/21 de setiembre', contactX, cy, { align: 'right' });
+        cy += LINE_HEIGHT;
+        doc.text('Luque - Paraguay', contactX, cy, { align: 'right' });
+        cy += LINE_HEIGHT;
+        doc.setTextColor(0, 0, 255);
+        doc.text('Email: hmino@hdm.com.py', contactX, cy, { align: 'right' });
+        doc.setTextColor(0, 0, 0);
+        cy += LINE_HEIGHT;
+        doc.text('Cel: +595981795669', contactX, cy, { align: 'right' });
+        cy += LINE_HEIGHT;
+        doc.text('RUC: 80122639-2', contactX, cy, { align: 'right' });
+
+        // Número de presupuesto
+        const servicesBottom = yTop + (preloadedLogo ? LOGO_WIDTH_MM * (preloadedLogo.height / preloadedLogo.width) + 20 : 30);
+        doc.setFont('times', 'bold');
+        doc.setFontSize(12);
+        const formattedCode = formatPresupuestoCode(presupuesto.codigo);
+        doc.text(`Presupuesto #: ${formattedCode}`, pageWidth - rightMargin, servicesBottom, { align: 'right' });
       }
     },
     // Aplicar estilo especial a la última fila (totales)
