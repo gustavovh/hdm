@@ -298,9 +298,9 @@ export class EstadoWorkflowService {
    */
   static getEstadosSiguientes(estadoActual: BudgetStatus): BudgetStatus[] {
     const flujoNormal: Record<BudgetStatus, BudgetStatus[]> = {
-      ABIERTO: ['PRESENTADO'],
-      CLONADO: ['PRESENTADO'],
-      PRESENTADO: ['ACEPTADO'],
+      ABIERTO: ['PRESENTADO', 'CANCELADO'], // CANCELADO directamente sin aprobación
+      CLONADO: ['PRESENTADO', 'CANCELADO'], // CANCELADO directamente sin aprobación
+      PRESENTADO: ['ACEPTADO', 'CANCELADO'], // CANCELADO directamente sin aprobación
       ACEPTADO: ['EN_EJECUCION'],
       EN_EJECUCION: ['FACTURADO'],
       FACTURADO: [],
