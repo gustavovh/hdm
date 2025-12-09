@@ -40,6 +40,8 @@ export function CommissionsManager() {
   const loadCommissionsData = async () => {
     setLoading(true);
     try {
+      console.log('🔄 Cargando comisiones para:', { mes: selectedMonth, año: selectedYear });
+
       const { data: vendedores } = await supabase
         .from('users')
         .select('*')
@@ -51,6 +53,8 @@ export function CommissionsManager() {
         return;
       }
 
+      console.log('👥 Vendedores encontrados:', vendedores.length, 'roles:', vendedores.map(v => `${v.full_name} (${v.role})`));
+
       const stats: VendedorStats[] = [];
       let totalVentasSum = 0;
       let totalComisionesSum = 0;
@@ -60,14 +64,26 @@ export function CommissionsManager() {
         const startDate = new Date(selectedYear, selectedMonth - 1, 1);
         const endDate = new Date(selectedYear, selectedMonth, 0, 23, 59, 59);
 
-        const { data: presupuestos } = await supabase
+        const { data: presupuestos, error: presupuestosError } = await supabase
           .from('presupuestos')
-          .select('id, codigo, total_neto, total_impuestos, total_comisiones, tasa_comision, moneda, fecha_aceptacion')
+          .select('id, codigo, total_neto, total_impuestos, total_comisiones, tasa_comision, moneda, fecha_aceptacion, estado')
           .eq('vendedor_id', vendedor.id)
           .in('estado', ['ACEPTADO', 'FACTURADO'])
-          .gte('fecha_aceptacion', startDate.toISOString())
-          .lte('fecha_aceptacion', endDate.toISOString())
+          .not('fecha_aceptacion', 'is', null)
+          .gte('fecha_aceptacion', startDate.toISOString().split('T')[0])
+          .lte('fecha_aceptacion', endDate.toISOString().split('T')[0])
           .is('deleted_at', null);
+
+        if (presupuestosError) {
+          console.error('❌ Error consultando presupuestos:', presupuestosError);
+        }
+
+        console.log(`📊 ${vendedor.full_name} (${vendedor.role}):`, {
+          presupuestos: presupuestos?.length || 0,
+          codigos: presupuestos?.map(p => p.codigo),
+          estados: presupuestos?.map(p => p.estado),
+          comisiones: presupuestos?.map(p => p.total_comisiones),
+        });
 
         const totalVentas = presupuestos?.reduce(
           (sum, p) => sum + parseFloat(p.total_neto as any) + parseFloat(p.total_impuestos as any),

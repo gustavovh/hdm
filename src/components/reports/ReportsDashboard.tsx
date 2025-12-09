@@ -139,6 +139,7 @@ export function ReportsDashboard() {
                   setUseCustomDate(false);
                   setDateFrom('');
                   setDateTo('');
+                  setTimeout(() => loadStats(), 100);
                 }}
                 className="px-3 py-2 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
                 title="Limpiar fechas personalizadas"
