@@ -22,6 +22,7 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
     status_comentario: '',
     proxima_accion: '',
     fecha_proxima_accion: '',
+    hora_proxima_accion: '',
   });
   const [error, setError] = useState('');
 
@@ -58,15 +59,21 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
     try {
       setError('');
 
-      if (formData.fecha_proxima_accion) {
-        const fechaProxima = new Date(formData.fecha_proxima_accion);
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
+      let fechaProximaISO = null;
 
-        if (fechaProxima < hoy) {
-          setError('La fecha de próxima acción no puede ser anterior a hoy');
+      if (formData.fecha_proxima_accion) {
+        const fechaStr = formData.fecha_proxima_accion;
+        const horaStr = formData.hora_proxima_accion || '00:00';
+
+        const fechaProxima = new Date(`${fechaStr}T${horaStr}:00`);
+        const ahora = new Date();
+
+        if (fechaProxima < ahora) {
+          setError('La fecha y hora de próxima acción no puede ser anterior a ahora');
           return;
         }
+
+        fechaProximaISO = fechaProxima.toISOString();
       }
 
       if (editingId) {
@@ -76,7 +83,7 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
             accion: formData.accion,
             status_comentario: formData.status_comentario || null,
             proxima_accion: formData.proxima_accion || null,
-            fecha_proxima_accion: formData.fecha_proxima_accion || null,
+            fecha_proxima_accion: fechaProximaISO,
           })
           .eq('id', editingId);
 
@@ -90,7 +97,7 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
             accion: formData.accion,
             status_comentario: formData.status_comentario || null,
             proxima_accion: formData.proxima_accion || null,
-            fecha_proxima_accion: formData.fecha_proxima_accion || null,
+            fecha_proxima_accion: fechaProximaISO,
           });
 
         if (insertError) throw insertError;
@@ -101,6 +108,7 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
         status_comentario: '',
         proxima_accion: '',
         fecha_proxima_accion: '',
+        hora_proxima_accion: '',
       });
       setEditingId(null);
       setShowForm(false);
@@ -112,11 +120,23 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
   };
 
   const handleEdit = (seguimiento: PresupuestoSeguimiento) => {
+    let fecha = '';
+    let hora = '';
+
+    if (seguimiento.fecha_proxima_accion) {
+      const fechaObj = new Date(seguimiento.fecha_proxima_accion);
+      fecha = fechaObj.toISOString().split('T')[0];
+      const hours = String(fechaObj.getHours()).padStart(2, '0');
+      const minutes = String(fechaObj.getMinutes()).padStart(2, '0');
+      hora = `${hours}:${minutes}`;
+    }
+
     setFormData({
       accion: seguimiento.accion,
       status_comentario: seguimiento.status_comentario || '',
       proxima_accion: seguimiento.proxima_accion || '',
-      fecha_proxima_accion: seguimiento.fecha_proxima_accion || '',
+      fecha_proxima_accion: fecha,
+      hora_proxima_accion: hora,
     });
     setEditingId(seguimiento.id);
     setShowForm(true);
@@ -148,6 +168,7 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
       status_comentario: '',
       proxima_accion: '',
       fecha_proxima_accion: '',
+      hora_proxima_accion: '',
     });
     setError('');
   };
@@ -211,29 +232,44 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Próxima Acción
+            </label>
+            <Input
+              type="text"
+              value={formData.proxima_accion}
+              onChange={(e) => setFormData({ ...formData, proxima_accion: e.target.value })}
+              placeholder="Ej: Visita, Seguimiento, etc."
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Próxima Acción
-              </label>
-              <Input
-                type="text"
-                value={formData.proxima_accion}
-                onChange={(e) => setFormData({ ...formData, proxima_accion: e.target.value })}
-                placeholder="Ej: Visita, Seguimiento, etc."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
                 <Calendar className="w-4 h-4 inline mr-1" />
-                Fecha Próxima Acción
+                Fecha de Alarma
               </label>
               <Input
                 type="date"
                 value={formData.fecha_proxima_accion}
                 onChange={(e) => setFormData({ ...formData, fecha_proxima_accion: e.target.value })}
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Hora de Alarma
+              </label>
+              <Input
+                type="time"
+                value={formData.hora_proxima_accion}
+                onChange={(e) => setFormData({ ...formData, hora_proxima_accion: e.target.value })}
+                placeholder="HH:MM"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Opcional: Deja vacío para alarma a las 00:00
+              </p>
             </div>
           </div>
 
@@ -321,10 +357,18 @@ export function SeguimientoManager({ presupuestoId }: SeguimientoManagerProps) {
                       <span className="flex items-center gap-1 text-blue-600">
                         <Calendar className="w-4 h-4" />
                         {(() => {
-                          const date = new Date(seg.fecha_proxima_accion + 'T00:00:00');
+                          const date = new Date(seg.fecha_proxima_accion);
                           const day = String(date.getDate()).padStart(2, '0');
                           const month = String(date.getMonth() + 1).padStart(2, '0');
                           const year = date.getFullYear();
+                          const hours = String(date.getHours()).padStart(2, '0');
+                          const minutes = String(date.getMinutes()).padStart(2, '0');
+
+                          const hasTime = hours !== '00' || minutes !== '00';
+
+                          if (hasTime) {
+                            return `${day}/${month}/${year} a las ${hours}:${minutes}`;
+                          }
                           return `${day}/${month}/${year}`;
                         })()}
                       </span>
