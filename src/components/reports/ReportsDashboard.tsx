@@ -23,26 +23,38 @@ export function ReportsDashboard() {
   const [dateTo, setDateTo] = useState('');
   const [useCustomDate, setUseCustomDate] = useState(false);
 
-  useEffect(() => {
-    loadStats();
-  }, [period]);
-
-  const loadStats = async () => {
+  const loadStats = async (customFrom?: string, customTo?: string) => {
     setLoading(true);
+    console.log('Loading stats with:', {
+      period,
+      customFrom: customFrom || dateFrom,
+      customTo: customTo || dateTo,
+      useCustomDate
+    });
     try {
       let data;
-      if (useCustomDate && dateFrom && dateTo) {
-        data = await ReportsService.getDashboardStats(period, dateFrom, dateTo);
+      const from = customFrom !== undefined ? customFrom : dateFrom;
+      const to = customTo !== undefined ? customTo : dateTo;
+
+      if (useCustomDate && from && to) {
+        console.log('Using custom dates:', from, to);
+        data = await ReportsService.getDashboardStats(period, from, to);
       } else {
+        console.log('Using period:', period);
         data = await ReportsService.getDashboardStats(period);
       }
       setStats(data);
+      console.log('Stats loaded successfully');
     } catch (error) {
       console.error('Error loading stats:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadStats();
+  }, [period]);
 
   if (loading || !stats) {
     return (
@@ -135,7 +147,10 @@ export function ReportsDashboard() {
               placeholder="Hasta"
             />
             <button
-              onClick={() => loadStats()}
+              onClick={() => {
+                console.log('Botón Actualizar clicked', { dateFrom, dateTo, useCustomDate });
+                loadStats(dateFrom, dateTo);
+              }}
               disabled={loading}
               className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
                 loading
@@ -153,7 +168,7 @@ export function ReportsDashboard() {
                   setUseCustomDate(false);
                   setDateFrom('');
                   setDateTo('');
-                  setTimeout(() => loadStats(), 100);
+                  setTimeout(() => loadStats('', ''), 100);
                 }}
                 className="px-3 py-2 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
                 title="Limpiar fechas personalizadas"
