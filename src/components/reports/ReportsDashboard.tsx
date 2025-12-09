@@ -25,28 +25,38 @@ export function ReportsDashboard() {
 
   const loadStats = async (customFrom?: string, customTo?: string) => {
     setLoading(true);
-    console.log('Loading stats with:', {
+
+    const from = customFrom !== undefined ? customFrom : dateFrom;
+    const to = customTo !== undefined ? customTo : dateTo;
+
+    console.log('🔄 Loading stats with:', {
       period,
-      customFrom: customFrom || dateFrom,
-      customTo: customTo || dateTo,
+      from,
+      to,
+      hasCustomDates: !!(from && to),
       useCustomDate
     });
+
     try {
       let data;
-      const from = customFrom !== undefined ? customFrom : dateFrom;
-      const to = customTo !== undefined ? customTo : dateTo;
 
-      if (useCustomDate && from && to) {
-        console.log('Using custom dates:', from, to);
+      if (from && to) {
+        console.log('✅ Using custom dates:', from, 'to', to);
         data = await ReportsService.getDashboardStats(period, from, to);
       } else {
-        console.log('Using period:', period);
+        console.log('📅 Using period:', period);
         data = await ReportsService.getDashboardStats(period);
       }
+
       setStats(data);
-      console.log('Stats loaded successfully');
+      console.log('✅ Stats loaded successfully:', {
+        presupuestos: data.presupuestos.total,
+        monto_total: data.monto_total.total,
+        top_vendedores: data.top_vendedores.length,
+        tasas_conversion: data.tasas_conversion
+      });
     } catch (error) {
-      console.error('Error loading stats:', error);
+      console.error('❌ Error loading stats:', error);
     } finally {
       setLoading(false);
     }
