@@ -12,6 +12,7 @@ import {
   XCircle,
   Clock,
   Calendar,
+  RefreshCw,
 } from 'lucide-react';
 
 export function ReportsDashboard() {
@@ -24,7 +25,7 @@ export function ReportsDashboard() {
 
   useEffect(() => {
     loadStats();
-  }, [period, dateFrom, dateTo, useCustomDate]);
+  }, [period]);
 
   const loadStats = async () => {
     setLoading(true);
@@ -133,6 +134,19 @@ export function ReportsDashboard() {
               }`}
               placeholder="Hasta"
             />
+            <button
+              onClick={() => loadStats()}
+              disabled={loading}
+              className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+                loading
+                  ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                  : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+              }`}
+              title="Actualizar datos"
+            >
+              <RefreshCw className={`w-4 h-4 inline mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Actualizar
+            </button>
             {useCustomDate && (
               <button
                 onClick={() => {
