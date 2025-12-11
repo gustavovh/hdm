@@ -36,12 +36,14 @@ interface DashboardStats {
   clonado: number;
   presentado: number;
   aceptado: number;
+  enEjecucion: number;
   facturado: number;
   anulado: number;
   montoTotal: number;
   montoClonado: number;
   montoPresentado: number;
   montoAceptado: number;
+  montoEnEjecucion: number;
   montoFacturado: number;
   tasaAceptacion: number;
   montoPromedio: number;
@@ -58,12 +60,14 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
     clonado: 0,
     presentado: 0,
     aceptado: 0,
+    enEjecucion: 0,
     facturado: 0,
     anulado: 0,
     montoTotal: 0,
     montoClonado: 0,
     montoPresentado: 0,
     montoAceptado: 0,
+    montoEnEjecucion: 0,
     montoFacturado: 0,
     tasaAceptacion: 0,
     montoPromedio: 0,
@@ -134,10 +138,18 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
           case 'ACEPTADO':
             acc.aceptado++;
             acc.montoAceptado += montoTotal;
+            acc.enEjecucion++;
+            acc.montoEnEjecucion += montoTotal;
+            break;
+          case 'EN_EJECUCION':
+            acc.enEjecucion++;
+            acc.montoEnEjecucion += montoTotal;
             break;
           case 'FACTURADO':
             acc.facturado++;
             acc.montoFacturado += montoTotal;
+            acc.enEjecucion++;
+            acc.montoEnEjecucion += montoTotal;
             break;
           case 'ANULADO':
             acc.anulado++;
@@ -150,12 +162,14 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
         clonado: 0,
         presentado: 0,
         aceptado: 0,
+        enEjecucion: 0,
         facturado: 0,
         anulado: 0,
         montoTotal: 0,
         montoClonado: 0,
         montoPresentado: 0,
         montoAceptado: 0,
+        montoEnEjecucion: 0,
         montoFacturado: 0,
         tasaAceptacion: 0,
         montoPromedio: 0,
@@ -542,18 +556,21 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-                <span className="text-2xl font-bold text-gray-900">{stats.aceptado}</span>
+                <DollarSign className="w-8 h-8 text-green-600" />
+                <span className="text-2xl font-bold text-gray-900">{stats.enEjecucion}</span>
               </div>
-              <h3 className="text-sm font-medium text-gray-600">Aceptados</h3>
+              <h3 className="text-sm font-medium text-gray-600">En Ejecución</h3>
               <p className="text-xs text-gray-500 mt-1">
-                {formatCurrency(stats.montoAceptado)} PYG
+                {formatCurrency(stats.montoEnEjecucion)} PYG
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Incluye Aceptados, En Ejecución y Facturados
               </p>
             </div>
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <DollarSign className="w-8 h-8 text-emerald-600" />
+                <Receipt className="w-8 h-8 text-emerald-600" />
                 <span className="text-2xl font-bold text-gray-900">{stats.facturado}</span>
               </div>
               <h3 className="text-sm font-medium text-gray-600">Facturados</h3>
