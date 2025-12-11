@@ -99,6 +99,8 @@ export interface Presupuesto {
   condicion_pago?: string;
   medio_pago?: string;
   enlace_comprobante?: string;
+  factura_pdf_url?: string;
+  factura_timbrado?: string;
   observaciones?: string;
   ultima_actualizacion_estado?: string;
   dias_notificacion_enviada?: boolean;

@@ -26,8 +26,12 @@ interface GeneralStats {
   totalMonto: number;
   totalPresentados: number;
   totalAceptados: number;
+  totalEnEjecucion: number;
   totalFacturados: number;
   montoFacturado: number;
+  montoEnEjecucion: number;
+  tasaConversion: number;
+  montoPromedio: number;
 }
 
 interface AdminDashboardProps {
@@ -64,8 +68,12 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
     totalMonto: 0,
     totalPresentados: 0,
     totalAceptados: 0,
+    totalEnEjecucion: 0,
     totalFacturados: 0,
     montoFacturado: 0,
+    montoEnEjecucion: 0,
+    tasaConversion: 0,
+    montoPromedio: 0,
   });
   const [currentTarget, setCurrentTarget] = useState<SalesTarget | null>(null);
   const [showCambiarEstado, setShowCambiarEstado] = useState(false);
@@ -180,10 +188,20 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
       acc.totalMonto += montoTotal;
 
       if (p.estado === 'PRESENTADO') acc.totalPresentados++;
-      if (p.estado === 'ACEPTADO') acc.totalAceptados++;
+      if (p.estado === 'ACEPTADO') {
+        acc.totalAceptados++;
+        acc.montoEnEjecucion += montoTotal;
+        acc.totalEnEjecucion++;
+      }
+      if (p.estado === 'EN_EJECUCION') {
+        acc.montoEnEjecucion += montoTotal;
+        acc.totalEnEjecucion++;
+      }
       if (p.estado === 'FACTURADO') {
         acc.totalFacturados++;
         acc.montoFacturado += montoTotal;
+        acc.montoEnEjecucion += montoTotal;
+        acc.totalEnEjecucion++;
       }
 
       return acc;
@@ -192,11 +210,25 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
       totalMonto: 0,
       totalPresentados: 0,
       totalAceptados: 0,
+      totalEnEjecucion: 0,
       totalFacturados: 0,
       montoFacturado: 0,
+      montoEnEjecucion: 0,
     });
 
-    setGeneralStats(stats);
+    const tasaConversion = stats.totalPresentados > 0
+      ? ((stats.totalAceptados / stats.totalPresentados) * 100)
+      : 0;
+
+    const montoPromedio = stats.totalFacturados > 0
+      ? stats.montoFacturado / stats.totalFacturados
+      : 0;
+
+    setGeneralStats({
+      ...stats,
+      tasaConversion,
+      montoPromedio,
+    });
   };
 
   const handleDeletePresupuesto = async (id: string) => {
@@ -720,7 +752,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <FileText className="w-8 h-8 text-blue-600" />
@@ -741,9 +773,11 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <DollarSign className="w-8 h-8 text-green-600" />
-                  <span className="text-2xl font-bold text-gray-900">{generalStats.totalAceptados}</span>
+                  <span className="text-2xl font-bold text-gray-900">{generalStats.totalEnEjecucion}</span>
                 </div>
-                <h3 className="text-sm font-medium text-gray-600">Aceptados</h3>
+                <h3 className="text-sm font-medium text-gray-600">En Ejecución</h3>
+                <p className="text-xs text-gray-500 mt-1">{formatCurrency(generalStats.montoEnEjecucion)}</p>
+                <p className="text-xs text-gray-400 mt-1">Incluye Aceptados, En Ejecución y Facturados</p>
               </div>
 
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -755,7 +789,25 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                 <p className="text-xs text-gray-500 mt-1">{formatCurrency(generalStats.montoFacturado)}</p>
               </div>
 
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white col-span-2">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+                <div className="flex items-center justify-between mb-4">
+                  <TrendingUp className="w-8 h-8 opacity-80" />
+                  <span className="text-2xl font-bold">{generalStats.tasaConversion.toFixed(1)}%</span>
+                </div>
+                <h3 className="text-sm font-semibold">Tasa de Conversión</h3>
+                <p className="text-xs opacity-90 mt-1">Presentados → Aceptados</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
+                <div className="flex items-center justify-between mb-4">
+                  <DollarSign className="w-8 h-8 opacity-80" />
+                  <span className="text-xl font-bold">{formatCurrencySimple(generalStats.montoPromedio)}</span>
+                </div>
+                <h3 className="text-sm font-semibold">Monto Promedio</h3>
+                <p className="text-xs opacity-90 mt-1">Por presupuesto facturado</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white col-span-2">
                 <div className="flex items-center justify-between mb-4">
                   <Users className="w-10 h-10 opacity-80" />
                   <span className="text-3xl font-bold">{vendedores.length}</span>
@@ -763,6 +815,104 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                 <h3 className="text-lg font-semibold">Vendedores Activos</h3>
                 <p className="text-sm opacity-90 mt-1">Total de vendedores en el sistema</p>
               </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Listado de Presupuestos</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                {getFilteredPresupuestosForExport().length} presupuesto(s) en el período seleccionado
+              </p>
+
+              {getFilteredPresupuestosForExport().length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No hay presupuestos en este período</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Código
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Cliente
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Vendedor
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Fecha
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                          Monto
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                          Estado
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {getFilteredPresupuestosForExport().map((presupuesto) => (
+                        <tr
+                          key={presupuesto.id}
+                          className="hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => onSelectPresupuesto && onSelectPresupuesto(presupuesto.id)}
+                        >
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {presupuesto.codigo}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {presupuesto.cliente_nombre}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-700">
+                            {presupuesto.vendedor?.full_name || '-'}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                            {new Date(presupuesto.created_at).toLocaleDateString('es-PY')}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900 text-right">
+                            {formatCurrency(presupuesto.total_neto + presupuesto.total_impuestos)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-center">
+                            <Badge color={getStatusColor(presupuesto.estado)}>
+                              {getStatusLabel(presupuesto.estado)}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex gap-1 justify-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onSelectPresupuesto && onSelectPresupuesto(presupuesto.id);
+                                }}
+                                className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                title="Ver detalle"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownloadPresupuesto(presupuesto);
+                                }}
+                                className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                title="Descargar PDF"
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

@@ -651,7 +651,35 @@ export function PresupuestoDetail({ presupuestoId }: PresupuestoDetailProps) {
                       </div>
                     </div>
 
-                    {presupuesto.enlace_comprobante && (
+                    {presupuesto.factura_pdf_url && (
+                      <div className="border-t pt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                          PDF de Factura
+                        </label>
+                        <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <FileText className="w-8 h-8 text-red-600" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">Factura cargada</p>
+                                <p className="text-xs text-gray-500">PDF disponible para descarga</p>
+                              </div>
+                            </div>
+                            <a
+                              href={presupuesto.factura_pdf_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                            >
+                              <Download className="w-4 h-4" />
+                              Ver PDF
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {presupuesto.enlace_comprobante && !presupuesto.factura_pdf_url && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Comprobante
