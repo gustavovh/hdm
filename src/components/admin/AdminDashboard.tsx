@@ -163,8 +163,15 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
           createdDate.getMonth() + 1 === dateFilter.month &&
           createdDate.getFullYear() === dateFilter.year;
       } else {
-        const from = dateRangeFilter.from ? new Date(dateRangeFilter.from) : null;
-        const to = dateRangeFilter.to ? new Date(dateRangeFilter.to) : null;
+        let from = dateRangeFilter.from ? new Date(dateRangeFilter.from) : null;
+        let to = dateRangeFilter.to ? new Date(dateRangeFilter.to) : null;
+
+        if (from) {
+          from.setHours(0, 0, 0, 0);
+        }
+        if (to) {
+          to.setHours(23, 59, 59, 999);
+        }
 
         if (from && to) {
           matchesDate = createdDate >= from && createdDate <= to;
@@ -506,8 +513,15 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
           createdDate.getMonth() + 1 === dateFilter.month &&
           createdDate.getFullYear() === dateFilter.year;
       } else {
-        const from = dateRangeFilter.from ? new Date(dateRangeFilter.from) : null;
-        const to = dateRangeFilter.to ? new Date(dateRangeFilter.to) : null;
+        let from = dateRangeFilter.from ? new Date(dateRangeFilter.from) : null;
+        let to = dateRangeFilter.to ? new Date(dateRangeFilter.to) : null;
+
+        if (from) {
+          from.setHours(0, 0, 0, 0);
+        }
+        if (to) {
+          to.setHours(23, 59, 59, 999);
+        }
 
         if (from && to) {
           matchesDate = createdDate >= from && createdDate <= to;
