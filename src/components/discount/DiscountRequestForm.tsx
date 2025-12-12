@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
-import { DiscountType, DiscountScope, PresupuestoItem } from '../../types/database.types';
+import { Badge } from '../ui/Badge';
+import { DiscountType, DiscountScope, PresupuestoItem, SolicitudDescuento } from '../../types/database.types';
 import { CreateDiscountRequestDTO } from '../../types/api.types';
+import { supabase } from '../../lib/supabase';
+import { AlertCircle, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 interface DiscountRequestFormProps {
   isOpen: boolean;
@@ -23,7 +26,9 @@ export function DiscountRequestForm({
   items = [],
 }: DiscountRequestFormProps) {
   const [loading, setLoading] = useState(false);
+  const [loadingHistorial, setLoadingHistorial] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [descuentosPrevios, setDescuentosPrevios] = useState<SolicitudDescuento[]>([]);
   const [formData, setFormData] = useState({
     tipo: 'PORCENTAJE' as DiscountType,
     valor_propuesto: '',
@@ -31,6 +36,61 @@ export function DiscountRequestForm({
     aplica_a: 'GLOBAL' as DiscountScope,
     item_id: '',
   });
+
+  useEffect(() => {
+    if (isOpen && presupuestoId) {
+      loadDescuentosPrevios();
+    }
+  }, [isOpen, presupuestoId]);
+
+  const loadDescuentosPrevios = async () => {
+    setLoadingHistorial(true);
+    try {
+      const { data, error } = await supabase
+        .from('solicitudes_descuento')
+        .select('*')
+        .eq('presupuesto_id', presupuestoId)
+        .is('deleted_at', null)
+        .order('numero_descuento', { ascending: true });
+
+      if (error) throw error;
+      setDescuentosPrevios(data || []);
+    } catch (error) {
+      console.error('Error cargando historial de descuentos:', error);
+    } finally {
+      setLoadingHistorial(false);
+    }
+  };
+
+  const getEstadoBadge = (estado: SolicitudDescuento['estado']) => {
+    switch (estado) {
+      case 'APROBADO':
+        return <Badge color="green"><CheckCircle className="w-3 h-3 mr-1 inline" />Aprobado</Badge>;
+      case 'APROBADO_MODIFICADO':
+        return <Badge color="blue"><CheckCircle className="w-3 h-3 mr-1 inline" />Aprobado Modificado</Badge>;
+      case 'RECHAZADO':
+        return <Badge color="red"><XCircle className="w-3 h-3 mr-1 inline" />Rechazado</Badge>;
+      case 'PENDIENTE':
+        return <Badge color="yellow"><Clock className="w-3 h-3 mr-1 inline" />Pendiente</Badge>;
+      default:
+        return <Badge color="gray">{estado}</Badge>;
+    }
+  };
+
+  const formatDescuento = (solicitud: SolicitudDescuento) => {
+    const valor = solicitud.estado === 'APROBADO' || solicitud.estado === 'APROBADO_MODIFICADO'
+      ? solicitud.valor_aprobado
+      : solicitud.valor_propuesto;
+
+    if (solicitud.tipo === 'PORCENTAJE') {
+      return `${valor}%`;
+    }
+    return new Intl.NumberFormat('es-PY', {
+      style: 'currency',
+      currency: 'PYG',
+      minimumFractionDigits: 0,
+    }).format(valor || 0);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,8 +148,49 @@ export function DiscountRequestForm({
     }
   };
 
+  const numeroDescuentoActual = descuentosPrevios.length + 1;
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Solicitar Descuento" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={`Solicitar Descuento${numeroDescuentoActual > 1 ? ` #${numeroDescuentoActual}` : ''}`} size="lg">
+      {descuentosPrevios.length > 0 && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertCircle className="w-5 h-5 text-blue-600" />
+            <h3 className="text-sm font-semibold text-blue-900">
+              Historial de Descuentos en este Presupuesto
+            </h3>
+          </div>
+          {loadingHistorial ? (
+            <p className="text-sm text-blue-700">Cargando historial...</p>
+          ) : (
+            <div className="space-y-2">
+              {descuentosPrevios.map((descuento) => (
+                <div
+                  key={descuento.id}
+                  className="flex items-center justify-between p-3 bg-white rounded border border-blue-100"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                      #{descuento.numero_descuento}
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {descuento.tipo === 'PORCENTAJE' ? 'Porcentaje' : 'Monto'}: {formatDescuento(descuento)}
+                      </p>
+                      <p className="text-xs text-gray-600">{descuento.motivo}</p>
+                    </div>
+                  </div>
+                  {getEstadoBadge(descuento.estado)}
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-blue-700 mt-3">
+            Estás solicitando el descuento #{numeroDescuentoActual} para este presupuesto
+          </p>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <Select

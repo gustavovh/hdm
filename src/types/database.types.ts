@@ -156,6 +156,7 @@ export interface SolicitudDescuento {
   aplica_a: DiscountScope;
   item_id?: string;
   applied_at?: string;
+  numero_descuento: number;
   created_at: string;
   updated_at: string;
   deleted_at?: string;
