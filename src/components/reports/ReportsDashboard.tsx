@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ReportsService, DashboardStats } from '../../services/reportsService';
 import { Badge } from '../ui/Badge';
+import { Modal } from '../ui/Modal';
+import { supabase } from '../../lib/supabase';
 import {
   TrendingUp,
   TrendingDown,
@@ -13,7 +15,19 @@ import {
   Clock,
   Calendar,
   RefreshCw,
+  X,
 } from 'lucide-react';
+
+interface VendedorPresupuesto {
+  id: string;
+  codigo: string;
+  cliente_nombre: string;
+  estado: string;
+  total_neto: number;
+  total_impuestos: number;
+  created_at: string;
+  concepto: string;
+}
 
 export function ReportsDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -22,6 +36,9 @@ export function ReportsDashboard() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [useCustomDate, setUseCustomDate] = useState(false);
+  const [selectedVendedor, setSelectedVendedor] = useState<{ id: string; nombre: string } | null>(null);
+  const [vendedorPresupuestos, setVendedorPresupuestos] = useState<VendedorPresupuesto[]>([]);
+  const [loadingPresupuestos, setLoadingPresupuestos] = useState(false);
 
   const loadStats = async (customFrom?: string, customTo?: string) => {
     setLoading(true);
@@ -89,6 +106,78 @@ export function ReportsDashboard() {
     if (value > 0) return 'text-green-600';
     if (value < 0) return 'text-red-600';
     return 'text-gray-600';
+  };
+
+  const loadVendedorPresupuestos = async (vendedorId: string, vendedorNombre: string) => {
+    setLoadingPresupuestos(true);
+    setSelectedVendedor({ id: vendedorId, nombre: vendedorNombre });
+
+    try {
+      let startDateStr: string;
+      let endDateStr: string | undefined;
+
+      if (dateFrom && dateTo) {
+        startDateStr = new Date(dateFrom).toISOString();
+        const endDate = new Date(dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        endDateStr = endDate.toISOString();
+      } else {
+        const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        startDateStr = startDate.toISOString();
+      }
+
+      let query = supabase
+        .from('presupuestos')
+        .select('id, codigo, cliente_nombre, estado, total_neto, total_impuestos, created_at, concepto')
+        .eq('vendedor_id', vendedorId)
+        .in('estado', ['FACTURADO', 'ACEPTADO', 'EN_EJECUCION'])
+        .gte('created_at', startDateStr)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+
+      if (endDateStr) {
+        query = query.lte('created_at', endDateStr);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      setVendedorPresupuestos(data || []);
+    } catch (error) {
+      console.error('Error cargando presupuestos del vendedor:', error);
+      setVendedorPresupuestos([]);
+    } finally {
+      setLoadingPresupuestos(false);
+    }
+  };
+
+  const getStatusColor = (estado: string) => {
+    switch (estado) {
+      case 'FACTURADO':
+        return 'emerald';
+      case 'ACEPTADO':
+        return 'green';
+      case 'EN_EJECUCION':
+        return 'blue';
+      default:
+        return 'gray';
+    }
+  };
+
+  const getStatusLabel = (estado: string) => {
+    switch (estado) {
+      case 'FACTURADO':
+        return 'Facturado';
+      case 'ACEPTADO':
+        return 'Aceptado';
+      case 'EN_EJECUCION':
+        return 'En Ejecución';
+      default:
+        return estado;
+    }
   };
 
   return (
@@ -354,15 +443,16 @@ export function ReportsDashboard() {
           </h3>
           <div className="space-y-3">
             {stats.top_vendedores.slice(0, 5).map((vendedor, index) => (
-              <div
+              <button
                 key={vendedor.id}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50"
+                onClick={() => loadVendedorPresupuestos(vendedor.id, vendedor.nombre)}
+                className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer border border-transparent hover:border-blue-200"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-600">
                     #{index + 1}
                   </div>
-                  <div>
+                  <div className="text-left">
                     <p className="font-medium text-gray-900">
                       {vendedor.nombre}
                     </p>
@@ -377,7 +467,7 @@ export function ReportsDashboard() {
                   </p>
                   <p className="text-xs text-gray-500">Total</p>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -439,6 +529,105 @@ export function ReportsDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Modal de presupuestos del vendedor */}
+      <Modal
+        isOpen={!!selectedVendedor}
+        onClose={() => {
+          setSelectedVendedor(null);
+          setVendedorPresupuestos([]);
+        }}
+        title={`Presupuestos de ${selectedVendedor?.nombre || ''}`}
+      >
+        <div className="space-y-4">
+          {loadingPresupuestos ? (
+            <div className="text-center py-8">
+              <RefreshCw className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-3" />
+              <p className="text-gray-600">Cargando presupuestos...</p>
+            </div>
+          ) : vendedorPresupuestos.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-600">No hay presupuestos en este período</p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Total de presupuestos</p>
+                    <p className="text-2xl font-bold text-gray-900">{vendedorPresupuestos.length}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Monto total</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatCurrency(
+                        vendedorPresupuestos.reduce(
+                          (sum, p) => sum + p.total_neto + p.total_impuestos,
+                          0
+                        )
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                <table className="w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Código
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Cliente
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Concepto
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Estado
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Monto
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Fecha
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {vendedorPresupuestos.map((presupuesto) => (
+                      <tr key={presupuesto.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {presupuesto.codigo}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {presupuesto.cliente_nombre}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700">
+                          {presupuesto.concepto || '-'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-center">
+                          <Badge color={getStatusColor(presupuesto.estado)}>
+                            {getStatusLabel(presupuesto.estado)}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900 text-right">
+                          {formatCurrency(presupuesto.total_neto + presupuesto.total_impuestos)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 text-center">
+                          {new Date(presupuesto.created_at).toLocaleDateString('es-PY')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
