@@ -179,8 +179,9 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
         ? ((estadisticas.aceptado + estadisticas.facturado) / estadisticas.presentado) * 100
         : 0;
 
-      estadisticas.montoPromedio = estadisticas.total > 0
-        ? estadisticas.montoTotal / estadisticas.total
+      // Monto promedio basado solo en presupuestos facturados
+      estadisticas.montoPromedio = estadisticas.facturado > 0
+        ? estadisticas.montoFacturado / estadisticas.facturado
         : 0;
 
       setStats(estadisticas);
@@ -203,9 +204,11 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
         console.error('Error cargando objetivo:', error);
       }
 
-      // Calcular comisiones basadas en presupuestos filtrados
-      const presupuestosFacturados = misPresupuestos.filter(p => p.estado === 'FACTURADO');
-      montoVendido = presupuestosFacturados.reduce((sum, p) => {
+      // Calcular alcance vs objetivo basado en En Ejecución (Aceptados, En Ejecución y Facturados)
+      const presupuestosEnEjecucion = misPresupuestos.filter(
+        p => p.estado === 'ACEPTADO' || p.estado === 'EN_EJECUCION' || p.estado === 'FACTURADO'
+      );
+      montoVendido = presupuestosEnEjecucion.reduce((sum, p) => {
         return sum + (p.total_neto + p.total_impuestos);
       }, 0);
 
@@ -608,9 +611,9 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
                 <Target className="w-10 h-10 opacity-80" />
                 <span className="text-3xl font-bold">{formatPercent(comisiones.avance)}</span>
               </div>
-              <h3 className="text-lg font-semibold">Avance vs Objetivo</h3>
+              <h3 className="text-lg font-semibold">Alcance vs Objetivo</h3>
               <p className="text-sm opacity-90 mt-1">
-                Comisiones est.: {formatCurrency(comisiones.estimadas)} PYG
+                En Ejecución (incluye Aceptados, En Ejecución y Facturados)
               </p>
             </div>
           </div>
