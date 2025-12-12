@@ -133,14 +133,17 @@ export class ReportsService {
       .is('deleted_at', null);
     const { data: presupuestosFacturados } = await applyDateLimit(facturadosQuery);
 
+    // Top vendedores: solo vendedores activos y presupuestos ACEPTADOS y FACTURADOS
     let topVendedoresQuery = supabase
       .from('presupuestos')
       .select(`
         vendedor_id,
         total_neto,
         total_impuestos,
-        vendedor:users!presupuestos_vendedor_id_fkey(full_name)
+        estado,
+        vendedor:users!presupuestos_vendedor_id_fkey(id, full_name, active)
       `)
+      .in('estado', ['ACEPTADO', 'FACTURADO'])
       .gte('created_at', startDateStr)
       .is('deleted_at', null);
     const { data: topVendedores } = await applyDateLimit(topVendedoresQuery);
@@ -151,8 +154,14 @@ export class ReportsService {
       ? Math.round(((presupuestosTotal - presupuestosPreviousTotal) / presupuestosPreviousTotal) * 100)
       : 0;
 
+    // Monto total solo de presupuestos ACEPTADOS y FACTURADOS
     const montoTotal = presupuestos?.reduce(
-      (sum, p) => sum + (p.total_neto + p.total_impuestos),
+      (sum, p) => {
+        if (p.estado === 'ACEPTADO' || p.estado === 'FACTURADO') {
+          return sum + (p.total_neto + p.total_impuestos);
+        }
+        return sum;
+      },
       0
     ) || 0;
 
@@ -163,13 +172,17 @@ export class ReportsService {
 
     const vendedoresActivos = new Set(presupuestos?.map(p => p.vendedor_id)).size;
 
-    const presentadosTotal = presupuestosPresentados?.length || 0;
-    const aceptadosTotal = presupuestosAceptados?.length || 0;
+    // Calcular tasas de conversión con los presupuestos filtrados
+    const presentadosTotal = presupuestosPresentados?.filter(p => p.estado === 'PRESENTADO').length || 0;
+    const aceptadosYFacturadosTotal = presupuestosPresentados?.filter(p => p.estado === 'ACEPTADO' || p.estado === 'FACTURADO').length || 0;
+    const aceptadosTotal = presupuestosAceptados?.filter(p => p.estado === 'ACEPTADO').length || 0;
     const facturadosTotal = presupuestosFacturados?.length || 0;
 
+    // Presentados → Aceptados (incluye aceptados y facturados)
     const tasaPresentadoAceptado = presentadosTotal > 0
-      ? Math.round((aceptadosTotal / presentadosTotal) * 100)
+      ? Math.round((aceptadosYFacturadosTotal / presentadosTotal) * 100)
       : 0;
+    // Aceptados → Facturados
     const tasaAceptadoFacturado = aceptadosTotal > 0
       ? Math.round((facturadosTotal / aceptadosTotal) * 100)
       : 0;
@@ -180,6 +193,11 @@ export class ReportsService {
     const vendedoresMap = new Map<string, { id: string; nombre: string; presupuestos: number; monto_total: number }>();
 
     topVendedores?.forEach((p: any) => {
+      // Filtrar solo vendedores activos
+      if (!p.vendedor?.active) {
+        return;
+      }
+
       const vendedorId = p.vendedor_id;
       const vendedorNombre = p.vendedor?.full_name || 'Desconocido';
       const monto = p.total_neto + p.total_impuestos;
