@@ -504,8 +504,9 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
   ]) || [];
 
   // Agregar filas de totales al final de los datos
+  // SUB TOTAL debe ser la suma de todos los items ANTES de descuentos (total_bruto)
+  const subtotal = presupuesto.total_bruto || presupuesto.items?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
   const totalConDescuento = presupuesto.total_neto + presupuesto.total_impuestos;
-  const subtotal = totalConDescuento + presupuesto.total_descuento;
 
   // SUB TOTAL
   tableData.push([

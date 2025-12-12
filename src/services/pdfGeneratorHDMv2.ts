@@ -269,7 +269,8 @@ export class HDMPDFGeneratorV2 {
     doc.setFont('helvetica', 'bold');
 
     const totalConDescuento = presupuesto.total_neto + presupuesto.total_impuestos;
-    const subtotal = totalConDescuento + presupuesto.total_descuento;
+    // SUB TOTAL debe ser la suma de todos los items ANTES de descuentos (total_bruto)
+    const subtotal = presupuesto.total_bruto || presupuesto.items?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
 
     // SUB TOTAL
     doc.text('SUB TOTAL', pageWidth - rightMargin - 60, yPosition, { align: 'left' });

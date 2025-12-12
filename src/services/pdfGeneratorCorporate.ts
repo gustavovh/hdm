@@ -356,7 +356,8 @@ export class CorporatePDFGenerator {
     doc.setTextColor(0, 0, 0);
 
     const totalConDescuento = presupuesto.total_neto + presupuesto.total_impuestos;
-    const subtotalConDescuento = totalConDescuento + presupuesto.total_descuento;
+    // SUB TOTAL debe ser la suma de todos los items ANTES de descuentos (total_bruto)
+    const subtotalConDescuento = presupuesto.total_bruto || presupuesto.items?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
 
     // SUB TOTAL
     doc.text('SUB TOTAL', summaryX, summaryStartY);

@@ -246,7 +246,8 @@ export class HDMPDFGenerator {
 
     const currencySymbol = presupuesto.moneda === 'USD' ? '' : 'Gs.:';
     const totalConDescuento = presupuesto.total_neto + presupuesto.total_impuestos;
-    const subtotal = totalConDescuento + presupuesto.total_descuento;
+    // SUB TOTAL debe ser la suma de todos los items ANTES de descuentos (total_bruto)
+    const subtotal = presupuesto.total_bruto || presupuesto.items?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
 
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.3);
