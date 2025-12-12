@@ -127,7 +127,7 @@ export class CommissionsService {
       .from('presupuestos')
       .select('id, total_neto, total_impuestos, moneda, codigo')
       .eq('vendedor_id', vendedorId)
-      .in('estado', ['ACEPTADO', 'FACTURADO'])
+      .in('estado', ['ACEPTADO', 'EN_EJECUCION', 'FACTURADO'])
       .gte('fecha_aceptacion', startDate.toISOString())
       .lte('fecha_aceptacion', endDate.toISOString())
       .is('deleted_at', null);
