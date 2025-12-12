@@ -133,7 +133,7 @@ export class ReportsService {
       .is('deleted_at', null);
     const { data: presupuestosFacturados } = await applyDateLimit(facturadosQuery);
 
-    // Top vendedores: solo vendedores activos y presupuestos ACEPTADOS y FACTURADOS
+    // Top vendedores: solo vendedores activos y presupuestos FACTURADOS, ACEPTADOS y EN_EJECUCION
     let topVendedoresQuery = supabase
       .from('presupuestos')
       .select(`
@@ -143,7 +143,7 @@ export class ReportsService {
         estado,
         vendedor:users!presupuestos_vendedor_id_fkey(id, full_name, active)
       `)
-      .in('estado', ['ACEPTADO', 'FACTURADO'])
+      .in('estado', ['FACTURADO', 'ACEPTADO', 'EN_EJECUCION'])
       .gte('created_at', startDateStr)
       .is('deleted_at', null);
     const { data: topVendedores } = await applyDateLimit(topVendedoresQuery);
@@ -170,7 +170,12 @@ export class ReportsService {
     const solicitudesModificadas = solicitudes?.filter(s => s.estado === 'APROBADO_MODIFICADO').length || 0;
     const solicitudesRechazadas = solicitudes?.filter(s => s.estado === 'RECHAZADO').length || 0;
 
-    const vendedoresActivos = new Set(presupuestos?.map(p => p.vendedor_id)).size;
+    // Vendedores activos: solo contar vendedores con presupuestos en estados FACTURADO, ACEPTADO o EN_EJECUCION
+    const vendedoresActivos = new Set(
+      presupuestos
+        ?.filter(p => p.estado === 'FACTURADO' || p.estado === 'ACEPTADO' || p.estado === 'EN_EJECUCION')
+        ?.map(p => p.vendedor_id)
+    ).size;
 
     // Calcular tasas de conversión con los presupuestos filtrados
     const presentadosTotal = presupuestosPresentados?.filter(p => p.estado === 'PRESENTADO').length || 0;
@@ -182,9 +187,11 @@ export class ReportsService {
     const tasaPresentadoAceptado = presentadosTotal > 0
       ? Math.round((aceptadosYFacturadosTotal / presentadosTotal) * 100)
       : 0;
-    // Aceptados → Facturados
-    const tasaAceptadoFacturado = aceptadosTotal > 0
-      ? Math.round((facturadosTotal / aceptadosTotal) * 100)
+    // Aceptados → Facturados: facturados / (aceptados + facturados)
+    // No puede ser mayor a 100%
+    const aceptadosYFacturadosTotalBase = aceptadosTotal + facturadosTotal;
+    const tasaAceptadoFacturado = aceptadosYFacturadosTotalBase > 0
+      ? Math.round((facturadosTotal / aceptadosYFacturadosTotalBase) * 100)
       : 0;
     const tasaDescuentosAprobados = (solicitudes?.length || 0) > 0
       ? Math.round(((solicitudesAprobadas + solicitudesModificadas) / solicitudes!.length) * 100)

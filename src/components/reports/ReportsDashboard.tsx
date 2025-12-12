@@ -302,7 +302,7 @@ export function ReportsDashboard() {
                 <div
                   className="bg-green-600 h-2 rounded-full"
                   style={{
-                    width: `${stats.tasas_conversion.presentado_aceptado}%`,
+                    width: `${Math.min(stats.tasas_conversion.presentado_aceptado, 100)}%`,
                   }}
                 ></div>
               </div>
@@ -321,7 +321,7 @@ export function ReportsDashboard() {
                 <div
                   className="bg-blue-600 h-2 rounded-full"
                   style={{
-                    width: `${stats.tasas_conversion.aceptado_facturado}%`,
+                    width: `${Math.min(stats.tasas_conversion.aceptado_facturado, 100)}%`,
                   }}
                 ></div>
               </div>
@@ -340,7 +340,7 @@ export function ReportsDashboard() {
                 <div
                   className="bg-purple-600 h-2 rounded-full"
                   style={{
-                    width: `${stats.tasas_conversion.descuentos_aprobados}%`,
+                    width: `${Math.min(stats.tasas_conversion.descuentos_aprobados, 100)}%`,
                   }}
                 ></div>
               </div>
