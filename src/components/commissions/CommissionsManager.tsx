@@ -37,6 +37,13 @@ export function CommissionsManager() {
     vendedoresActivos: 0,
   });
 
+  const months = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+
+  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+
   useEffect(() => {
     loadCommissionsData();
   }, [selectedMonth, selectedYear, useCustomDates, dateFrom, dateTo]);
@@ -199,13 +206,6 @@ export function CommissionsManager() {
     if (percentage >= 50) return 'bg-yellow-500';
     return 'bg-red-500';
   };
-
-  const months = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-  ];
-
-  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
