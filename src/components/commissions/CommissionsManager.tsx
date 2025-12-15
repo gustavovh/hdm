@@ -27,6 +27,10 @@ export function CommissionsManager() {
   const [vendedoresStats, setVendedoresStats] = useState<VendedorStats[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [useCustomDates, setUseCustomDates] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [periodLabel, setPeriodLabel] = useState('');
   const [totalStats, setTotalStats] = useState({
     totalVentas: 0,
     totalComisiones: 0,
@@ -35,12 +39,27 @@ export function CommissionsManager() {
 
   useEffect(() => {
     loadCommissionsData();
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, useCustomDates, dateFrom, dateTo]);
 
   const loadCommissionsData = async () => {
     setLoading(true);
     try {
-      console.log('🔄 Cargando comisiones para:', { mes: selectedMonth, año: selectedYear });
+      let startDate: Date;
+      let endDate: Date;
+      let periodLabel: string;
+
+      if (useCustomDates && dateFrom && dateTo) {
+        startDate = new Date(dateFrom);
+        endDate = new Date(dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        periodLabel = `Desde ${new Date(dateFrom).toLocaleDateString('es-PY')} hasta ${new Date(dateTo).toLocaleDateString('es-PY')}`;
+        console.log('🔄 Cargando comisiones para rango personalizado:', { desde: dateFrom, hasta: dateTo });
+      } else {
+        startDate = new Date(selectedYear, selectedMonth - 1, 1);
+        endDate = new Date(selectedYear, selectedMonth, 0, 23, 59, 59);
+        periodLabel = `${months[selectedMonth - 1]} ${selectedYear}`;
+        console.log('🔄 Cargando comisiones para:', { mes: selectedMonth, año: selectedYear });
+      }
 
       const { data: vendedores } = await supabase
         .from('users')
@@ -61,9 +80,6 @@ export function CommissionsManager() {
       let vendedoresConVentas = 0;
 
       for (const vendedor of vendedores) {
-        const startDate = new Date(selectedYear, selectedMonth - 1, 1);
-        const endDate = new Date(selectedYear, selectedMonth, 0, 23, 59, 59);
-
         const { data: presupuestos, error: presupuestosError } = await supabase
           .from('presupuestos')
           .select('id, codigo, total_neto, total_impuestos, total_comisiones, tasa_comision, moneda, fecha_aceptacion, estado')
@@ -127,6 +143,7 @@ export function CommissionsManager() {
       stats.sort((a, b) => b.totalVentas - a.totalVentas);
 
       setVendedoresStats(stats);
+      setPeriodLabel(periodLabel);
       setTotalStats({
         totalVentas: totalVentasSum,
         totalComisiones: totalComisionesSum,
@@ -156,7 +173,15 @@ export function CommissionsManager() {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `comisiones_${months[selectedMonth - 1]}_${selectedYear}.csv`;
+
+    let filename: string;
+    if (useCustomDates && dateFrom && dateTo) {
+      filename = `comisiones_${dateFrom}_a_${dateTo}.csv`;
+    } else {
+      filename = `comisiones_${months[selectedMonth - 1]}_${selectedYear}.csv`;
+    }
+
+    link.download = filename;
     link.click();
   };
 
@@ -193,50 +218,87 @@ export function CommissionsManager() {
         </p>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-4 items-center justify-between">
-        <div className="flex gap-4">
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {months.map((month, index) => (
-              <option key={index} value={index + 1}>
-                {month}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
+      <div className="mb-6 space-y-4">
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useCustomDates}
+              onChange={(e) => setUseCustomDates(e.target.checked)}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-sm font-medium text-gray-700">Usar rango de fechas personalizado</span>
+          </label>
         </div>
 
-        <div className="flex gap-3">
-          <Button
-            onClick={loadCommissionsData}
-            variant="outline"
-            disabled={loading}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
-          <Button
-            onClick={handleExportReport}
-            disabled={loading || vendedoresStats.length === 0}
-            variant="outline"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Exportar CSV
-          </Button>
+        <div className="flex flex-wrap gap-4 items-center justify-between">
+          {useCustomDates ? (
+            <div className="flex gap-4 items-center">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Desde:</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Hasta:</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-4">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {months.map((month, index) => (
+                  <option key={index} value={index + 1}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <Button
+              onClick={loadCommissionsData}
+              variant="outline"
+              disabled={loading || (useCustomDates && (!dateFrom || !dateTo))}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Actualizar
+            </Button>
+            <Button
+              onClick={handleExportReport}
+              disabled={loading || vendedoresStats.length === 0}
+              variant="outline"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Exportar CSV
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -252,7 +314,7 @@ export function CommissionsManager() {
             {formatCurrency(totalStats.totalVentas)}
           </p>
           <p className="text-xs text-gray-500 mt-2">
-            En {months[selectedMonth - 1]} {selectedYear}
+            {periodLabel || `En ${months[selectedMonth - 1]} ${selectedYear}`}
           </p>
         </div>
 
