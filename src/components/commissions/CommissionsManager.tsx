@@ -68,7 +68,7 @@ export function CommissionsManager() {
           .from('presupuestos')
           .select('id, codigo, total_neto, total_impuestos, total_comisiones, tasa_comision, moneda, fecha_aceptacion, estado')
           .eq('vendedor_id', vendedor.id)
-          .in('estado', ['ACEPTADO', 'FACTURADO'])
+          .in('estado', ['ACEPTADO', 'EN_EJECUCION', 'FACTURADO'])
           .not('fecha_aceptacion', 'is', null)
           .gte('fecha_aceptacion', startDate.toISOString().split('T')[0])
           .lte('fecha_aceptacion', endDate.toISOString().split('T')[0])

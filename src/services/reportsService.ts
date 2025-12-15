@@ -120,7 +120,7 @@ export class ReportsService {
     let aceptadosQuery = supabase
       .from('presupuestos')
       .select('id, estado')
-      .in('estado', ['ACEPTADO', 'FACTURADO'])
+      .in('estado', ['ACEPTADO', 'EN_EJECUCION', 'FACTURADO'])
       .gte('created_at', startDateStr)
       .is('deleted_at', null);
     const { data: presupuestosAceptados } = await applyDateLimit(aceptadosQuery);
@@ -154,10 +154,10 @@ export class ReportsService {
       ? Math.round(((presupuestosTotal - presupuestosPreviousTotal) / presupuestosPreviousTotal) * 100)
       : 0;
 
-    // Monto total solo de presupuestos ACEPTADOS y FACTURADOS
+    // Monto total solo de presupuestos ACEPTADOS, EN_EJECUCION y FACTURADOS
     const montoTotal = presupuestos?.reduce(
       (sum, p) => {
-        if (p.estado === 'ACEPTADO' || p.estado === 'FACTURADO') {
+        if (p.estado === 'ACEPTADO' || p.estado === 'EN_EJECUCION' || p.estado === 'FACTURADO') {
           return sum + (p.total_neto + p.total_impuestos);
         }
         return sum;
@@ -179,17 +179,18 @@ export class ReportsService {
 
     // Calcular tasas de conversión con los presupuestos filtrados
     const presentadosTotal = presupuestosPresentados?.filter(p => p.estado === 'PRESENTADO').length || 0;
-    const aceptadosYFacturadosTotal = presupuestosPresentados?.filter(p => p.estado === 'ACEPTADO' || p.estado === 'FACTURADO').length || 0;
+    const aceptadosYFacturadosTotal = presupuestosPresentados?.filter(p => p.estado === 'ACEPTADO' || p.estado === 'EN_EJECUCION' || p.estado === 'FACTURADO').length || 0;
     const aceptadosTotal = presupuestosAceptados?.filter(p => p.estado === 'ACEPTADO').length || 0;
+    const enEjecucionTotal = presupuestosAceptados?.filter(p => p.estado === 'EN_EJECUCION').length || 0;
     const facturadosTotal = presupuestosFacturados?.length || 0;
 
     // Presentados → Aceptados (incluye aceptados y facturados)
     const tasaPresentadoAceptado = presentadosTotal > 0
       ? Math.round((aceptadosYFacturadosTotal / presentadosTotal) * 100)
       : 0;
-    // Aceptados → Facturados: facturados / (aceptados + facturados)
+    // Aceptados → Facturados: facturados / (aceptados + en_ejecucion + facturados)
     // No puede ser mayor a 100%
-    const aceptadosYFacturadosTotalBase = aceptadosTotal + facturadosTotal;
+    const aceptadosYFacturadosTotalBase = aceptadosTotal + enEjecucionTotal + facturadosTotal;
     const tasaAceptadoFacturado = aceptadosYFacturadosTotalBase > 0
       ? Math.round((facturadosTotal / aceptadosYFacturadosTotalBase) * 100)
       : 0;
