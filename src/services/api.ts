@@ -854,6 +854,16 @@ export class NotificationService {
     if (error) throw error;
   }
 
+  static async markAllAsRead(usuario_id: string): Promise<void> {
+    const { error } = await supabase
+      .from('notificaciones')
+      .update({ leida: true, leida_at: new Date().toISOString() })
+      .eq('usuario_id', usuario_id)
+      .eq('leida', false);
+
+    if (error) throw error;
+  }
+
   static async list(
     usuario_id: string,
     pagination: PaginationOptions = {}

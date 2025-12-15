@@ -38,6 +38,24 @@ export function NotificationCenter() {
           setUnreadCount((prev) => prev + 1);
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notificaciones',
+          filter: `usuario_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const updated = payload.new as Notificacion;
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === updated.id ? updated : n))
+          );
+          if (updated.leida) {
+            setUnreadCount((prev) => Math.max(0, prev - 1));
+          }
+        }
+      )
       .subscribe();
 
     return () => {
@@ -80,9 +98,21 @@ export function NotificationCenter() {
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, leida: true } : n))
       );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      await loadUnreadCount();
     } catch (error) {
       console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    if (!user) return;
+
+    try {
+      await NotificationService.markAllAsRead(user.id);
+      setNotifications((prev) => prev.map((n) => ({ ...n, leida: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
     }
   };
 
@@ -150,7 +180,12 @@ export function NotificationCenter() {
   return (
     <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          if (!isOpen) {
+            loadUnreadCount();
+          }
+        }}
         className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
         aria-label="Notificaciones"
       >
@@ -182,9 +217,18 @@ export function NotificationCenter() {
                 </button>
               </div>
               {unreadCount > 0 && (
-                <p className="text-sm text-gray-600 mt-1">
-                  {unreadCount} sin leer
-                </p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-sm text-gray-600">
+                    {unreadCount} sin leer
+                  </p>
+                  <button
+                    onClick={handleMarkAllAsRead}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                  >
+                    <Check className="w-3 h-3" />
+                    Marcar todas como leídas
+                  </button>
+                </div>
               )}
             </div>
 
