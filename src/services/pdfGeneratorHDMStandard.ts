@@ -96,6 +96,10 @@ export async function generateHDMStandardPDF(presupuesto: Presupuesto): Promise<
 
   yPosition += 8;
 
+  yPosition = addCondicionesObra(doc, margin, yPosition, presupuesto);
+
+  yPosition += 8;
+
   yPosition = addObservaciones(doc, margin, yPosition, pageWidth, presupuesto);
 
   yPosition += 15;
@@ -675,17 +679,56 @@ async function addItemsTable(doc: jsPDF, margin: number, yPosition: number, page
 
 function addFormaPago(doc: jsPDF, margin: number, yPosition: number, presupuesto: Presupuesto): number {
   doc.setFont('times', 'bold');
-  doc.setFontSize(12);  // Title size
+  doc.setFontSize(12);
 
   const labelText = 'Forma de pago:';
   doc.text(labelText, margin, yPosition);
 
-  const formaPago = presupuesto.observaciones?.match(/forma de pago:?\s*([^\n]+)/i)?.[1] || '30 DIAS';
+  const formaPago = presupuesto.condicion_pago ||
+    presupuesto.observaciones?.match(/forma de pago:?\s*([^\n]+)/i)?.[1] ||
+    '30 DIAS';
   doc.setFont('times', 'normal');
-  doc.setFontSize(11);  // Body text
+  doc.setFontSize(11);
   doc.text(formaPago.toUpperCase(), margin + 45, yPosition);
 
   return yPosition;
+}
+
+function addCondicionesObra(doc: jsPDF, margin: number, yPosition: number, presupuesto: Presupuesto): number {
+  const lineHeight = 7;
+  let currentY = yPosition;
+
+  if (presupuesto.duracion_obra) {
+    doc.setFont('times', 'bold');
+    doc.setFontSize(12);
+    doc.text('Duración de la obra:', margin, currentY);
+    doc.setFont('times', 'normal');
+    doc.setFontSize(11);
+    doc.text(presupuesto.duracion_obra.toUpperCase(), margin + 55, currentY);
+    currentY += lineHeight;
+  }
+
+  if (presupuesto.porcentaje_anticipo) {
+    doc.setFont('times', 'bold');
+    doc.setFontSize(12);
+    doc.text('Porcentaje de anticipo:', margin, currentY);
+    doc.setFont('times', 'normal');
+    doc.setFontSize(11);
+    doc.text(presupuesto.porcentaje_anticipo.toUpperCase(), margin + 55, currentY);
+    currentY += lineHeight;
+  }
+
+  if (presupuesto.plazo_entrega) {
+    doc.setFont('times', 'bold');
+    doc.setFontSize(12);
+    doc.text('Plazo de entrega:', margin, currentY);
+    doc.setFont('times', 'normal');
+    doc.setFontSize(11);
+    doc.text(presupuesto.plazo_entrega.toUpperCase(), margin + 55, currentY);
+    currentY += lineHeight;
+  }
+
+  return currentY;
 }
 
 function addObservaciones(doc: jsPDF, margin: number, yPosition: number, pageWidth: number, presupuesto: Presupuesto): number {

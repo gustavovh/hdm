@@ -98,6 +98,9 @@ export interface Presupuesto {
   monto_factura?: number;
   condicion_pago?: string;
   medio_pago?: string;
+  duracion_obra?: string;
+  porcentaje_anticipo?: string;
+  plazo_entrega?: string;
   enlace_comprobante?: string;
   factura_pdf_url?: string;
   factura_timbrado?: string;
