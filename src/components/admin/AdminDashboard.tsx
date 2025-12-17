@@ -264,6 +264,10 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
     if (!confirm(`¿Deseas clonar el presupuesto ${presupuesto.codigo}? Se creará un nuevo presupuesto en estado CLONADO que podrás editar.`)) return;
 
     try {
+      const observacionesLimpias = presupuesto.observaciones
+        ? presupuesto.observaciones.replace(/CLONADO DE [^\-]+ - /gi, '').trim()
+        : '';
+
       const newPresupuestoData = {
         cliente_nombre: presupuesto.cliente_nombre,
         cliente_email: presupuesto.cliente_email,
@@ -281,7 +285,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
         tasa_impuesto: presupuesto.tasa_impuesto,
         tasa_comision: presupuesto.tasa_comision,
         estado: 'CLONADO' as const,
-        observaciones: `Clonado de ${presupuesto.codigo}${presupuesto.observaciones ? ' - ' + presupuesto.observaciones : ''}`,
+        observaciones: observacionesLimpias || null,
         concepto: presupuesto.concepto,
         condicion_pago: presupuesto.condicion_pago,
         medio_pago: presupuesto.medio_pago,
