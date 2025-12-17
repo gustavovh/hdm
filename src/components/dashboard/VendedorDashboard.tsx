@@ -271,6 +271,7 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
         cliente_email: presupuesto.cliente_email,
         cliente_telefono: presupuesto.cliente_telefono,
         cliente_documento: presupuesto.cliente_documento,
+        nombre_fantasia: presupuesto.nombre_fantasia,
         vendedor_id: presupuesto.vendedor_id,
         moneda: presupuesto.moneda,
         tipo_cambio: presupuesto.tipo_cambio,
@@ -287,6 +288,9 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
         condicion_pago: presupuesto.condicion_pago,
         medio_pago: presupuesto.medio_pago,
         image_urls: presupuesto.image_urls,
+        duracion_obra: presupuesto.duracion_obra,
+        porcentaje_anticipo: presupuesto.porcentaje_anticipo,
+        plazo_entrega: presupuesto.plazo_entrega,
       };
 
       const { data: newPresupuesto, error } = await supabase
