@@ -128,8 +128,8 @@ export class CommissionsService {
       .select('id, total_neto, total_impuestos, moneda, codigo')
       .eq('vendedor_id', vendedorId)
       .in('estado', ['ACEPTADO', 'EN_EJECUCION', 'FACTURADO'])
-      .gte('fecha_aceptacion', startDate.toISOString())
-      .lte('fecha_aceptacion', endDate.toISOString())
+      .gte('ultima_actualizacion_estado', startDate.toISOString())
+      .lte('ultima_actualizacion_estado', endDate.toISOString())
       .is('deleted_at', null);
 
     if (presupuestosError) throw presupuestosError;
