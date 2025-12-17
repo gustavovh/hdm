@@ -33,6 +33,9 @@ export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: Presupues
     tipo_cambio: presupuesto.tipo_cambio || 7300,
     condicion_pago: presupuesto.condicion_pago || '',
     medio_pago: presupuesto.medio_pago || '',
+    duracion_obra: presupuesto.duracion_obra || '',
+    porcentaje_anticipo: presupuesto.porcentaje_anticipo || '',
+    plazo_entrega: presupuesto.plazo_entrega || '',
     tasa_impuesto: presupuesto.tasa_impuesto || 10,
     tasa_comision: presupuesto.tasa_comision || 0,
   });
@@ -247,6 +250,41 @@ export function PresupuestoEditor({ presupuesto, onUpdate, onCancel }: Presupues
                   value={formData.medio_pago}
                   onChange={(e) => setFormData({ ...formData, medio_pago: e.target.value })}
                   placeholder="Ej: Transferencia, Efectivo, etc."
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Duración de la obra
+                </label>
+                <Input
+                  value={formData.duracion_obra}
+                  onChange={(e) => setFormData({ ...formData, duracion_obra: e.target.value })}
+                  placeholder="Ej: 30 días"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Porcentaje de anticipo
+                </label>
+                <Input
+                  value={formData.porcentaje_anticipo}
+                  onChange={(e) => setFormData({ ...formData, porcentaje_anticipo: e.target.value })}
+                  placeholder="Ej: 50%"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Plazo de entrega
+                </label>
+                <Input
+                  value={formData.plazo_entrega}
+                  onChange={(e) => setFormData({ ...formData, plazo_entrega: e.target.value })}
+                  placeholder="Ej: 15 días"
                 />
               </div>
             </div>

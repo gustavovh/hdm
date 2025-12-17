@@ -85,9 +85,9 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         cliente_telefono: presupuesto.cliente_telefono || '',
         cliente_email: presupuesto.cliente_email || '',
         descripcion: presupuesto.observaciones || '',
-        duracion_obra: '',
-        porcentaje_anticipo: '',
-        plazo_entrega: '',
+        duracion_obra: presupuesto.duracion_obra || '',
+        porcentaje_anticipo: presupuesto.porcentaje_anticipo || '',
+        plazo_entrega: presupuesto.plazo_entrega || '',
         moneda: presupuesto.moneda,
         tipo_cambio: presupuesto.tipo_cambio,
         tasa_impuesto: presupuesto.tasa_impuesto,
@@ -368,13 +368,6 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         codigo = data;
       }
 
-      const observacionesCompletas = [
-        formData.descripcion,
-        formData.duracion_obra && `Duración de la obra: ${formData.duracion_obra}`,
-        formData.porcentaje_anticipo && `Porcentaje de anticipo: ${formData.porcentaje_anticipo}`,
-        formData.plazo_entrega && `Plazo de entrega: ${formData.plazo_entrega}`,
-      ].filter(Boolean).join('\n');
-
       const presupuestoData: any = {
         concepto: formData.concepto,
         cliente_nombre: formData.cliente_nombre,
@@ -382,7 +375,7 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         cliente_documento: formData.cliente_documento || null,
         cliente_telefono: formData.cliente_telefono || null,
         cliente_email: formData.cliente_email || null,
-        observaciones: observacionesCompletas || null,
+        observaciones: formData.descripcion || null,
         moneda: formData.moneda,
         tipo_cambio: formData.tipo_cambio,
         tasa_impuesto: formData.tasa_impuesto,
@@ -393,6 +386,9 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
         total_neto: totals.totalNeto,
         total_impuestos: totals.totalImpuestos,
         total_comisiones: totals.totalComisiones,
+        duracion_obra: formData.duracion_obra || null,
+        porcentaje_anticipo: formData.porcentaje_anticipo || null,
+        plazo_entrega: formData.plazo_entrega || null,
         factura_numero: formData.factura_numero || null,
         factura_timbrado: formData.factura_timbrado || null,
         factura_fecha: formData.factura_fecha || null,
