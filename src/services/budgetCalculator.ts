@@ -107,7 +107,7 @@ export class BudgetCalculator {
 
     const tasa_comision = presupuesto.tasa_comision || 0;
     const total_comisiones = this.calculateCommissions(
-      total_neto,
+      total_neto + total_impuestos,
       tasa_comision
     );
 
@@ -130,17 +130,19 @@ export class BudgetCalculator {
 
   static async calculateCommissionsWithTiers(
     total_neto: number,
-    moneda: 'PYG' | 'USD'
+    moneda: 'PYG' | 'USD',
+    total_impuestos: number = 0
   ): Promise<{ tasa: number; monto: number }> {
+    const baseAmount = total_neto + total_impuestos;
     try {
       const { CommissionsService } = await import('./commissionsService');
-      const tier = await CommissionsService.calculateTier(total_neto, moneda);
+      const tier = await CommissionsService.calculateTier(baseAmount, moneda);
       const tasa = tier?.tasa_comision || 3.0;
-      const monto = (total_neto * tasa) / 100;
+      const monto = (baseAmount * tasa) / 100;
       return { tasa, monto };
     } catch (error) {
       const tasa = 3.0;
-      const monto = (total_neto * tasa) / 100;
+      const monto = (baseAmount * tasa) / 100;
       return { tasa, monto };
     }
   }

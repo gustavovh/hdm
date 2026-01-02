@@ -252,8 +252,9 @@ export function PresupuestoForm({ presupuestoId, onSave, onCancel }: Presupuesto
 
     const totalNeto = totalBruto;
     const totalImpuestos = totalNeto * (formData.tasa_impuesto / 100);
-    const totalComisiones = totalNeto * (formData.tasa_comision / 100);
-    const totalFinal = totalNeto + totalImpuestos;
+    const totalConImpuestos = totalNeto + totalImpuestos;
+    const totalComisiones = totalConImpuestos * (formData.tasa_comision / 100);
+    const totalFinal = totalConImpuestos;
 
     return { totalBruto, totalNeto, totalImpuestos, totalComisiones, totalFinal };
   };
