@@ -89,11 +89,11 @@ export function CommissionsManager() {
       for (const vendedor of vendedores) {
         const { data: presupuestos, error: presupuestosError } = await supabase
           .from('presupuestos')
-          .select('id, codigo, total_neto, total_impuestos, total_comisiones, tasa_comision, moneda, ultima_actualizacion_estado, estado')
+          .select('id, codigo, total_neto, total_impuestos, total_comisiones, tasa_comision, moneda, created_at, estado')
           .eq('vendedor_id', vendedor.id)
           .in('estado', ['ACEPTADO', 'EN_EJECUCION', 'FACTURADO'])
-          .gte('ultima_actualizacion_estado', startDate.toISOString())
-          .lte('ultima_actualizacion_estado', endDate.toISOString())
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
           .is('deleted_at', null);
 
         if (presupuestosError) {
