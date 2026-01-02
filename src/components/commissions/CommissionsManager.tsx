@@ -383,7 +383,7 @@ export function CommissionsManager() {
                     Avance
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Comisión Total
+                    Ventas
                   </th>
                 </tr>
               </thead>
@@ -427,10 +427,10 @@ export function CommissionsManager() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="text-lg font-bold text-green-600">
-                        {formatCurrency(stat.totalComisiones)}
+                        {formatCurrency(stat.totalVentas)}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        Suma de comisiones asignadas
+                        Comisión: {formatCurrency(stat.totalComisiones)}
                       </div>
                     </td>
                   </tr>
