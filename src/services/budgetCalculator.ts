@@ -65,6 +65,7 @@ export class BudgetCalculator {
       };
 
       updatedPresupuesto.items = items;
+      updatedPresupuesto.total_descuento = 0;
     } else {
       const totalBruto = this.calculateBrutoTotal(items);
       const discountAmount = this.applyDiscountToValue(
@@ -79,6 +80,11 @@ export class BudgetCalculator {
         );
       }
 
+      items.forEach(item => {
+        item.descuento_aplicado = 0;
+      });
+
+      updatedPresupuesto.items = items;
       updatedPresupuesto.total_descuento = discountAmount;
     }
 
@@ -97,8 +103,9 @@ export class BudgetCalculator {
       0
     );
 
-    const total_descuento =
-      (presupuesto.total_descuento || 0) + itemDiscounts;
+    const total_descuento = itemDiscounts > 0
+      ? itemDiscounts
+      : (presupuesto.total_descuento || 0);
 
     const total_neto = Math.max(0, total_bruto - total_descuento);
 

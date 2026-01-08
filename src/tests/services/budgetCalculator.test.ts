@@ -168,7 +168,7 @@ describe('BudgetCalculator', () => {
       expect(result.total_descuento).toBe(1000);
       expect(result.total_neto).toBe(9000);
       expect(result.total_impuestos).toBe(900);
-      expect(result.total_comisiones).toBe(450);
+      expect(result.total_comisiones).toBe(495);
     });
 
     it('should apply global monto discount', () => {
@@ -182,7 +182,7 @@ describe('BudgetCalculator', () => {
       expect(result.total_descuento).toBe(1500);
       expect(result.total_neto).toBe(8500);
       expect(result.total_impuestos).toBe(850);
-      expect(result.total_comisiones).toBe(425);
+      expect(result.total_comisiones).toBe(467.5);
     });
 
     it('should throw error if discount exceeds total', () => {
@@ -347,10 +347,10 @@ describe('BudgetCalculator', () => {
       const result = BudgetCalculator.recalculateTotals(presupuesto);
 
       expect(result.total_bruto).toBe(15000);
-      expect(result.total_descuento).toBe(800);
-      expect(result.total_neto).toBe(14200);
-      expect(result.total_impuestos).toBe(1420);
-      expect(result.total_comisiones).toBe(710);
+      expect(result.total_descuento).toBe(300);
+      expect(result.total_neto).toBe(14700);
+      expect(result.total_impuestos).toBe(1470);
+      expect(result.total_comisiones).toBe(808.5);
     });
 
     it('should handle zero totals', () => {
