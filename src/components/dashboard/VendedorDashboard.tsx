@@ -692,6 +692,46 @@ export function VendedorDashboard({ onSelectPresupuesto }: VendedorDashboardProp
             </button>
           </div>
 
+          <div className="mb-6 bg-white rounded-lg shadow-md border border-gray-200 p-6">
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <div className="flex items-center gap-2 min-w-fit">
+                <Filter className="w-5 h-5 text-gray-600" />
+                <span className="text-sm font-semibold text-gray-700">Filtrar por fechas:</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 flex-1">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-600 min-w-fit">Desde:</label>
+                  <Input
+                    type="date"
+                    value={fechaDesde}
+                    onChange={(e) => setFechaDesde(e.target.value)}
+                    className="w-auto"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-600 min-w-fit">Hasta:</label>
+                  <Input
+                    type="date"
+                    value={fechaHasta}
+                    onChange={(e) => setFechaHasta(e.target.value)}
+                    className="w-auto"
+                  />
+                </div>
+                {(fechaDesde || fechaHasta) && (
+                  <button
+                    onClick={() => {
+                      setFechaDesde('');
+                      setFechaHasta('');
+                    }}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white rounded-lg shadow p-4 space-y-4 mb-6">
             <div className="flex gap-4">
               <Input
