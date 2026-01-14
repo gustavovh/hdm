@@ -1138,7 +1138,39 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="overflow-x-auto">
+                {/* Scroll bar superior visible */}
+                <div className="bg-gray-50 p-2 border-b border-gray-200">
+                  <div
+                    className="overflow-x-auto"
+                    style={{
+                      overflowY: 'hidden',
+                      height: '20px',
+                      background: 'linear-gradient(to right, #e5e7eb 0%, #e5e7eb 100%)',
+                      borderRadius: '4px'
+                    }}
+                    onScroll={(e) => {
+                      const target = e.target as HTMLDivElement;
+                      const tableContainer = target.parentElement?.parentElement?.querySelector('.table-scroll-container') as HTMLDivElement;
+                      if (tableContainer) {
+                        tableContainer.scrollLeft = target.scrollLeft;
+                      }
+                    }}
+                  >
+                    <div style={{ height: '1px', width: '1600px' }}></div>
+                  </div>
+                </div>
+
+                {/* Tabla con scroll */}
+                <div
+                  className="overflow-x-auto table-scroll-container"
+                  onScroll={(e) => {
+                    const target = e.target as HTMLDivElement;
+                    const topScroll = target.parentElement?.querySelector('.overflow-x-auto') as HTMLDivElement;
+                    if (topScroll && topScroll !== target) {
+                      topScroll.scrollLeft = target.scrollLeft;
+                    }
+                  }}
+                >
                 <table className="w-full divide-y divide-gray-200" style={{ minWidth: '1600px' }}>
                   <thead className="bg-gray-50">
                     <tr>
