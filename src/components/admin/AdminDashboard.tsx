@@ -906,7 +906,7 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <div className="flex gap-1 justify-center">
+                            <div className="flex gap-1 justify-center flex-nowrap">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -926,6 +926,48 @@ export function AdminDashboard({ onSelectPresupuesto, onCreatePresupuesto }: Adm
                                 title="Descargar PDF"
                               >
                                 <Download className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleClonePresupuesto(presupuesto);
+                                }}
+                                className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors"
+                                title="Clonar presupuesto"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPresupuestoForEstado(presupuesto);
+                                  setShowCambiarEstado(true);
+                                }}
+                                className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+                                title="Cambiar estado"
+                              >
+                                <RotateCw className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPresupuestoForFacturacion(presupuesto);
+                                  setShowFacturacion(true);
+                                }}
+                                className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors"
+                                title="Datos de facturación"
+                              >
+                                <Receipt className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeletePresupuesto(presupuesto.id);
+                                }}
+                                className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </td>
