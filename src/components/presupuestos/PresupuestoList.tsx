@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Search, RefreshCw, Download, Copy, RotateCw, Receipt, Eye } from 'lucide-react';
+import { FileText, Plus, Search, RefreshCw, Download, Copy, RotateCw, Receipt, Eye, Filter } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
@@ -22,6 +22,8 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [fechaDesde, setFechaDesde] = useState<string>('');
+  const [fechaHasta, setFechaHasta] = useState<string>('');
   const [showCambiarEstado, setShowCambiarEstado] = useState(false);
   const [selectedPresupuestoForEstado, setSelectedPresupuestoForEstado] = useState<Presupuesto | null>(null);
   const [showFacturacion, setShowFacturacion] = useState(false);
@@ -219,7 +221,26 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
       p.concepto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.nombre_fantasia?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || p.estado === statusFilter;
-    return matchesSearch && matchesStatus;
+
+    let matchesFechaDesde = true;
+    let matchesFechaHasta = true;
+
+    if (fechaDesde) {
+      const fechaDesdeDate = new Date(fechaDesde);
+      fechaDesdeDate.setHours(0, 0, 0, 0);
+      const presupuestoDate = new Date(p.created_at);
+      presupuestoDate.setHours(0, 0, 0, 0);
+      matchesFechaDesde = presupuestoDate >= fechaDesdeDate;
+    }
+
+    if (fechaHasta) {
+      const fechaHastaDate = new Date(fechaHasta);
+      fechaHastaDate.setHours(23, 59, 59, 999);
+      const presupuestoDate = new Date(p.created_at);
+      matchesFechaHasta = presupuestoDate <= fechaHastaDate;
+    }
+
+    return matchesSearch && matchesStatus && matchesFechaDesde && matchesFechaHasta;
   });
 
   if (loading) {
@@ -247,6 +268,46 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
             <Plus className="w-4 h-4 mr-2" />
             Nuevo Presupuesto
           </Button>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <div className="flex items-center gap-2 min-w-fit">
+              <Filter className="w-5 h-5 text-gray-600" />
+              <span className="text-sm font-semibold text-gray-700">Filtrar por fechas:</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-4 flex-1">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-600 min-w-fit">Desde:</label>
+                <Input
+                  type="date"
+                  value={fechaDesde}
+                  onChange={(e) => setFechaDesde(e.target.value)}
+                  className="w-auto"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-600 min-w-fit">Hasta:</label>
+                <Input
+                  type="date"
+                  value={fechaHasta}
+                  onChange={(e) => setFechaHasta(e.target.value)}
+                  className="w-auto"
+                />
+              </div>
+              {(fechaDesde || fechaHasta) && (
+                <button
+                  onClick={() => {
+                    setFechaDesde('');
+                    setFechaHasta('');
+                  }}
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+                >
+                  Limpiar filtros
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-4 space-y-4">
