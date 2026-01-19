@@ -17,7 +17,7 @@ interface PresupuestoListProps {
 }
 
 export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: PresupuestoListProps) {
-  const { user } = useAuth();
+  const { user, isAdmin, isAdministrativo } = useAuth();
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,7 +37,12 @@ export function PresupuestoList({ onSelectPresupuesto, onCreateNew }: Presupuest
     try {
       setLoading(true);
       const data = await PresupuestoService.getAll();
-      const myPresupuestos = data.filter(p => p.vendedor_id === user?.id && !p.deleted_at);
+
+      // Admin y administrativo ven TODOS los presupuestos, vendedores solo los suyos
+      const myPresupuestos = (isAdmin || isAdministrativo)
+        ? data.filter(p => !p.deleted_at)
+        : data.filter(p => p.vendedor_id === user?.id && !p.deleted_at);
+
       setPresupuestos(myPresupuestos || []);
     } catch (error) {
       console.error('Error loading presupuestos:', error);
