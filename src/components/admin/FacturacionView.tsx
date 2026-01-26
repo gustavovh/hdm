@@ -5,6 +5,7 @@ import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 import { Search, Download, RefreshCw, FileText, Calendar } from 'lucide-react';
 import { BudgetCalculator } from '../../services/budgetCalculator';
+import * as XLSX from 'xlsx';
 
 interface FacturaData {
   id: string;
@@ -105,57 +106,53 @@ export function FacturacionView() {
     }
   };
 
-  const exportToCSV = () => {
-    const headers = [
-      'Código',
-      'Concepto',
-      'Cliente',
-      'Vendedor',
-      'Estado',
-      'Monto Total',
-      'Moneda',
-      'Factura Número',
-      'Timbrado',
-      'Fecha Factura',
-      'Número Factura',
-      'Monto Factura',
-      'Condición Pago',
-      'Medio Pago',
-      'Observación',
-      'Link Comprobante',
-      'Fecha Creación'
+  const exportToExcel = () => {
+    const data = filteredFacturas.map(f => ({
+      'Código': f.codigo,
+      'Concepto': f.concepto,
+      'Cliente': f.cliente_nombre,
+      'Vendedor': f.vendedor_nombre,
+      'Estado': f.estado,
+      'Monto Total': f.total_neto,
+      'Moneda': f.moneda,
+      'Factura Número': f.factura_numero || '',
+      'Timbrado': f.factura_timbrado || '',
+      'Fecha Factura': f.fecha_facturacion || f.factura_fecha || '',
+      'Número Factura': f.numero_factura || '',
+      'Monto Factura': f.monto_factura || '',
+      'Condición Pago': f.condicion_pago || '',
+      'Medio Pago': f.medio_pago || '',
+      'Observación': f.factura_observacion || '',
+      'Link Comprobante': f.enlace_comprobante || '',
+      'Fecha Creación': new Date(f.created_at).toLocaleDateString('es-PY')
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Facturas');
+
+    const colWidths = [
+      { wch: 18 },
+      { wch: 40 },
+      { wch: 30 },
+      { wch: 20 },
+      { wch: 12 },
+      { wch: 15 },
+      { wch: 8 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 30 },
+      { wch: 30 },
+      { wch: 15 }
     ];
+    worksheet['!cols'] = colWidths;
 
-    const rows = filteredFacturas.map(f => [
-      f.codigo,
-      f.concepto,
-      f.cliente_nombre,
-      f.vendedor_nombre,
-      f.estado,
-      f.total_neto,
-      f.moneda,
-      f.factura_numero || '',
-      f.factura_timbrado || '',
-      f.fecha_facturacion || f.factura_fecha || '',
-      f.numero_factura || '',
-      f.monto_factura || '',
-      f.condicion_pago || '',
-      f.medio_pago || '',
-      f.factura_observacion || '',
-      f.enlace_comprobante || '',
-      new Date(f.created_at).toLocaleDateString('es-PY')
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `facturas_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
+    XLSX.writeFile(workbook, `facturas_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   if (loading) {
@@ -181,9 +178,9 @@ export function FacturacionView() {
               <RefreshCw className="w-4 h-4 mr-2" />
               Actualizar
             </Button>
-            <Button onClick={exportToCSV} variant="primary" size="sm">
+            <Button onClick={exportToExcel} variant="primary" size="sm">
               <Download className="w-4 h-4 mr-2" />
-              Exportar CSV
+              Exportar Excel
             </Button>
           </div>
         </div>

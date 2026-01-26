@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { CommissionsService, CommissionCalculation } from '../../services/commissionsService';
 import { salesTargetsService } from '../../services/salesTargetsService';
 import { supabase } from '../../lib/supabase';
+import * as XLSX from 'xlsx';
 
 interface User {
   id: string;
@@ -164,31 +165,37 @@ export function CommissionsManager() {
   };
 
   const handleExportReport = () => {
-    const csvContent = [
-      ['Vendedor', 'Email', 'Ventas', 'Objetivo', 'Avance %', 'Comisión'],
-      ...vendedoresStats.map(stat => [
-        stat.vendedor.full_name,
-        stat.vendedor.email,
-        stat.totalVentas.toString(),
-        stat.objetivo.toString(),
-        stat.porcentajeObjetivo.toString(),
-        stat.totalComisiones.toString(),
-      ])
-    ].map(row => row.join(',')).join('\n');
+    const data = vendedoresStats.map(stat => ({
+      'Vendedor': stat.vendedor.full_name,
+      'Email': stat.vendedor.email,
+      'Ventas': stat.totalVentas,
+      'Objetivo': stat.objetivo,
+      'Avance %': stat.porcentajeObjetivo,
+      'Comisión': stat.totalComisiones,
+    }));
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Comisiones');
+
+    const colWidths = [
+      { wch: 25 },
+      { wch: 30 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 15 }
+    ];
+    worksheet['!cols'] = colWidths;
 
     let filename: string;
     if (useCustomDates && dateFrom && dateTo) {
-      filename = `comisiones_${dateFrom}_a_${dateTo}.csv`;
+      filename = `comisiones_${dateFrom}_a_${dateTo}.xlsx`;
     } else {
-      filename = `comisiones_${months[selectedMonth - 1]}_${selectedYear}.csv`;
+      filename = `comisiones_${months[selectedMonth - 1]}_${selectedYear}.xlsx`;
     }
 
-    link.download = filename;
-    link.click();
+    XLSX.writeFile(workbook, filename);
   };
 
   const formatCurrency = (amount: number) => {
@@ -295,7 +302,7 @@ export function CommissionsManager() {
               variant="outline"
             >
               <Download className="w-4 h-4 mr-2" />
-              Exportar CSV
+              Exportar Excel
             </Button>
           </div>
         </div>
