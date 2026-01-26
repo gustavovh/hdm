@@ -81,6 +81,7 @@ export function FacturacionView() {
           vendedor:users!presupuestos_vendedor_id_fkey(full_name)
         `)
         .or('estado.eq.FACTURADO,factura_numero.not.is.null,numero_factura.not.is.null')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (error) {
