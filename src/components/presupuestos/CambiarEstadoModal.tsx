@@ -69,22 +69,14 @@ export function CambiarEstadoModal({
 
   const handleSubmit = async () => {
     if (!nuevoEstado) {
-      alert('Debes seleccionar un estado');
       return;
     }
 
-    if (!validacion) {
-      alert('Error validando la transición');
-      return;
-    }
-
-    if (!validacion.permitido) {
-      alert(validacion.mensaje);
+    if (!validacion || !validacion.permitido) {
       return;
     }
 
     if (validacion.requiere_aprobacion && !justificacion.trim()) {
-      alert('Debes proporcionar una justificación para este cambio excepcional');
       return;
     }
 
@@ -98,18 +90,17 @@ export function CambiarEstadoModal({
           nuevoEstado,
           justificacion
         );
-        alert('SU SOLICITUD DE CAMBIO DE ESTADO FUE REMITIDA AL ADMINISTRADOR');
+        console.log('✅ Solicitud de cambio de estado enviada al administrador');
       } else {
         // Cambio directo (transición normal)
         await EstadoWorkflowService.cambiarEstadoDirecto(presupuestoId, nuevoEstado);
-        alert('Estado actualizado exitosamente');
+        console.log('✅ Estado actualizado exitosamente');
       }
 
       onEstadoCambiado();
       onClose();
     } catch (error: any) {
       console.error('Error procesando cambio de estado:', error);
-      alert('Error: ' + (error.message || 'Error desconocido'));
     } finally {
       setLoading(false);
     }

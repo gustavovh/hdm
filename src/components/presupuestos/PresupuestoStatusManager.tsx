@@ -119,9 +119,8 @@ export function PresupuestoStatusManager({
   const handleConfirm = async () => {
     if (!targetStatus || !validacion) return;
 
-    // Si no está permitido en absoluto, mostrar error
+    // Si no está permitido en absoluto, no hacer nada
     if (!validacion.permitido) {
-      alert(validacion.mensaje);
       setLoading(false);
       return;
     }
@@ -133,7 +132,6 @@ export function PresupuestoStatusManager({
         const justificacion = observaciones.trim();
 
         if (!justificacion) {
-          alert('Debes proporcionar una justificación en el campo "Observaciones" para este cambio excepcional.');
           setLoading(false);
           return;
         }
@@ -144,7 +142,7 @@ export function PresupuestoStatusManager({
           justificacion
         );
 
-        alert('✅ SU SOLICITUD DE CAMBIO DE ESTADO FUE REMITIDA AL ADMINISTRADOR.\n\nEl presupuesto permanecerá en su estado actual hasta que un administrador apruebe el cambio.');
+        console.log('✅ Solicitud de cambio de estado enviada al administrador');
         setShowModal(false);
         setTargetStatus(null);
         setObservaciones('');
@@ -178,14 +176,13 @@ export function PresupuestoStatusManager({
       }
 
       await EstadoWorkflowService.cambiarEstadoDirecto(presupuesto.id, targetStatus);
-      alert('Estado actualizado exitosamente');
+      console.log('✅ Estado actualizado exitosamente');
       setShowModal(false);
       setTargetStatus(null);
       setObservaciones('');
       onUpdate();
     } catch (error: any) {
-      console.error('Error changing status:', error);
-      alert('Error: ' + (error.message || 'Error desconocido'));
+      console.error('Error al cambiar estado:', error);
     } finally {
       setLoading(false);
     }

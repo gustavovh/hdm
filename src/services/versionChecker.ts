@@ -4,9 +4,10 @@ interface VersionData {
 }
 
 class VersionChecker {
-  private checkInterval: number = 5 * 60 * 1000; // 5 minutes
+  private checkInterval: number = 2 * 60 * 60 * 1000; // 2 horas
   private intervalId: NodeJS.Timeout | null = null;
   private currentVersion: string;
+  private hasAskedToReload: boolean = false;
 
   constructor() {
     this.currentVersion = (window as any).APP_VERSION || '1.0.0';
@@ -14,10 +15,8 @@ class VersionChecker {
   }
 
   start() {
-    // Check immediately on start
-    this.checkVersion();
-
-    // Then check every X minutes
+    // NO revisar inmediatamente al iniciar para no interrumpir el trabajo
+    // Revisar solo después de 2 horas
     this.intervalId = setInterval(() => {
       this.checkVersion();
     }, this.checkInterval);
@@ -63,19 +62,25 @@ class VersionChecker {
   }
 
   private notifyNewVersion(newVersion: string) {
+    // Solo preguntar una vez por sesión
+    if (this.hasAskedToReload) {
+      console.log('⏰ Already asked user to reload this session');
+      return;
+    }
+
+    this.hasAskedToReload = true;
+
     const message =
-      `¡Nueva versión disponible!\n\n` +
-      `Versión actual: ${this.currentVersion}\n` +
-      `Nueva versión: ${newVersion}\n\n` +
-      `Se recomienda recargar la página para obtener las últimas actualizaciones.\n\n` +
+      `Nueva versión disponible: ${newVersion}\n\n` +
+      `Se recomienda recargar cuando termines tu trabajo actual.\n\n` +
       `¿Deseas recargar ahora?`;
 
     if (confirm(message)) {
       // Force reload, bypassing cache
       window.location.reload();
     } else {
-      // Ask again in 5 minutes
-      console.log('⏰ User declined reload, will ask again later');
+      // No volver a preguntar en esta sesión
+      console.log('⏰ User declined reload for this session');
     }
   }
 
