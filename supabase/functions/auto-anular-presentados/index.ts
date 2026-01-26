@@ -33,12 +33,12 @@ Deno.serve(async (req: Request) => {
         codigo,
         cliente_nombre,
         fecha_presentacion,
+        created_at,
         vendedor_id,
         estado,
         vendedor:users!presupuestos_vendedor_id_fkey(email, full_name)
       `)
       .eq("estado", "PRESENTADO")
-      .lte("fecha_presentacion", fecha30Dias)
       .is("deleted_at", null);
 
     if (fetchError) {
@@ -46,9 +46,17 @@ Deno.serve(async (req: Request) => {
     }
 
     const anulados: any[] = [];
+    const fecha30DiasDate = new Date(fecha30Dias);
 
     if (presupuestos && presupuestos.length > 0) {
       for (const presupuesto of presupuestos) {
+        const fechaCreacion = new Date(presupuesto.created_at);
+
+        // Verificar que el presupuesto tenga más de 30 días desde su creación
+        if (fechaCreacion > fecha30DiasDate) {
+          continue;
+        }
+
         const vendedor = presupuesto.vendedor as any;
 
         // Anular el presupuesto
@@ -65,6 +73,8 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
+        const diasTranscurridos = Math.floor((Date.now() - fechaCreacion.getTime()) / (1000 * 60 * 60 * 24));
+
         // Crear auditoría
         await supabaseClient.from("auditorias").insert({
           accion: "AUTO_ANULAR_PRESENTADO",
@@ -72,9 +82,10 @@ Deno.serve(async (req: Request) => {
           entidad_id: presupuesto.id,
           usuario_id: null,
           cambios: {
-            motivo: "Presupuesto presentado sin respuesta por más de 30 días",
+            motivo: `Presupuesto presentado sin respuesta por más de 30 días (${diasTranscurridos} días desde creación)`,
             before: { estado: "PRESENTADO" },
             after: { estado: "ANULADO" },
+            fecha_creacion: presupuesto.created_at,
           },
         });
 
@@ -115,6 +126,8 @@ Deno.serve(async (req: Request) => {
           codigo: presupuesto.codigo,
           cliente: presupuesto.cliente_nombre,
           vendedor: vendedor?.full_name || 'desconocido',
+          dias_transcurridos: diasTranscurridos,
+          fecha_creacion: presupuesto.created_at,
         });
       }
     }
