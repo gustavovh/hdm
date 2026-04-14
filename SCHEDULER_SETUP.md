@@ -172,3 +172,32 @@ LIMIT 10;
 2. **Monitorear el uso**: Cada ejecución consume recursos de Supabase
 3. **Configurar alertas**: Si el cron job falla, deberías saberlo
 4. **Logs**: Revisar logs del edge function en Supabase Dashboard
+
+## Implementación Activa: Alarmas en GitHub + Vercel
+
+Se implementó un scheduler para alarmas usando Vercel Cron, sin depender de cron local.
+
+- Endpoint interno: `/api/trigger-alarmas-seguimiento`
+- Archivo: `api/trigger-alarmas-seguimiento.js`
+- Cron en Vercel: `*/15 * * * *` (cada 15 minutos)
+- Objetivo: invocar `https://<tu-proyecto>.supabase.co/functions/v1/alarmas-seguimiento`
+
+### Variables de entorno requeridas (Vercel)
+
+- `CRON_SECRET`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+### Flujo
+
+1. Vercel Cron llama a `/api/trigger-alarmas-seguimiento`
+2. El endpoint valida `Authorization: Bearer <CRON_SECRET>`
+3. El endpoint invoca la edge function `alarmas-seguimiento` con `SUPABASE_SERVICE_ROLE_KEY`
+4. La edge function procesa alarmas vencidas y crea notificaciones
+
+### Verificación rápida
+
+1. Hacer push a GitHub y desplegar en Vercel
+2. En Vercel, revisar que el cron aparezca en el proyecto
+3. Revisar logs de `/api/trigger-alarmas-seguimiento`
+4. Revisar logs de `alarmas-seguimiento` en Supabase
