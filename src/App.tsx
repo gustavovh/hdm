@@ -14,12 +14,26 @@ import { UserProfile } from './components/profile/UserProfile';
 import { CommissionsManager } from './components/commissions/CommissionsManager';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
+import { startLocalAlarmScheduler, stopLocalAlarmScheduler } from './services/alarmasLocalService';
 import { LogOut, FileText, Users, List, BarChart3, UserCog, LayoutDashboard, Package, Eye, EyeOff, UserCircle, DollarSign } from 'lucide-react';
 
 function AuthenticatedApp() {
   const { user, signOut, isAdmin, isAdministrativo } = useAuth();
   const [currentView, setCurrentView] = useState<'dashboard' | 'presupuesto' | 'list' | 'form' | 'reports' | 'users' | 'catalogo' | 'profile' | 'commissions'>('dashboard');
   const [selectedPresupuestoId, setSelectedPresupuestoId] = useState<string>('');
+
+  useEffect(() => {
+    if (!user) {
+      stopLocalAlarmScheduler();
+      return;
+    }
+
+    startLocalAlarmScheduler();
+
+    return () => {
+      stopLocalAlarmScheduler();
+    };
+  }, [user?.id]);
 
   if (!user) {
     return (
